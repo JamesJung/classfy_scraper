@@ -1,0 +1,50 @@
+# 공고 첨부파일 처리 프로그램 의존성 패키지
+
+# 핵심 기능 패키지
+requests>=2.32.0
+python-dotenv>=1.1.0
+
+# 데이터베이스 연동
+SQLAlchemy>=2.0.0
+PyMySQL>=1.1.0
+
+# 이미지 OCR 처리
+easyocr>=1.7.0
+Pillow>=10.0.0
+
+# PDF/문서 처리 (기존 프로젝트에서 사용)
+markitdown
+docling
+pdfminer
+langchain-community
+
+# HWP 파일 처리 (기존 프로젝트에서 사용)
+hwp5
+olefile
+
+# 추가 유틸리티
+pathlib
+configparser
+argparse
+typing
+datetime
+pathlib2
+
+# 로깅 및 설정
+colorama
+termcolor
+
+# 선택적 의존성 (성능 향상을 위해)
+torch
+torchvision
+opencv-python
+
+# 기존 프로젝트 의존성 (필요시)
+langchain
+langchain-openai
+langsmith
+openai
+beautifulsoup4
+lxml
+selenium
+webdriver-manager

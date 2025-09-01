@@ -1,0 +1,20 @@
+# 공고 첨부파일 처리 프로그램 - 최소 필수 패키지
+
+# HTTP 요청 (Ollama API 연동)
+requests>=2.32.0
+
+# 환경변수 로드
+python-dotenv>=1.1.0
+
+# 데이터베이스
+SQLAlchemy>=2.0.0
+PyMySQL>=1.1.0
+
+# 이미지 OCR
+easyocr>=1.7.0
+Pillow>=10.0.0
+
+# 기존 프로젝트 의존성 (PDF, HWP 변환용)
+markitdown
+pdfminer
+hwp5

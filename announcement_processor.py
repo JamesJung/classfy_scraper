@@ -286,7 +286,7 @@ class AnnouncementProcessor:
                 elif force and self.db_manager.is_already_processed(folder_name, site_code):
                     print("  🔄 이미 처리됨, --force 옵션으로 재처리")
                 
-                success = self.process_directory_with_custom_name(directory, site_code, folder_name, attach_force)
+                success = self.process_directory_with_custom_name(directory, site_code, folder_name, attach_force, force)
                 
                 # 개별 항목 처리 시간 계산
                 item_elapsed = time.time() - item_start_time
@@ -330,7 +330,7 @@ class AnnouncementProcessor:
         
         return results
     
-    def process_directory_with_custom_name(self, directory_path: Path, site_code: str, folder_name: str, attach_force: bool = False) -> bool:
+    def process_directory_with_custom_name(self, directory_path: Path, site_code: str, folder_name: str, attach_force: bool = False, force: bool = False) -> bool:
         """
         사용자 정의 폴더명으로 디렉토리를 처리합니다.
         
@@ -339,6 +339,7 @@ class AnnouncementProcessor:
             site_code: 사이트 코드
             folder_name: 데이터베이스에 저장할 폴더명
             attach_force: 첨부파일 강제 재처리 여부
+            force: 이미 처리된 항목도 다시 처리할지 여부
             
         Returns:
             처리 성공 여부
@@ -346,6 +347,12 @@ class AnnouncementProcessor:
         logger.info(f"디렉토리 처리 시작: {folder_name}")
         
         try:
+            # 0. 중복 처리 체크 (force 옵션이 없을 때만)
+            if not force:
+                if self.db_manager.is_already_processed(folder_name, site_code):
+                    logger.info(f"이미 처리된 폴더 건너뜀: {folder_name}")
+                    return True  # 성공으로 처리 (이미 처리됨)
+            
             # 1. 제외 키워드 체크
             excluded_keywords = self._check_exclusion_keywords(folder_name)
             

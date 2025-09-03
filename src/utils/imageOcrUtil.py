@@ -202,8 +202,20 @@ class ImageOCRProcessor:
             if image.mode != "RGB":
                 image = image.convert("RGB")
 
-            # OCR 실행
-            results = self.reader.readtext(image)
+            # OCR 실행 (예외 처리 강화)
+            try:
+                # PIL Image를 numpy 배열로 변환
+                import numpy as np
+                image_array = np.array(image)
+                
+                # EasyOCR에 numpy 배열 전달
+                results = self.reader.readtext(image_array)
+                if not results:
+                    logger.debug("OCR에서 텍스트를 찾지 못함")
+                    return None
+            except Exception as ocr_error:
+                logger.error(f"OCR 실행 중 오류: {ocr_error}")
+                return None
 
             # 결과 텍스트 결합
             extracted_texts = []
@@ -363,6 +375,31 @@ def _has_images_in_markdown(md_content: str, md_file_path: Path) -> bool:
     except Exception as e:
         logger.warning(f"이미지 존재 확인 중 오류: {e}")
         return False
+
+
+def extract_text_from_image(image_path: str) -> str | None:
+    """
+    이미지 파일에서 텍스트를 추출하는 독립 함수 (간단한 인터페이스)
+    
+    Args:
+        image_path: 이미지 파일 경로 (문자열)
+        
+    Returns:
+        추출된 텍스트 또는 None
+    """
+    try:
+        image_path_obj = Path(image_path)
+        if not image_path_obj.exists():
+            logger.warning(f"이미지 파일을 찾을 수 없습니다: {image_path}")
+            return None
+            
+        # ImageOCRProcessor 인스턴스 생성 및 처리
+        processor = ImageOCRProcessor(lazy_init=False)
+        return processor.extract_text_from_image_file(image_path_obj, image_path_obj.parent)
+        
+    except Exception as e:
+        logger.error(f"이미지 텍스트 추출 중 오류: {image_path} - {e}")
+        return None
 
 
 def find_image_files_in_directory(

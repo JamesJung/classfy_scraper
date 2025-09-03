@@ -850,7 +850,7 @@ def convert_pdf_to_md_docling(pdf_path: str, output_path: str = None) -> bool:
             # 표 구조 보존 옵션 설정 (사용자 요구사항)
             try:
                 table_options = TableStructureOptions(
-                    do_cell_matching=True,  # 셀 매칭 활성화
+                    do_cell_matching=False,  # 셀 매칭 활성화
                 )
                 
                 pipeline_options = PdfPipelineOptions(
@@ -1371,7 +1371,11 @@ def convert_pdf_to_text_simple(pdf_path: str, output_path: str = None) -> bool:
         # 길이 제한 제거 - 모든 텍스트 허용
         logger.debug(f"추출된 텍스트 길이: {len(cleaned_text)} 문자")
 
-        # 파일로 저장
+        # output_path 미지정 시 텍스트 직접 반환
+        if output_path is None:
+            return cleaned_text
+
+        # 파일로 저장 (output_path 지정된 경우)
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(cleaned_text)
 
@@ -1384,7 +1388,7 @@ def convert_pdf_to_text_simple(pdf_path: str, output_path: str = None) -> bool:
 
     except Exception as e:
         logger.error(f"PDF 텍스트 추출 중 오류: {e}\n{traceback.format_exc()}")
-        return False
+        return "" if output_path is None else False
 
 
 # marker-pdf 함수 제거됨 - 처리 속도 문제로 비활성화
@@ -1758,6 +1762,36 @@ def convert_hwp_to_html(hwp_file_path: Path, output_dir: Path) -> bool:
 
             except (ParseError, InvalidHwp5FileError) as e:
                 logger.error(f"HWP5 파일 형식 오류: {hwp_file_path.name} - {e}")
+                
+                # HWPX fallback 시도 (HWP 확장자지만 실제로는 HWPX일 가능성)
+                logger.info(f"HWPX fallback 시도: {hwp_file_path.name}")
+                try:
+                    hwpx_text = convert_hwpx_to_text(hwp_file_path)
+                    if hwpx_text and hwpx_text.strip():
+                        # 추출된 텍스트를 HTML 형태로 저장
+                        import html
+                        html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{hwp_file_path.stem}</title>
+</head>
+<body>
+    <pre>{html.escape(hwpx_text)}</pre>
+</body>
+</html>"""
+                        # output_dir 생성 및 index.xhtml 저장
+                        output_dir.mkdir(parents=True, exist_ok=True)
+                        html_file = output_dir / "index.xhtml"
+                        with open(html_file, "w", encoding="utf-8") as f:
+                            f.write(html_content)
+                        logger.info(f"HWPX fallback 성공: {hwp_file_path.name} → {html_file}")
+                        return True
+                    else:
+                        logger.warning(f"HWPX fallback 실패 - 텍스트 추출 불가: {hwp_file_path.name}")
+                except Exception as hwpx_error:
+                    logger.warning(f"HWPX fallback 실패: {hwp_file_path.name} - {hwpx_error}")
+                    
                 return False
             except Exception as transform_error:
                 # XML 파싱 오류 구체적 처리
@@ -1866,6 +1900,28 @@ def convert_hwp_to_markdown(hwp_file_path: Path, output_path: Path) -> bool:
         if not hwp_file_path.exists():
             logger.error(f"HWP 파일을 찾을 수 없습니다: {hwp_file_path}")
             return False
+
+        # .hwp 확장자지만 OLE2 서명이 아닌 경우(HWPX로 잘못 저장된 사례) 우선 처리
+        try:
+            if hwp_file_path.suffix.lower() == ".hwp" and not is_valid_hwp_file(hwp_file_path):
+                logger.warning(
+                    f"HWP 파일이 OLE2 시그니처가 아님(실제는 HWPX일 가능성): {hwp_file_path.name}"
+                )
+                # HWPX 텍스트 추출 시도 후, 결과를 Markdown 파일로 저장
+                hwpx_text = convert_hwpx_to_text(hwp_file_path)
+                if hwpx_text and hwpx_text.strip():
+                    with open(output_path, "w", encoding="utf-8") as f:
+                        f.write(hwpx_text)
+                    logger.info(
+                        f"HWPX-유사 파일 텍스트 추출 성공: {hwp_file_path.name} → {output_path.name}"
+                    )
+                    return True
+                else:
+                    logger.warning(
+                        f"HWPX-유사 파일 텍스트 추출 실패: {hwp_file_path.name} — 일반 경로로 계속"
+                    )
+        except Exception as sig_check_error:
+            logger.debug(f"HWP 서명 점검 중 오류(무시): {sig_check_error}")
 
         # 1차 시도: HTML 변환 (우선순위)
         try:

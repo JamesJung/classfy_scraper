@@ -403,6 +403,9 @@ class AnnouncementClassifier:
 
         result["source_files"] = priority_files
         result["extracted_text_preview"] = combined_text
+
+
+        
         logger.info(f"combined_text: {combined_text}")  
         #result["extracted_text_preview"] = combined_text
         
@@ -757,6 +760,7 @@ class AnnouncementClassifier:
             logger.error(f"bizInfo 첨부파일 추출 오류: {e}")
             return {}
     
+    #현재 사용하지 않는 것으로 판단된다.
     def _extract_single_file_text(self, file_path: Path) -> str:
         """단일 파일에서 텍스트 추출"""
         

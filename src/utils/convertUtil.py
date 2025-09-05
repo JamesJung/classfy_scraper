@@ -1801,6 +1801,10 @@ def convert_file_to_text(file_path: Path, file_type: str) -> str | None:
     Returns:
         Optional[str]: 추출된 텍스트 문자열. 실패 시 None.
     """
+
+
+    logger.info("convert_file_to_text")
+
     try:
         if file_type.lower() == "pdf":
             # PDF 파일 처리
@@ -1862,6 +1866,8 @@ def convert_hwp_to_markdown(hwp_file_path: Path, output_path: Path) -> bool:
     Returns:
         bool: 변환 성공 시 True, 실패 시 False
     """
+
+    logger.info("!!!!!!!!convert_hwp_to_markdown!!!!!!!!")
     try:
         if not hwp_file_path.exists():
             logger.error(f"HWP 파일을 찾을 수 없습니다: {hwp_file_path}")
@@ -1886,7 +1892,7 @@ def convert_hwp_to_markdown(hwp_file_path: Path, output_path: Path) -> bool:
                             )
                             return True
         except Exception as e:
-            logger.warning(f"HTML 변환 실패: {e}")
+            logger.info(f"HTML 변환 실패: {e}")
 
         # 2차 시도: MarkItDown 변환
         try:
@@ -1903,7 +1909,7 @@ def convert_hwp_to_markdown(hwp_file_path: Path, output_path: Path) -> bool:
                 )
                 return True
         except Exception as e:
-            logger.warning(f"MarkItDown 변환 실패: {e}")
+            logger.info(f"MarkItDown 변환 실패: {e}")
 
         # 3차 시도: 직접 텍스트 추출 (대체 방법)
         try:
@@ -1912,7 +1918,7 @@ def convert_hwp_to_markdown(hwp_file_path: Path, output_path: Path) -> bool:
                 with open(output_path, "w", encoding="utf-8") as f:
                     f.write(text_content)
                 logger.info(
-                    f"HWP 직접 텍스트 추출 성공: {hwp_file_path.name} -> {output_path.name}"
+                    f"2222HWP 직접 텍스트 추출 성공: {hwp_file_path.name} -> {output_path.name}"
                 )
                 return True
         except Exception as e:
@@ -2087,6 +2093,27 @@ def extract_hwp_text_fallback(hwp_file_path: Path) -> str | None:
     HWP 파일에서 텍스트 추출을 위한 대체 방법.
     주 변환 방법이 실패한 경우 사용됩니다.
     """
+
+    ###################
+    from tempfile import NamedTemporaryFile
+
+    with NamedTemporaryFile(mode="w", suffix=".md", delete=False) as temp_file:
+        temp_path = temp_file.name
+
+    success = convert_hwp_to_markdown(hwp_file_path, Path(temp_path))
+    if success:
+        with open(temp_path, encoding="utf-8") as f:
+            text = f.read()
+        os.unlink(temp_path)  # 임시 파일 삭제
+        return text
+    else:
+        if os.path.exists(temp_path):
+            os.unlink(temp_path)
+        return None
+    ###################
+
+    #2025.09.03  기존 소스. 현재  extracted_text = gethwp.read_hwp(str(hwp_file_path))
+    #이걸로만 하고 있다. 이 부분은 failback이다.
     try:
         # 파일 유효성 사전 검사
         if not is_valid_hwp_file(hwp_file_path):
@@ -2095,6 +2122,8 @@ def extract_hwp_text_fallback(hwp_file_path: Path) -> str | None:
             )
             return None
 
+
+        
         # Heavy library - lazy import for performance
         import gethwp
 

@@ -124,6 +124,9 @@ class AttachmentProcessor:
     
     def process_single_file(self, file_path: Path) -> Optional[str]:
         """단일 파일을 처리하여 텍스트 내용을 반환합니다."""
+
+        logger.info(f"단일 파일을 처리하여 텍스트 내용을 반환합니다. ====> {file_path}")
+
         try:
             file_extension = file_path.suffix.lower()
             filename = file_path.stem
@@ -183,9 +186,14 @@ class AttachmentProcessor:
     
     def _process_single_hwp(self, hwp_file: Path) -> Optional[str]:
         """단일 HWP 파일을 처리합니다."""
+
+        logger.info('단일 HWP FILE 처리')
+
         try:
             # process_hwp_with_fallback는 Path 객체를 받고 내용을 직접 반환
             content = process_hwp_with_fallback(hwp_file)
+            
+            logger.info(f"content===={content}")
             
             if content and content.strip():
                 return content

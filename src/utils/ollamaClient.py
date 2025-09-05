@@ -425,6 +425,224 @@ class AnnouncementAnalyzer:
         }
 
 
+class AnnouncementPrvAnalyzer:
+    """공고 PRV 내용 분석 및 데이터 추출 (PRV용 별도 템플릿 사용)"""
+
+    def __init__(self):
+        self.ollama_client = OllamaClient()
+        self.system_prompt = self._create_prv_system_prompt()
+
+    def _create_prv_system_prompt(self) -> str:
+        """PRV용 분석 시스템 프롬프트를 생성합니다."""
+        try:
+            # PRV 템플릿 파일 경로
+            template_path = Path(__file__).parent.parent / "config" / "ollama_prv_template.txt"
+            
+            if template_path.exists():
+                with open(template_path, 'r', encoding='utf-8') as f:
+                    template_content = f.read()
+                
+                logger.debug(f"PRV 시스템 프롬프트 템플릿 로드 성공: {template_path}")
+                return template_content
+            else:
+                logger.warning(f"PRV 템플릿 파일을 찾을 수 없음: {template_path}")
+                # 기본 PRV 프롬프트 사용
+                return self._get_default_prv_system_prompt()
+                
+        except Exception as e:
+            logger.error(f"PRV 시스템 프롬프트 템플릿 로드 실패: {e}")
+            return self._get_default_prv_system_prompt()
+    
+    def _get_default_prv_system_prompt(self) -> str:
+        """기본 PRV 시스템 프롬프트를 반환합니다."""
+        return """당신은 정부 및 공공기관의 공고문을 분석하는 전문가입니다.
+주어진 공고 내용을 분석하여 다음 정보를 정확히 추출해주세요.
+
+추출할 정보:
+1. 지원대상: 누가 지원할 수 있는지 (예: 중소기업, 스타트업, 개인 등)
+2. 지원금액: 지원받을 수 있는 금액 (구체적인 수치나 범위)
+3. 제목: 공고의 정확한 제목
+4. 등록일 : 공고 등록한 일자 (공고일, 등록일)
+5. 접수기간: 신청을 받는 기간 (시작일과 마감일)
+6. 모집일정: 전체적인 일정 (접수기간, 심사일정, 발표일 등)
+7. 지원내용: 구체적으로 어떤 지원을 제공하는지
+8. 정부24 URL : 정부24 사이트의 URL (www.gov.kr로 시작하는 URL)
+9. 지원사업여부: 이 공고가 실제 기업이나 개인에게 지원금, 보조금, 혜택 등을 제공하는 지원사업인지 여부 (true/false)
+10. 지원사업근거: 지원사업 여부 판단 근거 (지원사업이라고 판단한 이유나 지원사업이 아니라고 판단한 이유)
+
+지원대상이 추출되었으면 지원대상이 "개인","업체" 인지 구분하여 EXTRACTED_TARGET_TYPE에 입력한다.
+만약 개인과 업체 모두 해당이 된다면 개인, 업체 두개를 입력한다.
+
+중요한 규칙:
+- 전달된 내용에서 정보를 찾을 수 없으면 "정보 없음"이라고 정확히 기재해주세요.
+- 추측하거나 가정하지 마세요. 명확한 정보만 추출해주세요.
+- 결과는 반드시 유효한 JSON 형식으로 반환해주세요.
+- 날짜는 가능한 한 구체적으로 기재해주세요.
+
+응답 형식:
+```json
+{
+    "EXTRACTED_TARGET": "추출된 지원대상 또는 정보 없음",
+    "EXTRACTED_TARGET_TYPE" : "지원대상이 개인, 업체인지 구별",
+    "EXTRACTED_TITLE": "추출된 제목 또는 정보 없음",
+    "EXTRACTED_AMOUNT": "추출된 지원금액 또는 정보 없음",
+    "EXTRACTED_ANNOUNCEMENT_DATE": "추출된 등록일 또는 정보 없음",
+    "EXTRACTED_PERIOD": "추출된 접수기간 또는 정보 없음",
+    "EXTRACTED_SCHEDULE": "추출된 모집일정 또는 정보 없음",
+    "EXTRACTED_CONTENT": "추출된 지원내용 또는 정보 없음",
+    "EXTRACTED_GOV24_URL": "정부24 URL 또는 정보 없음",
+    "IS_SUPPORT_PROGRAM": true/false,
+    "SUPPORT_PROGRAM_REASON": "지원사업 판단 근거"
+}
+```"""
+
+    def analyze_announcement(self, content: str) -> tuple[Dict[str, Any], str]:
+        """
+        공고 내용을 분석하여 구조화된 데이터를 추출합니다. (PRV용)
+
+        Args:
+            content: 분석할 공고 내용
+
+        Returns:
+            (추출된 정보를 담은 딕셔너리, 사용된 프롬프트)
+        """
+        if not content or not content.strip():
+            logger.warning("PRV 분석할 내용이 비어있음")
+            return self._create_prv_empty_result("내용이 비어있음"), ""
+
+        # Ollama 서버 상태 확인
+        if not self.ollama_client.is_available():
+            logger.error("PRV Ollama 서버를 사용할 수 없음")
+            return self._create_prv_empty_result("Ollama 서버 연결 실패"), ""
+
+        # 분석 프롬프트 생성
+        user_prompt = f"""다음 공고 내용을 분석해주세요:
+
+=== 공고 내용 시작 ===
+{content}
+=== 공고 내용 끝 ===
+
+위 내용을 분석하여 JSON 형식으로 추출해주세요. 이 때 "반드시" 응답형식에 맞춰서 응답해주세요. JSON에 별도의 키 값을 추가하지 말고 응답형식을 지켜주세요."""
+
+        # 전체 프롬프트 (시스템 프롬프트 + 사용자 프롬프트)
+        full_prompt = f"SYSTEM:\n{self.system_prompt}\n\nUSER:\n{user_prompt}"
+
+        try:
+            logger.info("PRV 공고 내용 분석 시작...")
+
+            # 디버깅을 위한 전체 프롬프트 로그 추가
+            logger.info(f"=== PRV Ollama 요청 프롬프트 ===")
+            logger.info(f"PRV 시스템 프롬프트 길이: {len(self.system_prompt)} 문자")
+            logger.info(f"PRV 사용자 프롬프트 길이: {len(user_prompt)} 문자")
+            logger.info(f"PRV 전체 프롬프트 길이: {len(full_prompt)} 문자")
+            logger.info(f"PRV 사용자 프롬프트: {user_prompt}")
+            logger.info("=== PRV Ollama 요청 프롬프트 끝 ===")
+
+            # Ollama를 통해 분석 수행
+            response = self.ollama_client.generate_response(
+                prompt=user_prompt,
+                system_prompt=self.system_prompt
+            )
+
+            if not response:
+                logger.error("PRV Ollama 응답을 받을 수 없음")
+                return self._create_prv_empty_result("AI 분석 실패"), full_prompt
+
+            # 디버깅을 위한 원본 응답 로그 추가
+            logger.info(f"=== PRV Ollama 원본 응답 (길이: {len(response)} 문자) ===")
+            logger.info(f"PRV 응답 내용: {response}")
+            logger.info("=== PRV Ollama 원본 응답 끝 ===")
+
+            # JSON 파싱
+            parsed_result = self._parse_prv_json_response(response)
+
+            if parsed_result:
+                logger.info("PRV 공고 분석 완료")
+                return parsed_result, full_prompt
+            else:
+                logger.error("PRV JSON 파싱 실패")
+                return self._create_prv_empty_result("응답 파싱 실패"), full_prompt
+
+        except Exception as e:
+            logger.error(f"PRV 공고 분석 중 오류: {e}")
+            return self._create_prv_empty_result(f"분석 오류: {str(e)}"), full_prompt
+
+    def _parse_prv_json_response(self, response: str) -> Optional[Dict[str, Any]]:
+        """PRV AI 응답에서 JSON을 파싱합니다."""
+        try:
+            logger.debug("=== PRV JSON 파싱 시작 ===")
+            
+            # JSON 코드 블록에서 추출 시도
+            if "```json" in response:
+                logger.debug("PRV ```json 블록 발견")
+                json_start = response.find("```json") + 7
+                json_end = response.find("```", json_start)
+                if json_end != -1:
+                    json_str = response[json_start:json_end].strip()
+                else:
+                    json_str = response[json_start:].strip()
+            elif "```" in response:
+                logger.debug("PRV 일반 ``` 블록 발견")
+                # 일반 코드 블록에서 추출
+                json_start = response.find("```") + 3
+                json_end = response.find("```", json_start)
+                if json_end != -1:
+                    json_str = response[json_start:json_end].strip()
+                else:
+                    json_str = response[json_start:].strip()
+            else:
+                logger.debug("PRV 코드 블록 없음, 전체 응답 사용")
+                # JSON 블록이 없으면 전체 응답에서 JSON 찾기
+                json_str = response.strip()
+
+            logger.debug(f"PRV 추출된 JSON 문자열 (길이: {len(json_str)}): {json_str[:500]}...")
+
+            # JSON 파싱 시도
+            parsed = json.loads(json_str)
+            logger.debug(f"PRV JSON 파싱 성공, 키 개수: {len(parsed) if isinstance(parsed, dict) else '딕셔너리가 아님'}")
+            
+            # 필수 키들 확인 및 보완
+            required_keys = ["EXTRACTED_TARGET", "EXTRACTED_TARGET_TYPE", "EXTRACTED_TITLE", 
+                           "EXTRACTED_AMOUNT", "EXTRACTED_ANNOUNCEMENT_DATE", "EXTRACTED_PERIOD", 
+                           "EXTRACTED_SCHEDULE", "EXTRACTED_CONTENT", "EXTRACTED_GOV24_URL",
+                           "EXTRACTED_ORIGIN_URL", "IS_SUPPORT_PROGRAM", "SUPPORT_PROGRAM_REASON"]
+            for key in required_keys:
+                if key not in parsed:
+                    if key == "IS_SUPPORT_PROGRAM":
+                        parsed[key] = None  # Boolean 필드는 None으로
+                    else:
+                        parsed[key] = "정보 없음"
+            
+            logger.info(f"PRV parsed: {parsed}")
+            return parsed
+
+        except json.JSONDecodeError as e:
+            logger.error(f"PRV JSON 파싱 오류: {e}")
+            logger.debug(f"PRV 파싱 시도한 문자열: {response[:500]}...")
+            return None
+        except Exception as e:
+            logger.error(f"PRV 응답 파싱 중 오류: {e}")
+            return None
+
+    def _create_prv_empty_result(self, error_message: str = "분석 실패") -> Dict[str, Any]:
+        """PRV용 빈 결과 딕셔너리를 생성합니다."""
+        return {
+            "EXTRACTED_TARGET": "정보 없음",
+            "EXTRACTED_TARGET_TYPE": "정보 없음",
+            "EXTRACTED_TITLE": "정보 없음",
+            "EXTRACTED_AMOUNT": "정보 없음",
+            "EXTRACTED_ANNOUNCEMENT_DATE": "정보 없음",
+            "EXTRACTED_PERIOD": "정보 없음",
+            "EXTRACTED_SCHEDULE": "정보 없음",
+            "EXTRACTED_CONTENT": "정보 없음",
+            "EXTRACTED_GOV24_URL": "정보 없음",
+            "EXTRACTED_ORIGIN_URL": "정보 없음",
+            "IS_SUPPORT_PROGRAM": None,
+            "SUPPORT_PROGRAM_REASON": "정보 없음",
+            "error": error_message
+        }
+
+
 
 def analyze_announcement_content(content: str) -> Dict[str, Any]:
     """

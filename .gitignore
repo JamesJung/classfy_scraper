@@ -1,6 +1,9 @@
 # Data directories
+data/
 data.origin/
 data.enhanced/
+prv/
+prv1/
 
 # Python
 __pycache__/

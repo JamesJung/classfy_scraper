@@ -96,12 +96,10 @@ class OllamaClient:
             logger.debug(f"  모델: {self.model}")
             if system_prompt:
                 logger.debug(f"  시스템 프롬프트 길이: {len(system_prompt)} 문자")
-                logger.debug(system_prompt)
                 
             else:
                 logger.debug(f"  시스템 프롬프트 없음")
                     
-            logger.debug(f"  사용자 프롬프트 길이: {len(prompt)} 문자")
 
             # Ollama API 요청 페이로드
             payload = {
@@ -272,7 +270,7 @@ class AnnouncementAnalyzer:
             logger.info(f"사용자 프롬프트 길이: {len(user_prompt)} 문자")
             logger.info(f"전체 프롬프트 길이: {len(full_prompt)} 문자")
             # logger.info(f"시스템 프롬프트: {self.system_prompt}")
-            logger.info(f"사용자 프롬프트: {user_prompt}")
+            # logger.info(f"사용자 프롬프트: {user_prompt}")
             logger.info("=== Ollama 요청 프롬프트 끝 ===")
 
             # Ollama를 통해 분석 수행
@@ -284,7 +282,7 @@ class AnnouncementAnalyzer:
             if not response:
                 logger.error("Ollama 응답을 받을 수 없음")
                 logger.error(f"응답 타입: {type(response)}")
-                logger.error(f"응답 값: {repr(response)}")
+                # logger.error(f"응답 값: {repr(response)}")
                 logger.error("Ollama 서버 연결 상태 재확인...")
                 if self.ollama_client.is_available():
                     logger.error("Ollama 서버는 사용 가능하지만 응답이 없음")
@@ -535,7 +533,7 @@ class AnnouncementPrvAnalyzer:
             logger.info(f"PRV 시스템 프롬프트 길이: {len(self.system_prompt)} 문자")
             logger.info(f"PRV 사용자 프롬프트 길이: {len(user_prompt)} 문자")
             logger.info(f"PRV 전체 프롬프트 길이: {len(full_prompt)} 문자")
-            logger.info(f"PRV 사용자 프롬프트: {user_prompt}")
+            # logger.info(f"PRV 사용자 프롬프트: {user_prompt}")
             logger.info("=== PRV Ollama 요청 프롬프트 끝 ===")
 
             # Ollama를 통해 분석 수행
@@ -550,7 +548,7 @@ class AnnouncementPrvAnalyzer:
 
             # 디버깅을 위한 원본 응답 로그 추가
             logger.info(f"=== PRV Ollama 원본 응답 (길이: {len(response)} 문자) ===")
-            logger.info(f"PRV 응답 내용: {response}")
+            # logger.info(f"PRV 응답 내용: {response}")
             logger.info("=== PRV Ollama 원본 응답 끝 ===")
 
             # JSON 파싱

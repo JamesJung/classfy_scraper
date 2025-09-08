@@ -1907,6 +1907,25 @@ def convert_hwp_to_markdown(hwp_file_path: Path, output_path: Path) -> bool:
             logger.error(f"HWP 파일을 찾을 수 없습니다: {hwp_file_path}")
             return False
 
+        # .hwpx 파일인 경우 직접 처리
+        if hwp_file_path.suffix.lower() == ".hwpx":
+            logger.info(f"HWPX 파일 처리: {hwp_file_path.name}")
+            try:
+                hwpx_text = convert_hwpx_to_text(hwp_file_path)
+                if hwpx_text and hwpx_text.strip():
+                    with open(output_path, "w", encoding="utf-8") as f:
+                        f.write(hwpx_text)
+                    logger.info(
+                        f"HWPX 파일 텍스트 추출 성공: {hwp_file_path.name} → {output_path.name}"
+                    )
+                    return True
+                else:
+                    logger.warning(f"HWPX 파일 텍스트 추출 실패: {hwp_file_path.name}")
+                    return False
+            except Exception as e:
+                logger.error(f"HWPX 파일 처리 중 오류: {hwp_file_path.name} - {e}")
+                return False
+        
         # .hwp 확장자지만 OLE2 서명이 아닌 경우(HWPX로 잘못 저장된 사례) 우선 처리
         try:
             if hwp_file_path.suffix.lower() == ".hwp" and not is_valid_hwp_file(hwp_file_path):
@@ -2150,23 +2169,16 @@ def extract_hwp_text_fallback(hwp_file_path: Path) -> str | None:
     주 변환 방법이 실패한 경우 사용됩니다.
     """
 
-    ###################
-    from tempfile import NamedTemporaryFile
-
-    with NamedTemporaryFile(mode="w", suffix=".md", delete=False) as temp_file:
-        temp_path = temp_file.name
-
-    success = convert_hwp_to_markdown(hwp_file_path, Path(temp_path))
-    if success:
-        with open(temp_path, encoding="utf-8") as f:
-            text = f.read()
-        os.unlink(temp_path)  # 임시 파일 삭제
-        return text
-    else:
-        if os.path.exists(temp_path):
-            os.unlink(temp_path)
-        return None
-    ###################
+    # 중복 호출 방지: convert_hwp_to_markdown()를 호출하지 않고 직접 텍스트 추출
+    logger.info(f"Fallback HWP 텍스트 추출 시작: {hwp_file_path.name}")
+    
+    # HWPX 파일인 경우 직접 처리
+    if hwp_file_path.suffix.lower() == ".hwpx":
+        try:
+            return convert_hwpx_to_text(hwp_file_path)
+        except Exception as e:
+            logger.error(f"Fallback HWPX 텍스트 추출 실패: {hwp_file_path.name} - {e}")
+            return None
 
     #2025.09.03  기존 소스. 현재  extracted_text = gethwp.read_hwp(str(hwp_file_path))
     #이걸로만 하고 있다. 이 부분은 failback이다.

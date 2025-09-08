@@ -193,7 +193,6 @@ class AttachmentProcessor:
             # process_hwp_with_fallback는 Path 객체를 받고 내용을 직접 반환
             content = process_hwp_with_fallback(hwp_file)
             
-            logger.info(f"content===={content}")
             
             if content and content.strip():
                 return content

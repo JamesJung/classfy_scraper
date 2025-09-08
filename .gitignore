@@ -4,6 +4,10 @@ data.origin/
 data.enhanced/
 prv/
 prv1/
+prv7/
+prv8/
+prv*.zip
+prv*_backup/
 
 # Python
 __pycache__/

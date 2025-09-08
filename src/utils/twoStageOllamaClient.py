@@ -240,7 +240,7 @@ class TwoStageOllamaClient:
                 return self._create_empty_format_result("2단계 AI 분석 실패"), full_prompt, duration
             
             logger.info(f"2단계 Ollama 응답 받음 (길이: {len(response)} 문자, 소요시간: {duration:.2f}초)")
-            logger.debug(f"2단계 원본 응답: {response}")
+            # logger.debug(f"2단계 원본 응답: {response}")
             
             # JSON 파싱
             parsed_result = self._parse_format_json_response(response)

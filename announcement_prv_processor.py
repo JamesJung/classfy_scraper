@@ -3,19 +3,22 @@
 공고 처리 메인 프로그램
 
 사용법:
-    python announcement_prv_processor.py [디렉토리명] [사이트코드]
+    python announcement_prv_processor.py [옵션들]
     
 예시:
-    python announcement_prv_processor.py data.origin cbt
-    python announcement_prv_processor.py  # 환경변수 사용
+    python announcement_prv_processor.py --data prv7
+    python announcement_prv_processor.py --data prv8 --date 20250710  # 2025-07-10 이전 공고만 처리
+    python announcement_prv_processor.py --data prv7 -r --date 20250801  # 재귀적으로 8월 1일 이전 공고만 처리
 """
 
 import argparse
 import json
 import os
+import re
 import sys
 import time
 import unicodedata
+from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
@@ -37,12 +40,20 @@ config = ConfigManager().get_config()
 class AnnouncementPrvProcessor:
     """공고 처리 메인 클래스"""
     
-    def __init__(self, attach_force: bool = False):
+    def __init__(self, attach_force: bool = False, date_filter: str = None):
         self.attachment_processor = AttachmentProcessor()
         self.announcement_analyzer = AnnouncementPrvAnalyzer()
         self.db_manager = AnnouncementPrvDatabaseManager()
         self.filter = AnnouncementFilter()
         self.attach_force = attach_force
+        self.date_filter = date_filter
+        
+        # 날짜 필터 파싱
+        self.filter_date = None
+        if date_filter:
+            self.filter_date = self._parse_date_filter(date_filter)
+            if self.filter_date:
+                logger.info(f"날짜 필터 설정: {date_filter} ({self.filter_date.strftime('%Y-%m-%d')}) 이전 공고만 처리")
         
         # 데이터베이스 테이블 생성 (없는 경우)
         self._ensure_database_tables()
@@ -88,6 +99,116 @@ class AnnouncementPrvProcessor:
         except Exception as e:
             logger.warning(f"제외 키워드 로드 실패: {e}")
             return []
+    
+    def _parse_date_filter(self, date_str: str) -> Optional[datetime]:
+        """
+        날짜 필터 문자열을 datetime 객체로 파싱합니다.
+        
+        Args:
+            date_str: YYYYMMDD 형식의 날짜 문자열
+            
+        Returns:
+            datetime 객체 또는 None (파싱 실패시)
+        """
+        try:
+            if len(date_str) != 8 or not date_str.isdigit():
+                logger.error(f"잘못된 날짜 형식: {date_str} (YYYYMMDD 형식이어야 함)")
+                return None
+            
+            year = int(date_str[:4])
+            month = int(date_str[4:6])
+            day = int(date_str[6:8])
+            
+            return datetime(year, month, day)
+            
+        except ValueError as e:
+            logger.error(f"날짜 파싱 실패: {date_str} - {e}")
+            return None
+    
+    def _extract_date_from_content(self, content_md: str) -> Optional[datetime]:
+        """
+        content.md에서 작성일을 추출합니다.
+        
+        Args:
+            content_md: content.md 파일 내용
+            
+        Returns:
+            추출된 날짜 또는 None
+        """
+        if not content_md:
+            return None
+        
+        # 다양한 날짜 패턴 정의
+        date_patterns = [
+            # YYYY-MM-DD, YYYY/MM/DD, YYYY.MM.DD 형식
+            r'(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})',
+            # YYYY년 M월 D일 형식
+            r'(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일',
+            # MM/DD/YYYY, MM-DD-YYYY 형식
+            r'(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})',
+            # 등록일, 작성일, 공고일 등의 키워드와 함께 나오는 패턴
+            r'(?:등록일|작성일|공고일|게시일|공지일|발표일)[\s:]*(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})',
+            r'(?:등록일|작성일|공고일|게시일|공지일|발표일)[\s:]*(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일',
+        ]
+        
+        try:
+            for pattern in date_patterns:
+                matches = re.findall(pattern, content_md)
+                
+                for match in matches:
+                    try:
+                        if len(match) == 3:
+                            # 패턴에 따라 년, 월, 일 순서 결정
+                            if pattern.startswith(r'(\d{1,2})'):  # MM/DD/YYYY 형식
+                                month, day, year = map(int, match)
+                            else:  # YYYY/MM/DD 형식
+                                year, month, day = map(int, match)
+                            
+                            # 날짜 유효성 검사
+                            if 1 <= month <= 12 and 1 <= day <= 31 and 2020 <= year <= 2030:
+                                extracted_date = datetime(year, month, day)
+                                logger.debug(f"날짜 추출 성공: {extracted_date.strftime('%Y-%m-%d')}")
+                                return extracted_date
+                                
+                    except (ValueError, TypeError):
+                        continue
+            
+            logger.debug("content.md에서 유효한 날짜를 찾을 수 없음")
+            return None
+            
+        except Exception as e:
+            logger.warning(f"날짜 추출 중 오류: {e}")
+            return None
+    
+    def _should_process_by_date(self, content_md: str) -> bool:
+        """
+        날짜 필터에 따라 처리 여부를 결정합니다.
+        
+        Args:
+            content_md: content.md 파일 내용
+            
+        Returns:
+            처리 여부 (True: 처리함, False: 건너뜀)
+        """
+        if not self.filter_date:
+            # 날짜 필터가 설정되지 않은 경우 모든 파일 처리
+            return True
+        
+        extracted_date = self._extract_date_from_content(content_md)
+        
+        if not extracted_date:
+            logger.warning("날짜를 추출할 수 없어 건너뜀")
+            return False
+        
+        # 추출된 날짜가 필터 날짜보다 작거나 같은 경우 처리
+        should_process = extracted_date <= self.filter_date
+        
+        if should_process:
+            logger.info(f"날짜 필터 통과: {extracted_date.strftime('%Y-%m-%d')} <= {self.filter_date.strftime('%Y-%m-%d')}")
+        else:
+            logger.info(f"날짜 필터로 건너뜀: {extracted_date.strftime('%Y-%m-%d')} > {self.filter_date.strftime('%Y-%m-%d')}")
+        
+        return should_process
     
     def process_directory(self, directory_path: Path, site_code: str) -> bool:
         """
@@ -301,7 +422,7 @@ class AnnouncementPrvProcessor:
             logger.info(f"--force 옵션: 시군 {city_dir.name}의 모든 디렉토리 처리 ({len(target_directories)}개)")
             return target_directories
     
-    def process_all_sites(self, base_dir: Path, recursive: bool = False, force: bool = False, attach_force: bool = False) -> Dict[str, int]:
+    def process_all_sites(self, base_dir: Path, recursive: bool = False, force: bool = False, attach_force: bool = False, flat: bool = False) -> Dict[str, int]:
         """
         base_dir 내의 모든 사이트 디렉토리를 처리합니다.
         
@@ -310,6 +431,7 @@ class AnnouncementPrvProcessor:
             recursive: 재귀적 처리 여부
             force: 이미 처리된 항목도 다시 처리할지 여부
             attach_force: 첨부파일 강제 재처리 여부
+            flat: 평탄화된 구조 처리 여부
             
         Returns:
             전체 처리 결과 통계
@@ -336,55 +458,86 @@ class AnnouncementPrvProcessor:
         # 전체 시작 시간 기록
         overall_start_time = time.time()
         
-        # PRV는 2depth 구조: 지역/시군/공고 
-        for region_idx, region_dir in enumerate(site_directories, 1):
-            region_name = region_dir.name
+        if flat:
+            # 평탄화된 구조 처리: base_dir 바로 하위에 공고 폴더들이 있음
+            print(f"📁 평탄화된 구조로 처리합니다.")
             
-            print(f"\n🌍 [{region_idx}/{len(site_directories)}] 지역 처리 시작: {region_name}")
-            print(f"{'─'*60}")
-            
-            # 각 지역의 시군 디렉토리들 찾기
-            city_directories = [d for d in region_dir.iterdir() if d.is_dir()]
-            
-            if not city_directories:
-                print(f"   ⚠️ {region_name}에 시군 디렉토리가 없습니다.")
-                continue
+            # 모든 하위 디렉토리를 공고 폴더로 간주
+            for folder_idx, announcement_dir in enumerate(site_directories, 1):
+                folder_name = announcement_dir.name
                 
-            region_start_time = time.time()
-            region_results = {"total": 0, "success": 0, "failed": 0, "skipped": 0}
-            
-            for city_idx, city_dir in enumerate(city_directories, 1):
-                city_name = city_dir.name
-                site_code = "prv"  # PRV 프로세서는 site_code를 "prv"로 고정
+                print(f"\n📋 [{folder_idx}/{len(site_directories)}] 공고 처리: {folder_name}")
                 
-                print(f"\n🏘️  [{city_idx}/{len(city_directories)}] 시군 처리: {region_name}/{city_name} (DB저장: {site_code})")
+                start_time = time.time()
                 
-                city_start_time = time.time()
+                # 공고 폴더를 직접 처리 (site_code는 prv로 고정)
+                success = self.process_directory_with_custom_name(
+                    announcement_dir, "prv", folder_name, attach_force, force
+                )
                 
-                # 개별 시군 처리 - 2depth 경로 전달
-                city_path = f"{region_name}/{city_name}"
-                city_results = self.process_prv_city_directories(base_dir, city_path, recursive, force, attach_force)
+                processing_time = time.time() - start_time
                 
-                # 시군별 결과를 지역 결과에 합산
-                region_results["total"] += city_results["total"]
-                region_results["success"] += city_results["success"]
-                region_results["failed"] += city_results["failed"]
-                region_results["skipped"] += city_results["skipped"]
+                # 결과 집계
+                total_results["total"] += 1
+                if success:
+                    total_results["success"] += 1
+                    status = "✅ 성공"
+                else:
+                    total_results["failed"] += 1  
+                    status = "❌ 실패"
                 
-                city_elapsed = time.time() - city_start_time
+                print(f"   {status} ({processing_time:.2f}초)")
                 
-                print(f"     ✅ {city_name} 완료: 성공 {city_results['success']}, 실패 {city_results['failed']}, 건너뛴 {city_results['skipped']} ({city_elapsed:.1f}초)")
-            
-            # 지역별 결과를 전체 결과에 합산
-            total_results["total"] += region_results["total"]
-            total_results["success"] += region_results["success"]
-            total_results["failed"] += region_results["failed"]
-            total_results["skipped"] += region_results["skipped"]
-            
-            region_elapsed = time.time() - region_start_time
-            
-            print(f"\n✅ 지역 '{region_name}' 처리 완료 ({region_elapsed:.1f}초)")
-            print(f"   전체 성공: {region_results['success']}, 실패: {region_results['failed']}, 건너뛴: {region_results['skipped']}")
+        else:
+            # 기존 2depth 구조: 지역/시군/공고 
+            for region_idx, region_dir in enumerate(site_directories, 1):
+                region_name = region_dir.name
+                
+                print(f"\n🌍 [{region_idx}/{len(site_directories)}] 지역 처리 시작: {region_name}")
+                print(f"{'─'*60}")
+                
+                # 각 지역의 시군 디렉토리들 찾기
+                city_directories = [d for d in region_dir.iterdir() if d.is_dir()]
+                
+                if not city_directories:
+                    print(f"   ⚠️ {region_name}에 시군 디렉토리가 없습니다.")
+                    continue
+                    
+                region_start_time = time.time()
+                region_results = {"total": 0, "success": 0, "failed": 0, "skipped": 0}
+                
+                for city_idx, city_dir in enumerate(city_directories, 1):
+                    city_name = city_dir.name
+                    site_code = "prv"  # PRV 프로세서는 site_code를 "prv"로 고정
+                    
+                    print(f"\n🏘️  [{city_idx}/{len(city_directories)}] 시군 처리: {region_name}/{city_name} (DB저장: {site_code})")
+                    
+                    city_start_time = time.time()
+                    
+                    # 개별 시군 처리 - 2depth 경로 전달
+                    city_path = f"{region_name}/{city_name}"
+                    city_results = self.process_prv_city_directories(base_dir, city_path, recursive, force, attach_force)
+                    
+                    # 시군별 결과를 지역 결과에 합산
+                    region_results["total"] += city_results["total"]
+                    region_results["success"] += city_results["success"]
+                    region_results["failed"] += city_results["failed"]
+                    region_results["skipped"] += city_results["skipped"]
+                    
+                    city_elapsed = time.time() - city_start_time
+                    
+                    print(f"     ✅ {city_name} 완료: 성공 {city_results['success']}, 실패 {city_results['failed']}, 건너뛴 {city_results['skipped']} ({city_elapsed:.1f}초)")
+                
+                # 지역별 결과를 전체 결과에 합산
+                total_results["total"] += region_results["total"]
+                total_results["success"] += region_results["success"]
+                total_results["failed"] += region_results["failed"]
+                total_results["skipped"] += region_results["skipped"]
+                
+                region_elapsed = time.time() - region_start_time
+                
+                print(f"\n✅ 지역 '{region_name}' 처리 완료 ({region_elapsed:.1f}초)")
+                print(f"   전체 성공: {region_results['success']}, 실패: {region_results['failed']}, 건너뛴: {region_results['skipped']}")
         
         # 전체 처리 시간 계산
         overall_elapsed = time.time() - overall_start_time
@@ -626,6 +779,15 @@ class AnnouncementPrvProcessor:
                     )
             else:
                 logger.warning(f"content.md 파일이 없음: {content_md_path}")
+            
+            # 2.5. 날짜 필터링 검사
+            if not self._should_process_by_date(content_md):
+                logger.info(f"날짜 필터로 인해 건너뛰는 폴더: {folder_name}")
+                return self._save_processing_result(
+                    folder_name, site_code, content_md, "",
+                    attachment_filenames=[],
+                    status="건너뜀", error_message="날짜 필터 조건에 맞지 않음"
+                )
             
             # 3. content.md만으로 기본 검증
             if not content_md.strip():
@@ -1308,11 +1470,13 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 예시:
-  python announcement_prv_processor.py --data data.enhanced
-  python announcement_prv_processor.py --data data.origin
-  python announcement_prv_processor.py  # 환경변수 DEFAULT_DIR 사용
-  python announcement_prv_processor.py --data data.enhanced -r  # 재귀적 처리
-  python announcement_prv_processor.py --data data.enhanced --attach-force  # 첨부파일 강제 재처리
+  python announcement_prv_processor.py --data prv7
+  python announcement_prv_processor.py --data prv8
+  python announcement_prv_processor.py --data prv7 --date 20250710  # 2025-07-10 이전 공고만 처리
+  python announcement_prv_processor.py --data prv8 -r --date 20250801  # 재귀적으로 8월 1일 이전 공고만 처리
+  python announcement_prv_processor.py --data prv7 --flat  # 평탄화된 구조 처리 (지역_시군_공고 형태)
+  python announcement_prv_processor.py --data prv8 --flat --date 20250715  # 평탄화 구조에서 날짜 필터링
+  python announcement_prv_processor.py --data prv7 --attach-force  # 첨부파일 강제 재처리
         """
     )
     
@@ -1347,6 +1511,18 @@ def main():
         help="첨부파일 강제 재처리 (기존 .md 파일 무시하고 원본 파일에서 다시 변환)"
     )
     
+    parser.add_argument(
+        "--date",
+        type=str,
+        help="날짜 필터링 (YYYYMMDD 형식, 해당 날짜 이전 공고만 처리)"
+    )
+    
+    parser.add_argument(
+        "--flat",
+        action="store_true",
+        help="평탄화된 구조 처리 (2depth 구조 없이 바로 공고 폴더들 처리)"
+    )
+    
     args = parser.parse_args()
     
     try:
@@ -1355,10 +1531,10 @@ def main():
         
         # 프로세서 초기화
         logger.info("다중 사이트 공고 처리 프로그램 시작")
-        processor = AnnouncementPrvProcessor(attach_force=args.attach_force)
+        processor = AnnouncementPrvProcessor(attach_force=args.attach_force, date_filter=args.date)
         
         # 모든 사이트 처리 실행
-        results = processor.process_all_sites(base_directory, args.recursive, args.force, args.attach_force)
+        results = processor.process_all_sites(base_directory, args.recursive, args.force, args.attach_force, args.flat)
         
         # 결과 출력 (process_site_directories에서 이미 상세 출력됨)
         print(f"\n=== 최종 요약 ===")

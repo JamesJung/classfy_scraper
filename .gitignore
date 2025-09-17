@@ -10,13 +10,14 @@ prv7/
 prv8/
 prv*.zip
 prv*_backup/
-node/
-# node/scraped_data_old
-# node/scarper/scraped_data
-# node/scarper/eminwon_data
-# node/node_modules
-# node/scarper/scraped_data22
-# node/scarper/eminwon_data22
+# node/
+node/scraped_data_old
+node/scraper/scraped_data
+node/scraper/eminwon_data
+node/node_modules
+node/scraper/scraped_data22
+node/scraper/eminwon_data22
+node/scraper/-page
 
 # Python
 __pycache__/
@@ -100,4 +101,5 @@ Thumbs.db
 chromadb_data/
 
 # Ollama models (if stored locally)
-models/
+/models/
+!src/models/

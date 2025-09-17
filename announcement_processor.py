@@ -286,7 +286,7 @@ class AnnouncementProcessor:
                 elif force and self.db_manager.is_already_processed(folder_name, site_code):
                     print("  🔄 이미 처리됨, --force 옵션으로 재처리")
                 
-                success = self.process_directory_with_custom_name(directory, site_code, folder_name, attach_force, force)
+                success = self.process_directory_with_custom_name(directory, site_code, folder_name, attach_force)
                 
                 # 개별 항목 처리 시간 계산
                 item_elapsed = time.time() - item_start_time
@@ -613,7 +613,6 @@ class AnnouncementProcessor:
 
                 logger.info(f"filename===={filename}")
                 lowercase_filename = filename.lower()
-                
                 if any(keyword in lowercase_filename for keyword in target_keywords):                
                     logger.info(f"양식, 신청서 등은 SKIP===={filename}")
                     continue; 

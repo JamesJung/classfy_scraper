@@ -135,9 +135,13 @@ class ImageOCRProcessor:
             추출된 텍스트 또는 None
         """
         try:
-            # 절대 경로 또는 상대 경로 처리
-            if image_path.is_absolute():
+            # 경로가 이미 존재하는 파일이면 그대로 사용
+            if image_path.exists():
                 full_path = image_path
+            # 절대 경로인 경우
+            elif image_path.is_absolute():
+                full_path = image_path
+            # 상대 경로인 경우 base_dir과 결합
             else:
                 full_path = base_dir / image_path
 

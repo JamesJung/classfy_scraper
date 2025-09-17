@@ -25,7 +25,17 @@
       "Bash(git merge:*)",
       "Bash(mysql:*)",
       "Read(//Users/jin/zium_scraper/**)",
-      "Bash(timeout:*)"
+      "Bash(timeout:*)",
+      "Bash(find:*)",
+      "Bash(sudo mysql:*)",
+      "Bash(chmod:*)",
+      "Bash(node:*)",
+      "Bash(npx puppeteer browsers:*)",
+      "Bash(npx playwright:*)",
+      "WebFetch(domain:eminwon.cheongyang.go.kr)",
+      "Bash(head:*)",
+      "Bash(wc:*)",
+      "WebFetch(domain:eminwon.taean.go.kr)"
     ],
     "deny": []
   }

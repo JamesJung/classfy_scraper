@@ -211,10 +211,14 @@ class AttachmentProcessor:
                 logger.warning("OCR 기능을 사용할 수 없음")
                 return None
             
-            processor = ImageOCRProcessor()
-            content = processor.extract_text_from_image(str(image_file))
+            processor = ImageOCRProcessor(lazy_init=False)
+            
+            # 이미지가 절대 경로인 경우 부모 디렉토리를 base_dir로 사용
+            base_dir = image_file.parent
+            content = processor.extract_text_from_image_file(image_file, base_dir)
             
             if content and content.strip():
+                logger.info(f"이미지에서 텍스트 추출 성공: {image_file.name} ({len(content)} 문자)")
                 return content
             else:
                 logger.warning(f"이미지에서 텍스트 추출 실패: {image_file.name}")

@@ -3,12 +3,12 @@
 공고 처리 메인 프로그램
 
 사용법:
-    python announcement_prv_processor.py [옵션들]
+    python announcement_prv_file.py [옵션들]
     
 예시:
-    python announcement_prv_processor.py --data prv7
-    python announcement_prv_processor.py --data prv8 --date 20250710  # 2025-07-10 이전 공고만 처리
-    python announcement_prv_processor.py --data prv7 -r --date 20250801  # 재귀적으로 8월 1일 이전 공고만 처리
+    python announcement_prv_file.py --data prv7
+    python announcement_prv_file.py --data prv8 --date 20250710  # 2025-07-10 이전 공고만 처리
+    python announcement_prv_file.py --data prv7 -r --date 20250801  # 재귀적으로 8월 1일 이전 공고만 처리
 """
 
 import argparse
@@ -753,9 +753,9 @@ class AnnouncementPrvProcessor:
         logger.info(f"디렉토리 처리 시작: {folder_name}")
         
         try:
-            # 0. 중복 처리 체크 (force 옵션이 없을 때만)
+            # 0. folder_name 중복 체크 (force 옵션이 없을 때만)
             if not force:
-                if self.db_manager.is_already_processed(folder_name, site_code):
+                if self._check_folder_name_exists(folder_name, site_code):
                     logger.info(f"이미 처리된 폴더 건너뜀: {folder_name}")
                     return True  # 성공으로 처리 (이미 처리됨)
             
@@ -775,28 +775,60 @@ class AnnouncementPrvProcessor:
                     logger.error(f"content.md 읽기 실패: {e}")
                     return self._save_processing_result(
                         folder_name, site_code, content_md, "", 
-                        status="ollama", error_message=f"content.md 읽기 실패: {e}"
+                        status="error", error_message=f"content.md 읽기 실패: {e}"
                     )
             else:
                 logger.warning(f"content.md 파일이 없음: {content_md_path}")
-            
-            # 2.5. 날짜 필터링 검사
-            if not self._should_process_by_date(content_md):
-                logger.info(f"날짜 필터로 인해 건너뛰는 폴더: {folder_name}")
-                return self._save_processing_result(
-                    folder_name, site_code, content_md, "",
-                    attachment_filenames=[],
-                    status="건너뜀", error_message="날짜 필터 조건에 맞지 않음"
-                )
-            
             # 3. content.md만으로 기본 검증
             if not content_md.strip():
                 logger.warning("content.md 내용이 없음")
                 return self._save_processing_result(
                     folder_name, site_code, content_md, "",
                     attachment_filenames=[],
-                    status="ollama", error_message="content.md 내용이 없음"
+                    status="error", error_message="content.md 내용이 없음"
                 )
+            
+            title = self._extract_title_from_content(content_md) or "정보 없음"
+            gov24_url = self._extract_gov24_url_from_content(content_md) or "정보 없음"
+            origin_url = self._extract_origin_url_from_content(content_md) or "정보 없음"
+            announcement_date = self._extract_announcement_date_from_content(content_md) or "정보 없음"
+            
+            # 0.5. origin_url 중복 체크
+            is_duplicate_url = False
+            if origin_url and origin_url != "정보 없음":
+                is_duplicate_url = self._check_origin_url_exists(origin_url, site_code)
+            # 3. 첨부파일 처리 (content.md와 분리)
+            try:
+                combined_content, attachment_filenames, attachment_files_info = self._process_attachments_separately(directory_path, attach_force)
+                
+                if not content_md.strip() and not combined_content.strip():
+                    logger.warning("처리할 내용이 없음")
+                    return self._save_processing_result(
+                        folder_name, site_code, content_md, combined_content,
+                        attachment_filenames=attachment_filenames,
+                        attachment_files_info=attachment_files_info,
+                        status="error", error_message="처리할 내용이 없음"
+                    )
+                
+                logger.info(f"첨부파일 내용 처리 완료: {len(combined_content)} 문자, 파일 {len(attachment_filenames)}개")
+                
+            except Exception as e:
+                logger.error(f"첨부파일 처리 실패: {e}")
+                return self._save_processing_result(
+                    folder_name, site_code, content_md, "",
+                    attachment_filenames=[],
+                    status="ollama", error_message=f"첨부파일 처리 실패: {e}"
+                )
+                        
+            # 2.5. 날짜 필터링 검사
+            # if not self._should_process_by_date(content_md):
+            #     logger.info(f"날짜 필터로 인해 건너뛰는 폴더: {folder_name}")
+            #     return self._save_processing_result(
+            #         folder_name, site_code, content_md, "",
+            #         attachment_filenames=[],
+            #         status="건너뜀", error_message="날짜 필터 조건에 맞지 않음"
+            #     )
+            
             
             # 4. 제외 키워드가 있는 경우 제외 처리
             if excluded_keywords:
@@ -804,122 +836,49 @@ class AnnouncementPrvProcessor:
                 logger.info(f"제외 처리: {folder_name} - {exclusion_msg}")
                 
                 return self._save_processing_result(
-                    folder_name, site_code, content_md, "",
-                    attachment_filenames=[],
-                    status="제외", exclusion_keywords=excluded_keywords,
+                    folder_name, site_code, content_md, combined_content,
+                    attachment_filenames=attachment_filenames,
+                    attachment_files_info=attachment_files_info,
+                    status="제외", 
+                    title=title,
+                    announcement_date=announcement_date,
+                    gov24_url=gov24_url,
+                    origin_url=origin_url,
+                    exclusion_keywords=excluded_keywords,
                     exclusion_reason=exclusion_msg
                 )
             
-            # 5. 데이터베이스에 1차 저장 (content.md만으로 status: ollama)
+            # 5. 데이터베이스에 1차 저장 (중복 URL 여부에 따라 상태 결정)
+            final_status = "중복" if is_duplicate_url else "성공"
+            
             record_id = self._save_processing_result(
-                folder_name, site_code, content_md, "", 
-                attachment_filenames=[],
-                status="ollama", force=True  # force 옵션은 항상 UPSERT로 처리
+                folder_name, site_code, content_md, combined_content, 
+                attachment_filenames=attachment_filenames,
+                attachment_files_info=attachment_files_info,
+                title=title,
+                announcement_date=announcement_date,
+                gov24_url=gov24_url,
+                origin_url=origin_url,
+                status=final_status, force=True  # force 옵션은 항상 UPSERT로 처리
             )
-
-            #2025.09.03 TEMP  나중에 이거 풀어야 함. 테스트를 위해  잠시              
-            # if not record_id:
-            #     logger.error("1차 저장 실패")
-            #     return False
             
-            # 5.5. 제목에서 "지원" 키워드 확인 (Ollama 분석 전 조기 반환)
-            if content_md.strip():
-                extracted_title = self._extract_title_from_content(content_md)
-                logger.info(f"추출된 제목: {extracted_title}")
-                
-                if "지원" in extracted_title:
-                    logger.info(f"제목에 '지원' 키워드 발견: {extracted_title}")
-                    print(f"  ✅ 제목에 '지원' 키워드 발견: {extracted_title[:50]}...")
-                    
-                    # content.md에서 추출한 기본 정보를 포함하여 성공 처리
-                    return self._update_processing_result_with_content_info(
-                        record_id, content_md, status="성공", error_message="제목에 지원이라는 글자 있음"
-                    )
+            if is_duplicate_url:
+                logger.info(f"origin_url 중복으로 '중복' 상태로 저장: {folder_name}")
             
-            # 6. content_md로 첫번째 ollama 분석
-            print("  📋 1차 Ollama 분석 중 (content.md)...")
-            first_response = None
-            first_prompt = ""
-            
-            # IS_SUPPORT_PROGRAM 확인
-            def is_support_program(response):
-                if not response:
-                    return False
-                return response.get("IS_SUPPORT_PROGRAM", False) == True
-            
-            first_response, first_prompt = self._analyze_with_ollama(content_md)
-            
-            # 7. 1차 분석 결과에 따른 처리
-            if not is_support_program(first_response):
-                # IS_SUPPORT_PROGRAM=false면 완료 (첨부파일 처리 안함)
-                logger.info("1차 분석 완료 - 지원사업이 아님 (IS_SUPPORT_PROGRAM=false)")
-                return self._update_processing_result(
-                    record_id, first_response, first_prompt, status="성공", content_md=content_md
-                )
-            
-            # 8. 지원사업인 경우 첨부파일 처리 시작
-            logger.info("1차 분석 결과: 지원사업 확인됨 - 첨부파일 처리 시작")
-            print("  📂 첨부파일 변환 중...")
-            
-            combined_content = ""
-            attachment_filenames = []
-            
-            try:
-                combined_content, attachment_filenames = self._process_attachments_separately(directory_path, attach_force)
-                logger.info(f"첨부파일 내용 처리 완료: {len(combined_content)} 문자, 파일 {len(attachment_filenames)}개")
-                
-                # 첨부파일 정보를 데이터베이스에 업데이트
-                self._update_attachment_info(record_id, combined_content, attachment_filenames)
-                
-            except Exception as e:
-                logger.error(f"첨부파일 처리 실패: {e}")
-                # 첨부파일 처리 실패해도 1차 분석 결과로 진행
-                combined_content = ""
-                attachment_filenames = []
-            
-            # 9. EXTRACTED_TARGET 확인 및 2차 분석 필요성 판단
-            def has_valid_target(response):
-                if not response:
-                    return False
-                target = response.get("EXTRACTED_TARGET", "")
-                return target and target not in ["정보 없음", "해당없음", ""]
-            
-            if has_valid_target(first_response):
-                # 성공: 1차 분석에서 이미 지원대상 정보가 있으면 완료
-                logger.info("1차 분석에서 EXTRACTED_TARGET 추출됨 - 완료")
-                return self._update_processing_result(
-                    record_id, first_response, first_prompt, status="성공", content_md=content_md
-                )
-            
-            # 10. 2차 ollama 분석 (지원사업이지만 지원대상 정보가 부족한 경우)
-            if combined_content.strip():
-                print("  📋 2차 Ollama 분석 중 (첨부파일만)...")
-                logger.info("2차 분석 시작 - 지원사업이지만 지원대상 정보 부족, 첨부파일만으로 재분석")
-                
-                # 첨부파일 내용만으로 2차 분석
-                second_response, second_prompt = self._analyze_with_ollama(combined_content)
-                
-                # 최종 상태 결정 로직
-                final_status = self._determine_final_status(first_response, second_response)
-                
-                return self._update_processing_result(
-                    record_id, second_response, second_prompt, 
-                    first_response=first_response, status=final_status, content_md=content_md
-                )
+            if record_id:
+                logger.info(f"디렉토리 처리 완료: {folder_name}")
+                return True
             else:
-                # 2차 분석이 필요하지만 첨부파일 내용이 없는 경우
-                logger.info("2차 분석 필요하지만 첨부파일 내용 없음 - 1차 결과만 사용")
-                final_status = self._determine_final_status(first_response, None)
-                return self._update_processing_result(
-                    record_id, first_response, first_prompt, status=final_status, content_md=content_md
-                )
+                logger.error(f"디렉토리 처리 실패: {folder_name}")
+                return False
                 
         except Exception as e:
             logger.error(f"디렉토리 처리 중 예상치 못한 오류: {e}")
-            return self._save_processing_result(
+            result = self._save_processing_result(
                 folder_name, site_code, "", "",
-                status="ollama", error_message=f"예상치 못한 오류: {e}"
+                status="error", error_message=f"예상치 못한 오류: {e}"
             )
+            return result is not None
     
     def _check_exclusion_keywords(self, folder_name: str) -> List[str]:
         """폴더명에서 제외 키워드를 체크합니다."""
@@ -932,6 +891,58 @@ class AnnouncementPrvProcessor:
                 logger.debug(f"제외 키워드 매칭: '{keyword}' in '{folder_name}'")
         
         return matched_keywords
+    
+    def _check_folder_name_exists(self, folder_name: str, site_code: str) -> bool:
+        """folder_name이 데이터베이스에 이미 존재하는지 확인합니다."""
+        try:
+            from sqlalchemy import text
+            
+            with self.db_manager.SessionLocal() as session:
+                result = session.execute(text("""
+                    SELECT COUNT(*) FROM announcement_prv_file 
+                    WHERE folder_name = :folder_name AND site_code = :site_code
+                """), {
+                    'folder_name': folder_name,
+                    'site_code': site_code
+                })
+                
+                count = result.scalar()
+                exists = count > 0
+                
+                if exists:
+                    logger.debug(f"folder_name 중복 발견: {folder_name}")
+                
+                return exists
+                
+        except Exception as e:
+            logger.error(f"folder_name 중복 체크 실패: {e}")
+            return False
+    
+    def _check_origin_url_exists(self, origin_url: str, site_code: str) -> bool:
+        """origin_url이 데이터베이스에 이미 존재하는지 확인합니다."""
+        try:
+            from sqlalchemy import text
+            
+            with self.db_manager.SessionLocal() as session:
+                result = session.execute(text("""
+                    SELECT COUNT(*) FROM announcement_prv_file 
+                    WHERE origin_url = :origin_url AND site_code = :site_code
+                """), {
+                    'origin_url': origin_url,
+                    'site_code': site_code
+                })
+                
+                count = result.scalar()
+                exists = count > 0
+                
+                if exists:
+                    logger.debug(f"origin_url 중복 발견: {origin_url}")
+                
+                return exists
+                
+        except Exception as e:
+            logger.error(f"origin_url 중복 체크 실패: {e}")
+            return False
     
     def _determine_final_status(self, first_response: Optional[Dict[str, Any]], second_response: Optional[Dict[str, Any]]) -> str:
         """1차, 2차 응답을 기반으로 최종 상태를 결정합니다."""
@@ -956,6 +967,7 @@ class AnnouncementPrvProcessor:
         
         # 기본값
         return "ollama"
+    
     
     def _format_date_to_standard(self, date_str: str) -> Optional[str]:
         """날짜 문자열을 YYYY-MM-DD 형태로 변환합니다."""
@@ -1153,15 +1165,16 @@ class AnnouncementPrvProcessor:
             # 숫자로 시작하지 않는 경우는 맨 뒤로
             return (float('inf'), folder_name)
     
-    def _process_attachments_separately(self, directory_path: Path, attach_force: bool = False) -> tuple[str, List[str]]:
+    def _process_attachments_separately(self, directory_path: Path, attach_force: bool = False) -> tuple[str, List[str], List[Dict[str, Any]]]:
         """첨부파일들을 처리하여 내용을 결합하고 파일명 목록을 반환합니다."""
         attachments_dir = directory_path / "attachments"
         
         if not attachments_dir.exists():
-            return "", []
+            return "", [], []
         
         combined_content = ""
         attachment_filenames = []
+        attachment_files_info = []
         
         # 처리 가능한 확장자 정의
         supported_extensions = {'.pdf', '.hwp', '.hwpx', '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp', '.pptx', '.docx', '.xlsx', '.md'}
@@ -1189,6 +1202,17 @@ class AnnouncementPrvProcessor:
                 attachment_filenames.append(self._normalize_korean_text(file_path.name))  # 전체 파일명 (확장자 포함)
                 logger.debug(f"첨부파일 처리 시작: {file_path.name}")
                 
+                # 파일 정보 수집
+                file_info = {
+                    "filename": file_path.stem,
+                    "file_extension": file_extension,
+                    "file_path": str(file_path),
+                    "file_size": file_path.stat().st_size if file_path.exists() else 0,
+                    "conversion_success": False,  # 초기값, 나중에 업데이트
+                    "conversion_method": self._guess_conversion_method(file_extension)
+                }
+                attachment_files_info.append(file_info)
+                
                 # 이미 .md 파일인 경우 직접 읽기
                 if file_extension == '.md':
                     try:
@@ -1197,6 +1221,7 @@ class AnnouncementPrvProcessor:
                         if content.strip():  # 내용이 있는 경우만 추가
                             combined_content += f"\n\n=== {self._normalize_korean_text(file_path.name)} ===\n{content}"
                             logger.debug(f"첨부파일 .md 직접 읽기 성공: {file_path.name} ({len(content)} 문자)")
+                            file_info["conversion_success"] = True
                         else:
                             logger.warning(f"첨부파일 .md 내용이 비어있음: {file_path.name}")
                     except Exception as e:
@@ -1215,6 +1240,7 @@ class AnnouncementPrvProcessor:
                         if content.strip():  # 내용이 있는 경우만 추가
                             combined_content += f"\n\n=== {self._normalize_korean_text(filename)}.md ===\n{content}"
                             logger.debug(f"첨부파일 .md 읽기 성공: {filename}.md ({len(content)} 문자)")
+                            file_info["conversion_success"] = True
                         else:
                             logger.warning(f"첨부파일 .md 내용이 비어있음: {filename}.md")
                     except Exception as e:
@@ -1232,6 +1258,7 @@ class AnnouncementPrvProcessor:
                         if content and content.strip():
                             combined_content += f"\n\n=== {self._normalize_korean_text(file_path.name)} ===\n{content}"
                             logger.info(f"첨부파일 변환 성공: {file_path.name} ({len(content)} 문자)")
+                            file_info["conversion_success"] = True
                             
                             # 변환된 내용을 .md 파일로 저장
                             try:
@@ -1247,15 +1274,7 @@ class AnnouncementPrvProcessor:
                         logger.error(f"첨부파일 변환 실패 ({file_path}): {e}")
         
         logger.info(f"첨부파일 처리 완료: {len(attachment_filenames)}개 파일, {len(combined_content)} 문자")
-        return combined_content.strip(), attachment_filenames
-    
-    def _analyze_with_ollama(self, content: str) -> tuple[Optional[Dict[str, Any]], str]:
-        """Ollama를 통해 내용을 분석합니다."""
-        try:
-            return self.announcement_analyzer.analyze_announcement(content)
-        except Exception as e:
-            logger.error(f"Ollama 분석 중 오류: {e}")
-            return None, ""
+        return combined_content.strip(), attachment_filenames, attachment_files_info
     
     def _save_processing_result(
         self, 
@@ -1268,7 +1287,12 @@ class AnnouncementPrvProcessor:
         exclusion_keywords: List[str] = None,
         exclusion_reason: str = None,
         error_message: str = None,
-        force: bool = False
+        force: bool = False,
+        title: str = None,
+        gov24_url: str = None,
+        origin_url: str = None,
+        announcement_date: str = None,
+        attachment_files_info: List[Dict[str, Any]] = None
     ) -> Optional[int]:
         """처리 결과를 데이터베이스에 저장합니다."""
         try:
@@ -1278,38 +1302,50 @@ class AnnouncementPrvProcessor:
                 if force:
                     # UPSERT 로직
                     sql = text("""
-                        INSERT INTO announcement_prv_processing (
+                        INSERT INTO announcement_prv_file (
                             folder_name, site_code, content_md, combined_content,
-                            attachment_filenames, exclusion_keyword, exclusion_reason, 
+                            attachment_filenames, attachment_files_list, exclusion_keyword, exclusion_reason, 
+                            title, origin_url, gov24_url, announcement_date,
                             processing_status, error_message, created_at, updated_at
                         ) VALUES (
                             :folder_name, :site_code, :content_md, :combined_content,
-                            :attachment_filenames, :exclusion_keyword, :exclusion_reason, 
+                            :attachment_filenames, :attachment_files_list, :exclusion_keyword, :exclusion_reason, 
+                            :title, :origin_url, :gov24_url, :announcement_date,
                             :processing_status, :error_message, NOW(), NOW()
                         )
                         ON DUPLICATE KEY UPDATE
                             content_md = VALUES(content_md),
                             combined_content = VALUES(combined_content),
                             attachment_filenames = VALUES(attachment_filenames),
+                            attachment_files_list = VALUES(attachment_files_list),
                             exclusion_keyword = VALUES(exclusion_keyword),
                             exclusion_reason = VALUES(exclusion_reason),
                             processing_status = VALUES(processing_status),
+                            title = VALUES(title),
+                            origin_url = VALUES(origin_url),
+                            gov24_url = VALUES(gov24_url),
+                            announcement_date = VALUES(announcement_date),
                             error_message = VALUES(error_message),
                             updated_at = NOW()
                     """)
                 else:
                     # 일반 INSERT
                     sql = text("""
-                        INSERT INTO announcement_prv_processing (
+                        INSERT INTO announcement_prv_file (
                             folder_name, site_code, content_md, combined_content,
-                            attachment_filenames, exclusion_keyword, exclusion_reason, 
+                            attachment_filenames, attachment_files_list, exclusion_keyword, exclusion_reason, 
+                            title, origin_url, gov24_url, announcement_date,
                             processing_status, error_message, created_at, updated_at
                         ) VALUES (
                             :folder_name, :site_code, :content_md, :combined_content,
-                            :attachment_filenames, :exclusion_keyword, :exclusion_reason, 
+                            :attachment_filenames, :attachment_files_list, :exclusion_keyword, :exclusion_reason, 
+                            :title, :origin_url, :gov24_url, :announcement_date,
                             :processing_status, :error_message, NOW(), NOW()
                         )
                     """)
+                
+                # JSON으로 직렬화
+                attachment_files_json = json.dumps(attachment_files_info, ensure_ascii=False) if attachment_files_info else None
                 
                 params = {
                     'folder_name': folder_name,
@@ -1317,8 +1353,13 @@ class AnnouncementPrvProcessor:
                     'content_md': content_md,
                     'combined_content': combined_content,
                     'attachment_filenames': ', '.join(attachment_filenames) if attachment_filenames else None,
+                    'attachment_files_list': attachment_files_json,
                     'exclusion_keyword': ', '.join(exclusion_keywords) if exclusion_keywords else None,
                     'exclusion_reason': exclusion_reason,
+                    'title': title,
+                    'origin_url': origin_url,
+                    'gov24_url': gov24_url,
+                    'announcement_date': announcement_date,
                     'processing_status': status,
                     'error_message': error_message
                 }
@@ -1334,249 +1375,8 @@ class AnnouncementPrvProcessor:
             logger.error(f"처리 결과 저장 실패: {e}")
             return None
     
-    def _update_processing_result_simple(
-        self,
-        record_id: int,
-        status: str = "성공",
-        error_message: str = None
-    ) -> bool:
-        """간단한 상태 업데이트 (제목 기반 처리용)"""
-        try:
-            from sqlalchemy import text
-            
-            with self.db_manager.SessionLocal() as session:
-                sql = text("""
-                    UPDATE announcement_prv_processing SET
-                        processing_status = :processing_status,
-                        error_message = :error_message,
-                        is_support_program = :is_support_program,
-                        support_program_reason = :support_program_reason,
-                        updated_at = NOW()
-                    WHERE id = :record_id
-                """)
-                
-                params = {
-                    'record_id': record_id,
-                    'processing_status': status,
-                    'error_message': error_message,
-                    'is_support_program': 1,
-                    'support_program_reason': '제목에 지원이라는 단어 들어감'
-                }
-                
-                session.execute(sql, params)
-                session.commit()
-                
-                logger.info(f"간단한 처리 결과 업데이트 완료: ID {record_id}, 상태: {status}, 지원사업: True")
-                return True
-                
-        except Exception as e:
-            logger.error(f"간단한 처리 결과 업데이트 실패: {e}")
-            return False
-    
-    def _update_processing_result_with_content_info(
-        self,
-        record_id: int,
-        content_md: str,
-        status: str = "성공",
-        error_message: str = None
-    ) -> bool:
-        """content.md에서 추출한 정보를 포함하여 처리 결과를 업데이트 (제목 지원 키워드 발견시 사용)"""
-        try:
-            from sqlalchemy import text
-            
-            # content.md에서 정보 추출
-            extracted_title = self._extract_title_from_content(content_md) or "정보 없음"
-            extracted_gov24_url = self._extract_gov24_url_from_content(content_md) or "정보 없음"
-            extracted_origin_url = self._extract_origin_url_from_content(content_md) or "정보 없음"
-            extracted_announcement_date = self._extract_announcement_date_from_content(content_md) or "정보 없음"
-            
-            with self.db_manager.SessionLocal() as session:
-                sql = text("""
-                    UPDATE announcement_prv_processing SET
-                        processing_status = :processing_status,
-                        error_message = :error_message,
-                        is_support_program = :is_support_program,
-                        support_program_reason = :support_program_reason,
-                        extracted_title = :extracted_title,
-                        extracted_gov24_url = :extracted_gov24_url,
-                        extracted_origin_url = :extracted_origin_url,
-                        extracted_announcement_date = :extracted_announcement_date,
-                        updated_at = NOW()
-                    WHERE id = :record_id
-                """)
-                
-                params = {
-                    'record_id': record_id,
-                    'processing_status': status,
-                    'error_message': error_message,
-                    'is_support_program': 1,
-                    'support_program_reason': '제목에 지원이라는 단어 들어감',
-                    'extracted_title': extracted_title,
-                    'extracted_gov24_url': extracted_gov24_url,
-                    'extracted_origin_url': extracted_origin_url,
-                    'extracted_announcement_date': extracted_announcement_date
-                }
-                
-                session.execute(sql, params)
-                session.commit()
-                
-                logger.info(f"제목 기반 처리 결과 업데이트 완료: ID {record_id}")
-                logger.info(f"  - 제목: {extracted_title}")
-                logger.info(f"  - 공고일: {extracted_announcement_date}")
-                logger.info(f"  - 원본 URL: {extracted_origin_url[:50]}..." if extracted_origin_url != "정보 없음" else "  - 원본 URL: 정보 없음")
-                logger.info(f"  - 정부24 URL: {extracted_gov24_url[:50]}..." if extracted_gov24_url != "정보 없음" else "  - 정부24 URL: 정보 없음")
-                
-                return True
-                
-        except Exception as e:
-            logger.error(f"제목 기반 처리 결과 업데이트 실패: {e}")
-            return False
-    
-    def _save_processing_result_with_basic_info(
-        self,
-        folder_name: str,
-        site_code: str,
-        content_md: str,
-        combined_content: str,
-        attachment_filenames: List[str] = None,
-        status: str = "건너뜀",
-        error_message: str = None
-    ) -> bool:
-        """처리 결과를 저장하되, content.md에서 기본 정보를 추출하여 포함 (날짜 필터 건너뜀용)"""
-        try:
-            # content.md에서 기본 정보 추출
-            extracted_title = self._extract_title_from_content(content_md) or "정보 없음"
-            extracted_announcement_date = self._extract_announcement_date_from_content(content_md) or "정보 없음"
-            extracted_gov24_url = self._extract_gov24_url_from_content(content_md) or "정보 없음"
-            extracted_origin_url = self._extract_origin_url_from_content(content_md) or "정보 없음"
-            
-            result = self.db_manager.save_processing_result(
-                folder_name=self._normalize_korean_text(folder_name),
-                site_code=site_code,
-                content_md=content_md,
-                combined_content=combined_content,
-                attachment_filenames=attachment_filenames or [],
-                processing_status=status,
-                error_message=error_message,
-                extracted_title=extracted_title,
-                extracted_announcement_date=extracted_announcement_date,
-                extracted_gov24_url=extracted_gov24_url,
-                extracted_origin_url=extracted_origin_url
-            )
-            
-            if result:
-                logger.info(f"기본 정보 포함 처리 결과 저장 완료: {folder_name}")
-                logger.info(f"  - 제목: {extracted_title}")
-                logger.info(f"  - 공고일: {extracted_announcement_date}")
-                logger.info(f"  - 상태: {status}")
-                if error_message:
-                    logger.info(f"  - 사유: {error_message}")
-                return True
-            else:
-                logger.error(f"기본 정보 포함 처리 결과 저장 실패: {folder_name}")
-                return False
-                
-        except Exception as e:
-            logger.error(f"기본 정보 포함 처리 결과 저장 중 오류: {e}")
-            return False
-    
-    def _update_processing_result(
-        self,
-        record_id: int,
-        ollama_response: Optional[Dict[str, Any]],
-        ollama_prompt: str,
-        first_response: Optional[Dict[str, Any]] = None,
-        status: str = "ollama",
-        content_md: str = ""
-    ) -> bool:
-        """기존 레코드에 Ollama 분석 결과를 업데이트합니다. content.md에서 추출한 정보를 우선 사용."""
-        try:
-            from sqlalchemy import text
-            
-            with self.db_manager.SessionLocal() as session:
-                # content.md에서 기본 정보 추출 (우선 사용)
-                content_title = self._extract_title_from_content(content_md)
-                content_gov24_url = self._extract_gov24_url_from_content(content_md)
-                content_origin_url = self._extract_origin_url_from_content(content_md)
-                content_announcement_date = self._extract_announcement_date_from_content(content_md)
-                
-                # 추출된 데이터 준비
-                extracted_data = {}
-                if ollama_response:
-                    # URL과 날짜는 first_response와 ollama_response 중 값이 있는 것을 우선 사용
-                    extracted_url = self._get_best_value_from_responses(first_response, ollama_response, "EXTRACTED_URL")
-                    extracted_announcement_date = self._get_best_value_from_responses(first_response, ollama_response, "EXTRACTED_ANNOUNCEMENT_DATE")
-                    
-                    # content.md에서 추출한 정보가 있으면 우선 사용, 없으면 Ollama 결과 사용
-                    final_title = content_title if content_title else ollama_response.get("EXTRACTED_TITLE", "정보 없음")
-                    final_gov24_url = content_gov24_url if content_gov24_url else ollama_response.get("EXTRACTED_GOV24_URL", "정보 없음")
-                    final_origin_url = content_origin_url if content_origin_url else ollama_response.get("EXTRACTED_ORIGIN_URL", "정보 없음")
-                    final_announcement_date = content_announcement_date if content_announcement_date else extracted_announcement_date
-                    
-                    extracted_data = {
-                        'extracted_title': final_title,
-                        'extracted_target': ollama_response.get("EXTRACTED_TARGET", "정보 없음"),
-                        'extracted_target_type': ollama_response.get("EXTRACTED_TARGET_TYPE", "정보 없음"),
-                        'extracted_amount': ollama_response.get("EXTRACTED_AMOUNT", "정보 없음"),
-                        'extracted_period': ollama_response.get("EXTRACTED_PERIOD", "정보 없음"),
-                        'extracted_schedule': ollama_response.get("EXTRACTED_SCHEDULE", "정보 없음"),
-                        'extracted_content': ollama_response.get("EXTRACTED_CONTENT", "정보 없음"),
-                        'extracted_announcement_date': final_announcement_date,
-                        'original_url': extracted_url,
-                        'formatted_announcement_date': self._format_date_to_standard(final_announcement_date),
-                        'extracted_gov24_url': final_gov24_url,
-                        'extracted_origin_url': final_origin_url,
-                        'is_support_program': ollama_response.get("IS_SUPPORT_PROGRAM"),
-                        'support_program_reason': ollama_response.get("SUPPORT_PROGRAM_REASON", "정보 없음")
-                    }
-                
-                sql = text("""
-                    UPDATE announcement_prv_processing SET
-                        ollama_first_response = :ollama_first_response,
-                        ollama_response = :ollama_response,
-                        ollama_prompt = :ollama_prompt,
-                        extracted_title = :extracted_title,
-                        extracted_target = :extracted_target,
-                        extracted_target_type = :extracted_target_type,
-                        extracted_amount = :extracted_amount,
-                        extracted_period = :extracted_period,
-                        extracted_schedule = :extracted_schedule,
-                        extracted_content = :extracted_content,
-                        extracted_announcement_date = :extracted_announcement_date,
-                        original_url = :original_url,
-                        formatted_announcement_date = :formatted_announcement_date,
-                        extracted_gov24_url = :extracted_gov24_url,
-                        extracted_origin_url = :extracted_origin_url,
-                        is_support_program = :is_support_program,
-                        support_program_reason = :support_program_reason,
-                        processing_status = :processing_status,
-                        updated_at = NOW()
-                    WHERE id = :record_id
-                """)
-                
-                params = {
-                    'record_id': record_id,
-                    'ollama_first_response': json.dumps(first_response, ensure_ascii=False) if first_response else None,
-                    'ollama_response': json.dumps(ollama_response, ensure_ascii=False) if ollama_response else None,
-                    'ollama_prompt': ollama_prompt,
-                    'processing_status': status,
-                    **extracted_data
-                }
-                
-                session.execute(sql, params)
-                session.commit()
-                
-                logger.info(f"처리 결과 업데이트 완료: ID {record_id}, 상태: {status}")
-                
-                # 화면에 결과 표시
-                if ollama_response:
-                    self._display_ollama_results(ollama_response)
-                
-                return True
-                
-        except Exception as e:
-            logger.error(f"처리 결과 업데이트 실패: {e}")
-            return False
+
+
 
     def _update_attachment_info(self, record_id: int, combined_content: str, attachment_filenames: List[str]) -> bool:
         """첨부파일 정보를 데이터베이스에 업데이트합니다."""
@@ -1584,63 +1384,21 @@ class AnnouncementPrvProcessor:
             with self.db_manager.SessionLocal() as session:
                 from sqlalchemy import text
                 
-                # 첨부파일 정보 리스트 생성 (각 파일의 상세 정보)
-                attachment_files_info = []
-                attachments_dir = None
-                
-                # 첨부파일 정보를 상세하게 수집
-                for filename in attachment_filenames:
-                    file_info = {
-                        "filename": filename,
-                        "file_size": None,
-                        "file_path": None,
-                        "conversion_success": True,  # combined_content에 포함되었으므로 성공으로 가정
-                        "file_extension": Path(filename).suffix.lower() if '.' in filename else None
-                    }
-                    
-                    # 실제 파일 경로에서 크기 정보 추가 (가능한 경우)
-                    try:
-                        # record_id로부터 폴더명을 찾아서 파일 경로 구성
-                        record = session.execute(
-                            text("SELECT folder_name FROM announcement_prv_processing WHERE id = :record_id"),
-                            {'record_id': record_id}
-                        ).fetchone()
-                        
-                        if record and record[0]:
-                            folder_name = record[0]
-                            # 기본 데이터 디렉토리에서 파일 경로 구성
-                            base_dir = Path("prv")  # 또는 다른 기본 디렉토리
-                            if attachments_dir is None:
-                                attachments_dir = base_dir / folder_name / "attachments"
-                            
-                            file_path = attachments_dir / filename
-                            if file_path.exists():
-                                file_info["file_size"] = file_path.stat().st_size
-                                file_info["file_path"] = str(file_path)
-                    except Exception as e:
-                        logger.debug(f"파일 정보 수집 실패 ({filename}): {e}")
-                    
-                    attachment_files_info.append(file_info)
-                
-                # JSON으로 직렬화
-                filenames_str = json.dumps(attachment_filenames, ensure_ascii=False) if attachment_filenames else ""
-                files_info_str = json.dumps(attachment_files_info, ensure_ascii=False) if attachment_files_info else ""
-                
                 # 첨부파일 정보만 업데이트
                 sql = text("""
                     UPDATE announcement_prv_processing 
                     SET combined_content = :combined_content,
                         attachment_filenames = :attachment_filenames,
-                        attachment_files_list = :attachment_files_list,
                         updated_at = NOW()
                     WHERE id = :record_id
                 """)
                 
+                filenames_str = json.dumps(attachment_filenames, ensure_ascii=False) if attachment_filenames else ""
+                
                 session.execute(sql, {
                     'record_id': record_id,
                     'combined_content': combined_content,
-                    'attachment_filenames': filenames_str,
-                    'attachment_files_list': files_info_str
+                    'attachment_filenames': filenames_str
                 })
                 session.commit()
                 
@@ -1651,29 +1409,6 @@ class AnnouncementPrvProcessor:
             logger.error(f"첨부파일 정보 업데이트 실패: {e}")
             return False
     
-    def _display_ollama_results(self, ollama_response: Dict[str, Any]):
-        """Ollama 분석 결과를 화면에 표시합니다."""
-        print(f"  🤖 Ollama 분석 결과: ==== {ollama_response}")
-
-        # IS_SUPPORT_PROGRAM 확인 및 출력
-        if "IS_SUPPORT_PROGRAM" in ollama_response:
-            if ollama_response.get('IS_SUPPORT_PROGRAM') == True:
-                print("     ✅ 지원사업입니다.")
-                if "SUPPORT_PROGRAM_REASON" in ollama_response and ollama_response["SUPPORT_PROGRAM_REASON"]:
-                    print(f"     📝 지원사업 판단 근거: {ollama_response['SUPPORT_PROGRAM_REASON'][:100]}...")
-            else:
-                print("     ❌ 지원사업이 아닙니다.")
-
-        if "EXTRACTED_TARGET" in ollama_response and ollama_response["EXTRACTED_TARGET"]:
-            print(f"     📌 지원대상: {ollama_response['EXTRACTED_TARGET'][:100]}...")
-        if "EXTRACTED_TARGET_TYPE" in ollama_response and ollama_response["EXTRACTED_TARGET_TYPE"]:
-            print(f"     🏷️ 지원대상분류: {ollama_response['EXTRACTED_TARGET_TYPE'][:50]}...")
-        if "EXTRACTED_AMOUNT" in ollama_response and ollama_response["EXTRACTED_AMOUNT"]:
-            print(f"     💰 지원금액: {ollama_response['EXTRACTED_AMOUNT'][:100]}...")
-        if "EXTRACTED_TITLE" in ollama_response and ollama_response["EXTRACTED_TITLE"]:
-            print(f"     📝 제목: {ollama_response['EXTRACTED_TITLE'][:100]}...")
-        if "EXTRACTED_ANNOUNCEMENT_DATE" in ollama_response and ollama_response["EXTRACTED_ANNOUNCEMENT_DATE"]:
-            print(f"     📅 등록일: {ollama_response['EXTRACTED_ANNOUNCEMENT_DATE'][:50]}...")
 
 
 def get_base_directory(args) -> Path:
@@ -1706,13 +1441,13 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 예시:
-  python announcement_prv_processor.py --data prv7
-  python announcement_prv_processor.py --data prv8
-  python announcement_prv_processor.py --data prv7 --date 20250710  # 2025-07-10 이전 공고만 처리
-  python announcement_prv_processor.py --data prv8 -r --date 20250801  # 재귀적으로 8월 1일 이전 공고만 처리
-  python announcement_prv_processor.py --data prv7 --flat  # 평탄화된 구조 처리 (지역_시군_공고 형태)
-  python announcement_prv_processor.py --data prv8 --flat --date 20250715  # 평탄화 구조에서 날짜 필터링
-  python announcement_prv_processor.py --data prv7 --attach-force  # 첨부파일 강제 재처리
+  python announcement_prv_file.py --data prv7
+  python announcement_prv_file.py --data prv8
+  python announcement_prv_file.py --data prv7 --date 20250710  # 2025-07-10 이전 공고만 처리
+  python announcement_prv_file.py --data prv8 -r --date 20250801  # 재귀적으로 8월 1일 이전 공고만 처리
+  python announcement_prv_file.py --data prv7 --flat  # 평탄화된 구조 처리 (지역_시군_공고 형태)
+  python announcement_prv_file.py --data prv8 --flat --date 20250715  # 평탄화 구조에서 날짜 필터링
+  python announcement_prv_file.py --data prv7 --attach-force  # 첨부파일 강제 재처리
         """
     )
     

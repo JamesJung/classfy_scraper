@@ -835,7 +835,10 @@ def convert_pdf_to_md_docling(pdf_path: str, output_path: str = None) -> bool:
 
         with Timer(f"PDF 파일 변환 (Docling): {pdf_path}", totalTimeChk=False):
             try:
-                from docling.document_converter import DocumentConverter, PdfFormatOption
+                from docling.document_converter import (
+                    DocumentConverter,
+                    PdfFormatOption,
+                )
                 from docling.datamodel.base_models import InputFormat
                 from docling.datamodel.pipeline_options import (
                     OcrOptions,
@@ -852,12 +855,12 @@ def convert_pdf_to_md_docling(pdf_path: str, output_path: str = None) -> bool:
                 table_options = TableStructureOptions(
                     do_cell_matching=False,  # 셀 매칭 활성화
                 )
-                
+
                 pipeline_options = PdfPipelineOptions(
                     do_table_structure=True,  # 표 구조 인식 활성화
                     table_structure_options=table_options,
                 )
-                
+
                 pdf_format_options = PdfFormatOption(pipeline_options=pipeline_options)
                 converter = DocumentConverter(
                     format_options={InputFormat.PDF: pdf_format_options}
@@ -1201,8 +1204,9 @@ def convert_pdf_to_text_simple(pdf_path: str, output_path: str = None) -> bool:
     try:
         # 색상 오류를 완전히 무시하는 환경 설정
         import os
-        os.environ['PDFMINER_IGNORE_COLOR_ERRORS'] = '1'
-        
+
+        os.environ["PDFMINER_IGNORE_COLOR_ERRORS"] = "1"
+
         # PDFMiner 설정으로 색상 관련 오류 방지
         from pdfminer.high_level import extract_text
         from pdfminer.layout import LAParams
@@ -1214,60 +1218,68 @@ def convert_pdf_to_text_simple(pdf_path: str, output_path: str = None) -> bool:
             char_margin=2.0,
             boxes_flow=0.5,
             detect_vertical=True,
-            all_texts=True
+            all_texts=True,
         )
-        
+
         # 색상 관련 경고 무시
         import warnings
+
         warnings.filterwarnings("ignore", category=UserWarning, module="pdfminer")
         warnings.filterwarnings("ignore", message=".*color.*", category=UserWarning)
-        
+
         # 색상 오류를 완전히 우회하는 패치 적용
         try:
             from pdfminer.pdfcolor import PDFColorSpace
+
             original_set_gray = PDFColorSpace.set_gray
-            
+
             def safe_set_gray(self, gray):
                 try:
                     return original_set_gray(self, gray)
                 except (ValueError, TypeError):
                     # 색상 오류 무시
                     return None
-            
+
             PDFColorSpace.set_gray = safe_set_gray
-            
+
             # 추가 색상 관련 메서드들도 패치
-            if hasattr(PDFColorSpace, 'set_rgb'):
+            if hasattr(PDFColorSpace, "set_rgb"):
                 original_set_rgb = PDFColorSpace.set_rgb
+
                 def safe_set_rgb(self, r, g, b):
                     try:
                         return original_set_rgb(self, r, g, b)
                     except (ValueError, TypeError):
                         return None
+
                 PDFColorSpace.set_rgb = safe_set_rgb
-                
-            if hasattr(PDFColorSpace, 'set_cmyk'):
+
+            if hasattr(PDFColorSpace, "set_cmyk"):
                 original_set_cmyk = PDFColorSpace.set_cmyk
+
                 def safe_set_cmyk(self, c, m, y, k):
                     try:
                         return original_set_cmyk(self, c, m, y, k)
                     except (ValueError, TypeError):
                         return None
+
                 PDFColorSpace.set_cmyk = safe_set_cmyk
-                
+
             # 색상 공간 초기화 메서드도 패치
-            if hasattr(PDFColorSpace, '__init__'):
+            if hasattr(PDFColorSpace, "__init__"):
                 original_init = PDFColorSpace.__init__
+
                 def safe_init(self, *args, **kwargs):
                     try:
                         return original_init(self, *args, **kwargs)
                     except (ValueError, TypeError):
                         # 기본값으로 초기화
-                        self.name = 'DeviceGray'
+                        self.name = "DeviceGray"
                         self.ncomponents = 1
                         return None
+
                 PDFColorSpace.__init__ = safe_init
-                
+
         except ImportError:
             pass  # PDFMiner 버전에 따라 없을 수 있음
 
@@ -1278,15 +1290,30 @@ def convert_pdf_to_text_simple(pdf_path: str, output_path: str = None) -> bool:
             except Exception as color_error:
                 # 색상 관련 오류인지 확인
                 error_msg = str(color_error).lower()
-                if any(keyword in error_msg for keyword in ['color', 'gray', 'stroke', 'invalid float', 'p67', 'pa1', 'pa2']):
-                    logger.warning(f"색상 관련 오류 감지, 대안 방법으로 재시도: {color_error}")
+                if any(
+                    keyword in error_msg
+                    for keyword in [
+                        "color",
+                        "gray",
+                        "stroke",
+                        "invalid float",
+                        "p67",
+                        "pa1",
+                        "pa2",
+                    ]
+                ):
+                    logger.warning(
+                        f"색상 관련 오류 감지, 대안 방법으로 재시도: {color_error}"
+                    )
                     # 대안 방법으로 재시도
-                    text = extract_text(pdf_path, laparams=laparams, codec='utf-8')
+                    text = extract_text(pdf_path, laparams=laparams, codec="utf-8")
                 else:
                     raise color_error
         except Exception as page_error:
-            logger.warning(f"PDFMiner 텍스트 추출 중 오류 (색상 관련 오류일 수 있음): {page_error}")
-            
+            logger.warning(
+                f"PDFMiner 텍스트 추출 중 오류 (색상 관련 오류일 수 있음): {page_error}"
+            )
+
             # 색상 오류인 경우 더 안전한 방법으로 재시도
             try:
                 from pdfminer.pdfinterp import PDFPageInterpreter, PDFResourceManager
@@ -1294,19 +1321,27 @@ def convert_pdf_to_text_simple(pdf_path: str, output_path: str = None) -> bool:
                 from pdfminer.pdfpage import PDFPage
                 import io
                 import warnings
-                
+
                 # 색상 관련 경고 무시
-                warnings.filterwarnings("ignore", category=UserWarning, module="pdfminer")
-                warnings.filterwarnings("ignore", message=".*color.*", category=UserWarning)
-                warnings.filterwarnings("ignore", message=".*gray.*", category=UserWarning)
-                warnings.filterwarnings("ignore", message=".*stroke.*", category=UserWarning)
-                
+                warnings.filterwarnings(
+                    "ignore", category=UserWarning, module="pdfminer"
+                )
+                warnings.filterwarnings(
+                    "ignore", message=".*color.*", category=UserWarning
+                )
+                warnings.filterwarnings(
+                    "ignore", message=".*gray.*", category=UserWarning
+                )
+                warnings.filterwarnings(
+                    "ignore", message=".*stroke.*", category=UserWarning
+                )
+
                 # 색상 처리를 완전히 비활성화한 설정
                 rsrcmgr = PDFResourceManager()
                 retstr = io.StringIO()
                 device = TextConverter(rsrcmgr, retstr, laparams=laparams)
-                
-                with open(pdf_path, 'rb') as fp:
+
+                with open(pdf_path, "rb") as fp:
                     interpreter = PDFPageInterpreter(rsrcmgr, device)
                     for page in PDFPage.get_pages(fp, check_extractable=True):
                         try:
@@ -1314,9 +1349,20 @@ def convert_pdf_to_text_simple(pdf_path: str, output_path: str = None) -> bool:
                         except Exception as page_ex:
                             # 색상 관련 오류인지 확인 (더 포괄적으로)
                             error_msg = str(page_ex).lower()
-                            color_keywords = ['color', 'gray', 'stroke', 'invalid float', 'p67', 'pa1', 'pa2', 'non-stroke']
+                            color_keywords = [
+                                "color",
+                                "gray",
+                                "stroke",
+                                "invalid float",
+                                "p67",
+                                "pa1",
+                                "pa2",
+                                "non-stroke",
+                            ]
                             if any(keyword in error_msg for keyword in color_keywords):
-                                logger.debug(f"색상 관련 오류 무시하고 계속 진행: {page_ex}")
+                                logger.debug(
+                                    f"색상 관련 오류 무시하고 계속 진행: {page_ex}"
+                                )
                                 continue
                             else:
                                 logger.debug(f"페이지 처리 중 오류 무시: {page_ex}")
@@ -1324,10 +1370,10 @@ def convert_pdf_to_text_simple(pdf_path: str, output_path: str = None) -> bool:
                     device.close()
                     text = retstr.getvalue()
                     retstr.close()
-                
+
                 if not text.strip():
                     raise Exception("텍스트 추출 실패")
-                    
+
             except Exception as fallback_error:
                 logger.error(f"PDF 텍스트 추출 fallback도 실패: {fallback_error}")
                 return False
@@ -1536,7 +1582,7 @@ def perform_ocr_on_image(image) -> str:
         img_array = np.array(image)
 
         # EasyOCR 리더 초기화 (한국어 + 영어)
-        reader = easyocr.Reader(["ko", "en"], gpu=False)
+        reader = easyocr.Reader(["ko", "en"], gpu=True)
 
         # OCR 수행
         results = reader.readtext(img_array)
@@ -1717,19 +1763,24 @@ def convert_hwp_to_html(hwp_file_path: Path, output_dir: Path) -> bool:
                 try:
                     deleted_count = 0
                     # HWP 변환 관련 파일만 선택적 삭제
-                    for file_pattern in ["*.xhtml", "*.css", "*.html", "llm_response_*.json"]:
+                    for file_pattern in [
+                        "*.xhtml",
+                        "*.css",
+                        "*.html",
+                        "llm_response_*.json",
+                    ]:
                         for file in output_dir.glob(file_pattern):
                             file.unlink()
                             deleted_count += 1
-                    
+
                     if deleted_count > 0:
-                        logger.debug(f"기존 HWP 변환 파일 {deleted_count}개 삭제, extracted_text.txt는 보존")
+                        logger.debug(
+                            f"기존 HWP 변환 파일 {deleted_count}개 삭제, extracted_text.txt는 보존"
+                        )
                     else:
                         logger.debug(f"삭제할 HWP 변환 파일 없음")
                 except OSError as e:
-                    logger.error(
-                        f"오류: HWP 변환 파일 삭제 실패 '{output_dir}': {e}"
-                    )
+                    logger.error(f"오류: HWP 변환 파일 삭제 실패 '{output_dir}': {e}")
                     return False
 
             output_dir.mkdir(parents=True, exist_ok=True)
@@ -1762,7 +1813,7 @@ def convert_hwp_to_html(hwp_file_path: Path, output_dir: Path) -> bool:
 
             except (ParseError, InvalidHwp5FileError) as e:
                 logger.error(f"HWP5 파일 형식 오류: {hwp_file_path.name} - {e}")
-                
+
                 # HWPX fallback 시도 (HWP 확장자지만 실제로는 HWPX일 가능성)
                 logger.info(f"HWPX fallback 시도: {hwp_file_path.name}")
                 try:
@@ -1770,6 +1821,7 @@ def convert_hwp_to_html(hwp_file_path: Path, output_dir: Path) -> bool:
                     if hwpx_text and hwpx_text.strip():
                         # 추출된 텍스트를 HTML 형태로 저장
                         import html
+
                         html_content = f"""<!DOCTYPE html>
 <html>
 <head>
@@ -1785,13 +1837,19 @@ def convert_hwp_to_html(hwp_file_path: Path, output_dir: Path) -> bool:
                         html_file = output_dir / "index.xhtml"
                         with open(html_file, "w", encoding="utf-8") as f:
                             f.write(html_content)
-                        logger.info(f"HWPX fallback 성공: {hwp_file_path.name} → {html_file}")
+                        logger.info(
+                            f"HWPX fallback 성공: {hwp_file_path.name} → {html_file}"
+                        )
                         return True
                     else:
-                        logger.warning(f"HWPX fallback 실패 - 텍스트 추출 불가: {hwp_file_path.name}")
+                        logger.warning(
+                            f"HWPX fallback 실패 - 텍스트 추출 불가: {hwp_file_path.name}"
+                        )
                 except Exception as hwpx_error:
-                    logger.warning(f"HWPX fallback 실패: {hwp_file_path.name} - {hwpx_error}")
-                    
+                    logger.warning(
+                        f"HWPX fallback 실패: {hwp_file_path.name} - {hwpx_error}"
+                    )
+
                 return False
             except Exception as transform_error:
                 # XML 파싱 오류 구체적 처리
@@ -1835,7 +1893,6 @@ def convert_file_to_text(file_path: Path, file_type: str) -> str | None:
     Returns:
         Optional[str]: 추출된 텍스트 문자열. 실패 시 None.
     """
-
 
     logger.info("convert_file_to_text")
 
@@ -1925,10 +1982,12 @@ def convert_hwp_to_markdown(hwp_file_path: Path, output_path: Path) -> bool:
             except Exception as e:
                 logger.error(f"HWPX 파일 처리 중 오류: {hwp_file_path.name} - {e}")
                 return False
-        
+
         # .hwp 확장자지만 OLE2 서명이 아닌 경우(HWPX로 잘못 저장된 사례) 우선 처리
         try:
-            if hwp_file_path.suffix.lower() == ".hwp" and not is_valid_hwp_file(hwp_file_path):
+            if hwp_file_path.suffix.lower() == ".hwp" and not is_valid_hwp_file(
+                hwp_file_path
+            ):
                 logger.warning(
                     f"HWP 파일이 OLE2 시그니처가 아님(실제는 HWPX일 가능성): {hwp_file_path.name}"
                 )
@@ -2157,7 +2216,9 @@ def is_valid_hwp_file(hwp_file_path: Path) -> bool:
         return False
 
 
-def process_hwp_with_fallback(hwp_file_path: Path, temp_output_dir: Path = None) -> str | None:
+def process_hwp_with_fallback(
+    hwp_file_path: Path, temp_output_dir: Path = None
+) -> str | None:
     """HWP 파일 처리 - fallback 포함 (announcementClassifier 및 processManager 호환성)"""
     # temp_output_dir 인수는 호환성을 위해 받지만 현재 구현에서는 사용하지 않음
     return extract_hwp_text_fallback(hwp_file_path)
@@ -2171,7 +2232,7 @@ def extract_hwp_text_fallback(hwp_file_path: Path) -> str | None:
 
     # 중복 호출 방지: convert_hwp_to_markdown()를 호출하지 않고 직접 텍스트 추출
     logger.info(f"Fallback HWP 텍스트 추출 시작: {hwp_file_path.name}")
-    
+
     # HWPX 파일인 경우 직접 처리
     if hwp_file_path.suffix.lower() == ".hwpx":
         try:
@@ -2180,8 +2241,8 @@ def extract_hwp_text_fallback(hwp_file_path: Path) -> str | None:
             logger.error(f"Fallback HWPX 텍스트 추출 실패: {hwp_file_path.name} - {e}")
             return None
 
-    #2025.09.03  기존 소스. 현재  extracted_text = gethwp.read_hwp(str(hwp_file_path))
-    #이걸로만 하고 있다. 이 부분은 failback이다.
+    # 2025.09.03  기존 소스. 현재  extracted_text = gethwp.read_hwp(str(hwp_file_path))
+    # 이걸로만 하고 있다. 이 부분은 failback이다.
     try:
         # 파일 유효성 사전 검사
         if not is_valid_hwp_file(hwp_file_path):
@@ -2190,8 +2251,6 @@ def extract_hwp_text_fallback(hwp_file_path: Path) -> str | None:
             )
             return None
 
-
-        
         # Heavy library - lazy import for performance
         import gethwp
 

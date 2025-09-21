@@ -1,23 +1,40 @@
-# Data directories
+# ===== Data directories =====
 data/
 data.origin/
 data.enhanced/
+data_new/
 scraped_data/
 eminwon_data/
+eminwon_data_new/
 prv/
 prv1/
 prv7/
 prv8/
 prv*.zip
 prv*_backup/
-# node/
-node/scraped_data_old
-node/scraper/scraped_data
-node/scraper/eminwon_data
-node/node_modules
-node/scraper/scraped_data22
-node/scraper/eminwon_data22
-node/scraper/-page
+processed/
+failed/
+backup/
+output/
+test_output/
+
+# ===== Node.js scraper data =====
+node/scraped_data/
+node/scraped_data_old/
+node/scraper/scraped_data/
+node/scraper/scraped_data22/
+node/scraper/eminwon_data/
+node/scraper/eminwon_data22/
+node/scraper/-page/
+node/test_output/
+node/node_modules/
+
+# Node scraper temporary files
+node/scraper/debug_screenshot_*.png
+node/scraper/*.png
+node/*.csv
+!node/scraper/eminwon.json
+!node/scraper/config.js
 
 # Python
 __pycache__/
@@ -96,6 +113,10 @@ logs/
 *.temp
 .DS_Store
 Thumbs.db
+*.bak
+*.orig
+*.rej
+*.old
 
 # ChromaDB
 chromadb_data/
@@ -103,3 +124,51 @@ chromadb_data/
 # Ollama models (if stored locally)
 /models/
 !src/models/
+
+# ===== Additional data files =====
+# CSV files (but keep important configs)
+*.csv
+!site_naver_url.csv  # if needed
+
+# Attachments and documents
+attachments/
+downloads/
+*.pdf
+*.hwp
+*.hwpx
+*.xlsx
+*.xls
+*.docx
+*.doc
+*.zip
+*.rar
+*.tar.gz
+
+# Reports (but keep markdown docs)
+reports/
+*.html
+!README*.html
+
+# Cache
+.cache/
+*.cache
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# macOS specific
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# ChromeDriver
+chromedriver*
+geckodriver*

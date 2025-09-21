@@ -12,6 +12,7 @@ from pathlib import Path
 # 선택적 import - OCR 기능을 사용할 때만 로드
 try:
     import easyocr
+
     EASYOCR_AVAILABLE = True
 except ImportError:
     EASYOCR_AVAILABLE = False
@@ -19,13 +20,16 @@ except ImportError:
 
 try:
     from PIL import Image
+
     PIL_AVAILABLE = True
 except ImportError:
     PIL_AVAILABLE = False
+
     # 타입 어노테이션을 위한 더미 클래스 생성
     class DummyImage:
         class Image:
             pass
+
     Image = DummyImage
 
 try:
@@ -34,11 +38,11 @@ except ImportError:
     # 절대 import 시도
     import sys
     from pathlib import Path
-    
+
     # 프로젝트 루트를 path에 추가
     project_root = Path(__file__).parent.parent.parent
     sys.path.insert(0, str(project_root))
-    
+
     from src.config.logConfig import setup_logging
 
 logger = setup_logging(__name__)
@@ -61,13 +65,15 @@ class ImageOCRProcessor:
         """OCR 리더를 지연 초기화합니다."""
         try:
             if not EASYOCR_AVAILABLE:
-                logger.error("EasyOCR 패키지가 설치되지 않았습니다. pip install easyocr로 설치해주세요.")
+                logger.error(
+                    "EasyOCR 패키지가 설치되지 않았습니다. pip install easyocr로 설치해주세요."
+                )
                 self.reader = None
                 return
-                
+
             if self.reader is None:
                 logger.info("EasyOCR 리더 초기화 중... (한국어, 영어)")
-                self.reader = easyocr.Reader(["ko", "en"], gpu=False)
+                self.reader = easyocr.Reader(["ko", "en"], gpu=True)
                 logger.info("EasyOCR 리더 초기화 완료")
         except Exception as e:
             logger.error(f"OCR 리더 초기화 실패: {e}")
@@ -101,10 +107,13 @@ class ImageOCRProcessor:
 
             # PIL Image로 변환
             if not PIL_AVAILABLE:
-                logger.error("PIL(Pillow) 패키지가 설치되지 않았습니다. pip install Pillow로 설치해주세요.")
+                logger.error(
+                    "PIL(Pillow) 패키지가 설치되지 않았습니다. pip install Pillow로 설치해주세요."
+                )
                 return None
-            
+
             from PIL import Image as PILImage
+
             image = PILImage.open(io.BytesIO(image_data))
 
             # OCR 실행
@@ -152,10 +161,13 @@ class ImageOCRProcessor:
 
             # 이미지 파일 로드
             if not PIL_AVAILABLE:
-                logger.error("PIL(Pillow) 패키지가 설치되지 않았습니다. pip install Pillow로 설치해주세요.")
+                logger.error(
+                    "PIL(Pillow) 패키지가 설치되지 않았습니다. pip install Pillow로 설치해주세요."
+                )
                 return None
-            
+
             from PIL import Image as PILImage
+
             image = PILImage.open(full_path)
 
             # OCR 실행
@@ -198,7 +210,7 @@ class ImageOCRProcessor:
                 return None
 
             # 입력 타입 검증
-            if not hasattr(image, 'mode'):
+            if not hasattr(image, "mode"):
                 logger.error("잘못된 입력 타입입니다. PIL Image 객체가 필요합니다.")
                 return None
 
@@ -210,8 +222,9 @@ class ImageOCRProcessor:
             try:
                 # PIL Image를 numpy 배열로 변환
                 import numpy as np
+
                 image_array = np.array(image)
-                
+
                 # EasyOCR에 numpy 배열 전달
                 results = self.reader.readtext(image_array)
                 if not results:
@@ -309,7 +322,7 @@ def extract_images_from_markdown(md_content: str, md_file_path: Path) -> list[st
             logger.info("처리 가능한 이미지에서 텍스트를 추출하지 못했습니다")
 
         logger.info(f"extracted_texts: {extracted_texts}")
-        
+
         return extracted_texts
 
     except Exception as e:
@@ -384,10 +397,10 @@ def _has_images_in_markdown(md_content: str, md_file_path: Path) -> bool:
 def extract_text_from_image(image_path: str) -> str | None:
     """
     이미지 파일에서 텍스트를 추출하는 독립 함수 (간단한 인터페이스)
-    
+
     Args:
         image_path: 이미지 파일 경로 (문자열)
-        
+
     Returns:
         추출된 텍스트 또는 None
     """
@@ -396,11 +409,13 @@ def extract_text_from_image(image_path: str) -> str | None:
         if not image_path_obj.exists():
             logger.warning(f"이미지 파일을 찾을 수 없습니다: {image_path}")
             return None
-            
+
         # ImageOCRProcessor 인스턴스 생성 및 처리
         processor = ImageOCRProcessor(lazy_init=False)
-        return processor.extract_text_from_image_file(image_path_obj, image_path_obj.parent)
-        
+        return processor.extract_text_from_image_file(
+            image_path_obj, image_path_obj.parent
+        )
+
     except Exception as e:
         logger.error(f"이미지 텍스트 추출 중 오류: {image_path} - {e}")
         return None

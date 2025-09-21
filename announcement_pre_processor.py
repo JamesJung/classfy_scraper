@@ -177,9 +177,9 @@ class AnnouncementPreProcessor:
 
                 if has_content_md or has_attachments:
                     target_directories.append(root_path)
-                    logger.debug(
-                        f"대상 디렉토리 발견: {root_path.relative_to(site_dir)}"
-                    )
+                    # Windows와 Unix 경로 표시 통일
+                    rel_path_str = str(root_path.relative_to(site_dir)).replace("\\", "/")
+                    logger.debug(f"대상 디렉토리 발견: {rel_path_str}")
 
         # 폴더명으로 정렬
         target_directories = sorted(target_directories, key=self._natural_sort_key)
@@ -198,9 +198,9 @@ class AnnouncementPreProcessor:
             for directory in target_directories:
                 # 사이트 디렉토리로부터의 상대 경로를 폴더명으로 사용
                 relative_path = directory.relative_to(site_dir)
-                folder_name = self._normalize_korean_text(
-                    str(relative_path).replace("/", "_")
-                )
+                # Windows와 Unix 경로 구분자 모두 처리
+                path_str = str(relative_path).replace("\\", "_").replace("/", "_")
+                folder_name = self._normalize_korean_text(path_str)
 
                 if folder_name not in processed_folders:
                     filtered_directories.append(directory)
@@ -283,9 +283,9 @@ class AnnouncementPreProcessor:
 
                 # 사이트 디렉토리로부터의 상대 경로를 폴더명으로 사용
                 relative_path = directory.relative_to(site_dir)
-                folder_name = self._normalize_korean_text(
-                    str(relative_path).replace("/", "_")
-                )
+                # Windows와 Unix 경로 구분자 모두 처리
+                path_str = str(relative_path).replace("\\", "_").replace("/", "_")
+                folder_name = self._normalize_korean_text(path_str)
 
                 progress_pct = (i / total_count) * 100
                 print(f"\n[{i}/{total_count} : {progress_pct:.1f}%] {folder_name}")
@@ -822,7 +822,7 @@ class AnnouncementPreProcessor:
                         )
 
                     file_info = {
-                        "filename": file_path.name,  # 확장자 포함된 전체 파일명
+                        "filename": self._normalize_korean_text(file_path.name),  # 확장자 포함된 전체 파일명 (정규화)
                         "file_size": (
                             file_path.stat().st_size if file_path.exists() else 0
                         ),
@@ -911,7 +911,7 @@ class AnnouncementPreProcessor:
                             )
 
                     except Exception as e:
-                        logger.error(f"첨부파일 변환 실패 ({file_path}): {e}")
+                        logger.error(f"첨부파일 변환 실패 ({file_path.as_posix()}): {e}")
 
         logger.info(
             f"첨부파일 처리 완료: {len(attachment_filenames)}개 파일, {len(combined_content)} 문자"
@@ -1050,6 +1050,8 @@ def determine_site_type(directory_name: str) -> str:
         return "Homepage"
     elif "eminwon" in directory_name.lower():
         return "Eminwon"
+    elif "data" in directory_name.lower():
+        return "Scraper"
     else:
         return "Unknown"
 

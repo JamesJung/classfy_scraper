@@ -10,6 +10,7 @@
     python announcement_pre_processor.py -d eminwon_data --site-code emw001
 """
 
+import sys
 import argparse
 import json
 import os
@@ -26,28 +27,49 @@ project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
 from src.config.config import ConfigManager
+
 from src.config.logConfig import setup_logging
-from src.utils.attachmentProcessor import AttachmentProcessor
+
 from src.models.announcementPrvDatabase import AnnouncementPrvDatabaseManager
 
 logger = setup_logging(__name__)
+
 config = ConfigManager().get_config()
 
 
 class AnnouncementPreProcessor:
     """공고 사전 처리 메인 클래스"""
 
-    def __init__(self, site_type: str, attach_force: bool = False):
-        self.attachment_processor = AttachmentProcessor()
+    def __init__(self, site_type: str, attach_force: bool = False, site_code: str = None, lazy_init: bool = False):
+        # lazy_init 옵션이 True면 AttachmentProcessor를 나중에 초기화
+        self._lazy_init = lazy_init
+        self._attachment_processor = None
+
+        if not lazy_init:
+            # AttachmentProcessor를 지연 import
+            from src.utils.attachmentProcessor import AttachmentProcessor
+            self._attachment_processor = AttachmentProcessor()
+
         self.db_manager = AnnouncementPrvDatabaseManager()
         self.attach_force = attach_force
         self.site_type = site_type
+        self.site_code = site_code  # site_code를 인스턴스 변수로 저장
 
         # 데이터베이스 테이블 생성 (없는 경우)
         self._ensure_database_tables()
 
         # 제외 키워드 로드
         self.exclusion_keywords = self._load_exclusion_keywords()
+
+    @property
+    def attachment_processor(self):
+        """지연 초기화를 위한 property"""
+        if self._lazy_init and self._attachment_processor is None:
+            logger.info("지연 초기화: AttachmentProcessor 생성")
+            # 지연 import
+            from src.utils.attachmentProcessor import AttachmentProcessor
+            self._attachment_processor = AttachmentProcessor()
+        return self._attachment_processor
 
     def _ensure_database_tables(self):
         """데이터베이스 테이블이 존재하는지 확인하고 생성합니다."""
@@ -164,22 +186,60 @@ class AnnouncementPreProcessor:
 
         target_directories = []
 
-        # 모든 하위 디렉토리에서 content.md 또는 attachments 폴더가 있는 디렉토리 찾기
+        # 모든 하위 디렉토리에서 content.md, JSON 파일 또는 attachments 폴더가 있는 디렉토리 찾기
         logger.info(f"디렉토리 검색 시작: {site_dir}")
 
-        for root_path in site_dir.rglob("*"):
-            if root_path.is_dir():
-                # content.md 파일이 있거나 attachments 폴더가 있는 디렉토리만 대상으로 함
-                has_content_md = (root_path / "content.md").exists()
-                has_attachments = (root_path / "attachments").exists() and any(
-                    (root_path / "attachments").iterdir()
-                )
+        # bizInfo, sme, kStartUp은 플랫 구조 (직접 하위 디렉토리만 검색)
+        if site_code in ["bizInfo", "sme", "kStartUp"]:
+            # 직접 하위 디렉토리만 검색 (더 빠름)
+            # bizInfo와 sme는 모든 디렉토리에 JSON 파일이 있다고 가정
+            for root_path in site_dir.iterdir():
+                if root_path.is_dir():
+                    # bizInfo와 sme는 JSON 체크 생략 (모두 JSON 있음)
+                    if site_code in ["bizInfo", "sme"]:
+                        # 모든 디렉토리를 대상으로 함
+                        target_directories.append(root_path)
+                        logger.debug(
+                            f"대상 디렉토리 발견: {root_path.relative_to(site_dir)}"
+                        )
+                    else:
+                        # kStartUp은 content.md가 반드시 있어야 함
+                        has_content_md = (root_path / "content.md").exists()
 
-                if has_content_md or has_attachments:
-                    target_directories.append(root_path)
-                    # Windows와 Unix 경로 표시 통일
-                    rel_path_str = str(root_path.relative_to(site_dir)).replace("\\", "/")
-                    logger.debug(f"대상 디렉토리 발견: {rel_path_str}")
+                        if has_content_md:
+                            # kStartUp은 content.md가 있는 디렉토리만 처리
+                            target_directories.append(root_path)
+                            logger.debug(
+                                f"대상 디렉토리 발견: {root_path.relative_to(site_dir)}"
+                            )
+                        else:
+                            # content.md가 없는 디렉토리는 건너뛰기
+                            logger.debug(
+                                f"kStartUp 디렉토리 건너뛰기 (content.md 없음): {root_path.relative_to(site_dir)}"
+                            )
+        else:
+            # 다른 사이트는 재귀적으로 검색 (중첩 구조 가능)
+            for root_path in site_dir.rglob("*"):
+                if root_path.is_dir():
+                    # content.md 파일이 있거나 attachments 폴더가 있거나 JSON 파일이 있는 디렉토리만 대상으로 함
+                    has_content_md = (root_path / "content.md").exists()
+                    has_json = bool(list(root_path.glob("*.json")))
+                    # attachments 폴더 확인 최적화
+                    attachments_dir = root_path / "attachments"
+                    has_attachments = False
+                    if attachments_dir.exists():
+                        # 첫 번째 파일만 확인 (전체 디렉토리 순회 방지)
+                        try:
+                            next(attachments_dir.iterdir())
+                            has_attachments = True
+                        except StopIteration:
+                            has_attachments = False
+
+                    if has_content_md or has_attachments or has_json:
+                        target_directories.append(root_path)
+                        logger.debug(
+                            f"대상 디렉토리 발견: {root_path.relative_to(site_dir)}"
+                        )
 
         # 폴더명으로 정렬
         target_directories = sorted(target_directories, key=self._natural_sort_key)
@@ -198,9 +258,9 @@ class AnnouncementPreProcessor:
             for directory in target_directories:
                 # 사이트 디렉토리로부터의 상대 경로를 폴더명으로 사용
                 relative_path = directory.relative_to(site_dir)
-                # Windows와 Unix 경로 구분자 모두 처리
-                path_str = str(relative_path).replace("\\", "_").replace("/", "_")
-                folder_name = self._normalize_korean_text(path_str)
+                folder_name = self._normalize_korean_text(
+                    str(relative_path).replace("/", "_")
+                )
 
                 if folder_name not in processed_folders:
                     filtered_directories.append(directory)
@@ -256,6 +316,7 @@ class AnnouncementPreProcessor:
         Returns:
             처리 결과 통계
         """
+
         # 처리할 디렉토리 목록 찾기
         target_directories = self._find_target_directories(base_dir, site_code, force)
 
@@ -283,9 +344,9 @@ class AnnouncementPreProcessor:
 
                 # 사이트 디렉토리로부터의 상대 경로를 폴더명으로 사용
                 relative_path = directory.relative_to(site_dir)
-                # Windows와 Unix 경로 구분자 모두 처리
-                path_str = str(relative_path).replace("\\", "_").replace("/", "_")
-                folder_name = self._normalize_korean_text(path_str)
+                folder_name = self._normalize_korean_text(
+                    str(relative_path).replace("/", "_")
+                )
 
                 progress_pct = (i / total_count) * 100
                 print(f"\n[{i}/{total_count} : {progress_pct:.1f}%] {folder_name}")
@@ -368,7 +429,7 @@ class AnnouncementPreProcessor:
         Returns:
             처리 성공 여부
         """
-        logger.info(f"디렉토리 처리 시작: {folder_name}")
+        logger.info(f"디렉토리 처리 시작: {folder_name} (site_code: {site_code})")
 
         try:
             # 0. folder_name 중복 체크 (force 옵션이 없을 때만)
@@ -377,30 +438,144 @@ class AnnouncementPreProcessor:
                     logger.info(f"이미 처리된 폴더 건너뜀: {folder_name}")
                     return True  # 성공으로 처리 (이미 처리됨)
 
-            # 1. 제외 키워드 체크
-            excluded_keywords = self._check_exclusion_keywords(folder_name)
+            # 1. 제외 키워드 체크 (bizInfo, sme는 나중에 JSON에서 title 추출 후 체크)
+            excluded_keywords = []
+            if site_code not in ["bizInfo", "sme"]:
+                excluded_keywords = self._check_exclusion_keywords(folder_name)
 
-            # 2. content.md 파일 읽기
-            content_md_path = directory_path / "content.md"
+            # 2. 특수 사이트 처리 (bizInfo, sme는 JSON 파일 읽기)
             content_md = ""
+            title = "정보 없음"
+            origin_url = "정보 없음"
+            announcement_date = "정보 없음"
 
-            if content_md_path.exists():
-                try:
-                    with open(content_md_path, "r", encoding="utf-8") as f:
-                        content_md = f.read()
-                    logger.info(f"content.md 읽기 완료: {len(content_md)} 문자")
-                except Exception as e:
-                    logger.error(f"content.md 읽기 실패: {e}")
+            if site_code in ["bizInfo", "sme"]:
+                # JSON 파일 찾기 및 읽기
+                json_files = list(directory_path.glob("*.json"))
+                if json_files:
+                    json_file_path = json_files[0]  # 첫 번째 JSON 파일 사용
+                    try:
+                        with open(json_file_path, "r", encoding="utf-8") as f:
+                            json_data = json.load(f)
+
+                        # JSON 데이터를 content_md로 저장
+                        content_md = json.dumps(json_data, ensure_ascii=False, indent=2)
+
+                        # JSON 필드 매핑
+                        title = json_data.get("supportBusinessTitle", "정보 없음")
+
+                        # origin_url 처리
+                        if site_code == "bizInfo":
+                            # bizInfo의 경우 완성형 URL로 만들기
+                            announcement_url = json_data.get("announcementUrlAddress", "")
+                            if announcement_url and not announcement_url.startswith("http"):
+                                origin_url = f"https://www.bizinfo.go.kr{announcement_url}"
+                            else:
+                                origin_url = announcement_url or "정보 없음"
+                        else:
+                            # sme의 경우 그대로 사용
+                            origin_url = json_data.get("announcementUrlAddress", "정보 없음")
+
+                        # announcement_date 처리 (YYYYMMDD 포맷으로 변환)
+                        announcement_date_raw = json_data.get("announcementDate", "")
+                        if not announcement_date_raw:
+                            announcement_date_raw = json_data.get("applicationStartDate", "")
+
+                        if announcement_date_raw:
+                            # 다양한 날짜 포맷 처리
+                            announcement_date = self._convert_to_yyyymmdd(announcement_date_raw)
+
+                        # title 기반으로 제외 키워드 체크
+                        if title != "정보 없음":
+                            excluded_keywords = self._check_exclusion_keywords(title)
+
+                        logger.info(f"JSON 파일 읽기 완료: {json_file_path.name}, title: {title}")
+                    except Exception as e:
+                        logger.error(f"JSON 파일 읽기 실패: {e}")
+                        return self._save_processing_result(
+                            folder_name,
+                            site_code,
+                            content_md,
+                            "",
+                            status="error",
+                            error_message=f"JSON 파일 읽기 실패: {e}",
+                        )
+                else:
+                    logger.warning(f"JSON 파일이 없음: {directory_path}")
                     return self._save_processing_result(
                         folder_name,
                         site_code,
                         content_md,
                         "",
                         status="error",
-                        error_message=f"content.md 읽기 실패: {e}",
+                        error_message="JSON 파일이 없음",
                     )
+
+            elif site_code == "kStartUp":
+                # kStartUp은 content.md를 읽고, JSON에서 날짜 정보만 보완
+                content_md_path = directory_path / "content.md"
+                if content_md_path.exists():
+                    try:
+                        with open(content_md_path, "r", encoding="utf-8") as f:
+                            content_md = f.read()
+                        logger.info(f"content.md 읽기 완료: {len(content_md)} 문자")
+
+                        # content.md에서 기본 정보 추출
+                        title = self._extract_title_from_content(content_md) or "정보 없음"
+                        origin_url = self._extract_origin_url_from_content(content_md) or "정보 없음"
+
+                        # JSON 파일에서 announcement_date 보완
+                        json_files = list(directory_path.glob("*.json"))
+                        if json_files:
+                            try:
+                                with open(json_files[0], "r", encoding="utf-8") as f:
+                                    json_data = json.load(f)
+                                announcement_date_raw = json_data.get("announcementDate", "")
+                                if announcement_date_raw:
+                                    announcement_date = self._convert_to_yyyymmdd(announcement_date_raw)
+                                else:
+                                    # JSON에 없으면 content.md에서 추출
+                                    announcement_date = self._extract_announcement_date_from_content(content_md) or "정보 없음"
+                            except Exception as e:
+                                logger.warning(f"kStartUp JSON 날짜 추출 실패, content.md 사용: {e}")
+                                announcement_date = self._extract_announcement_date_from_content(content_md) or "정보 없음"
+                        else:
+                            # JSON 파일이 없으면 content.md에서 추출
+                            announcement_date = self._extract_announcement_date_from_content(content_md) or "정보 없음"
+
+                    except Exception as e:
+                        logger.error(f"content.md 읽기 실패: {e}")
+                        return self._save_processing_result(
+                            folder_name,
+                            site_code,
+                            content_md,
+                            "",
+                            status="error",
+                            error_message=f"content.md 읽기 실패: {e}",
+                        )
+                else:
+                    logger.warning(f"content.md 파일이 없음: {content_md_path}")
+
             else:
-                logger.warning(f"content.md 파일이 없음: {content_md_path}")
+                # 일반 사이트 처리 (기존 로직)
+                content_md_path = directory_path / "content.md"
+                if content_md_path.exists():
+                    try:
+                        with open(content_md_path, "r", encoding="utf-8") as f:
+                            content_md = f.read()
+                        logger.info(f"content.md 읽기 완료: {len(content_md)} 문자")
+                    except Exception as e:
+                        logger.error(f"content.md 읽기 실패: {e}")
+                        return self._save_processing_result(
+                            folder_name,
+                            site_code,
+                            content_md,
+                            "",
+                            status="error",
+                            error_message=f"content.md 읽기 실패: {e}",
+                        )
+                else:
+                    logger.warning(f"content.md 파일이 없음: {content_md_path}")
 
             # 3. content.md만으로 기본 검증
             if not content_md.strip():
@@ -415,13 +590,11 @@ class AnnouncementPreProcessor:
                     error_message="content.md 내용이 없음",
                 )
 
-            title = self._extract_title_from_content(content_md) or "정보 없음"
-            origin_url = (
-                self._extract_origin_url_from_content(content_md) or "정보 없음"
-            )
-            announcement_date = (
-                self._extract_announcement_date_from_content(content_md) or "정보 없음"
-            )
+            # 일반 사이트의 경우만 content.md에서 정보 추출 (특수 사이트는 이미 추출함)
+            if site_code not in ["bizInfo", "sme", "kStartUp"]:
+                title = self._extract_title_from_content(content_md) or "정보 없음"
+                origin_url = self._extract_origin_url_from_content(content_md) or "정보 없음"
+                announcement_date = self._extract_announcement_date_from_content(content_md) or "정보 없음"
 
             # 3.5. origin_url 중복 체크
             is_duplicate_url = False
@@ -752,7 +925,7 @@ class AnnouncementPreProcessor:
     def _process_attachments_separately(
         self, directory_path: Path
     ) -> tuple[str, List[str], List[Dict[str, Any]]]:
-        """첨부파일들을 처리하여 내용을 결합하고 파일명 목록을 반환합니다."""
+        """첨부파일들을 처리하여 내용을 결합하고 파일명 목록을 반휘합니다."""
         attachments_dir = directory_path / "attachments"
 
         if not attachments_dir.exists():
@@ -803,35 +976,36 @@ class AnnouncementPreProcessor:
                 attachment_filenames.append(self._normalize_korean_text(file_path.name))
                 logger.info(f"첨부파일 처리 시작: {file_path.name}")
 
-                # md 파일은 attachment_files_info에 추가하지 않음
+                # 파일 정보 수집 (모든 파일에 대해)
+                # URL 매칭 시도 - 파일명으로 먼저 시도, 없으면 stem으로 시도
+                download_url = attachment_urls.get(file_path.name, "")
+                if not download_url:
+                    # 확장자 없는 이름으로도 시도
+                    download_url = attachment_urls.get(file_path.stem, "")
+
+                if download_url:
+                    logger.debug(
+                        f"URL 매칭 성공: {file_path.name} -> {download_url[:50]}..."
+                    )
+                else:
+                    logger.debug(
+                        f"URL 매칭 실패: {file_path.name}, 가능한 키: {list(attachment_urls.keys())[:3]}"
+                    )
+
+                file_info = {
+                    "filename": file_path.name,  # 확장자 포함된 전체 파일명
+                    "file_size": (
+                        file_path.stat().st_size if file_path.exists() else 0
+                    ),
+                    "conversion_success": False,
+                    "conversion_method": self._guess_conversion_method(
+                        file_extension
+                    ),
+                    "download_url": download_url,  # 다운로드 URL 추가
+                }
+
+                # md 파일이 아닌 경우만 attachment_files_info에 추가
                 if file_extension != ".md":
-                    # 파일 정보 수집
-                    # URL 매칭 시도 - 파일명으로 먼저 시도, 없으면 stem으로 시도
-                    download_url = attachment_urls.get(file_path.name, "")
-                    if not download_url:
-                        # 확장자 없는 이름으로도 시도
-                        download_url = attachment_urls.get(file_path.stem, "")
-
-                    if download_url:
-                        logger.debug(
-                            f"URL 매칭 성공: {file_path.name} -> {download_url[:50]}..."
-                        )
-                    else:
-                        logger.debug(
-                            f"URL 매칭 실패: {file_path.name}, 가능한 키: {list(attachment_urls.keys())[:3]}"
-                        )
-
-                    file_info = {
-                        "filename": self._normalize_korean_text(file_path.name),  # 확장자 포함된 전체 파일명 (정규화)
-                        "file_size": (
-                            file_path.stat().st_size if file_path.exists() else 0
-                        ),
-                        "conversion_success": False,
-                        "conversion_method": self._guess_conversion_method(
-                            file_extension
-                        ),
-                        "download_url": download_url,  # 다운로드 URL 추가
-                    }
                     attachment_files_info.append(file_info)
 
                 # 이미 .md 파일인 경우 직접 읽기
@@ -911,7 +1085,17 @@ class AnnouncementPreProcessor:
                             )
 
                     except Exception as e:
-                        logger.error(f"첨부파일 변환 실패 ({file_path.as_posix()}): {e}")
+                        error_msg = str(e)
+                        if "Invalid code point" in error_msg or "PDFSyntaxError" in error_msg or "No /Root object" in error_msg:
+                            logger.warning(f"손상된 PDF 파일 건너뛰기: {file_path.name}")
+                        elif "UnicodeDecodeError" in error_msg:
+                            logger.warning(f"인코딩 문제로 파일 건너뛰기: {file_path.name}")
+                        else:
+                            logger.error(f"첨부파일 변환 실패 ({file_path.name}): {e}")
+
+                        # 변환 실패한 파일 정보 기록
+                        file_info["conversion_success"] = False
+                        file_info["error_message"] = error_msg[:200]  # 오류 메시지 일부만 저장
 
         logger.info(
             f"첨부파일 처리 완료: {len(attachment_filenames)}개 파일, {len(combined_content)} 문자"
@@ -930,6 +1114,38 @@ class AnnouncementPreProcessor:
             return "ocr"
         else:
             return "unknown"
+
+    def _convert_to_yyyymmdd(self, date_str: str) -> str:
+        """날짜 문자열을 YYYYMMDD 포맷으로 변환합니다."""
+        try:
+            # 다양한 날짜 포맷 시도
+            from datetime import datetime
+
+            # 가능한 날짜 포맷들
+            date_formats = [
+                "%Y-%m-%d",
+                "%Y.%m.%d",
+                "%Y/%m/%d",
+                "%Y%m%d",
+                "%Y년 %m월 %d일",
+                "%Y-%m-%d %H:%M:%S",
+                "%Y.%m.%d %H:%M:%S",
+            ]
+
+            for fmt in date_formats:
+                try:
+                    dt = datetime.strptime(date_str.strip(), fmt)
+                    return dt.strftime("%Y%m%d")
+                except ValueError:
+                    continue
+
+            # 모든 포맷 실패시 원본 반환
+            logger.warning(f"날짜 변환 실패, 원본 반환: {date_str}")
+            return date_str
+
+        except Exception as e:
+            logger.error(f"날짜 변환 중 오류: {e}")
+            return date_str
 
     def _save_processing_result(
         self,
@@ -1044,14 +1260,17 @@ class AnnouncementPreProcessor:
             return None
 
 
-def determine_site_type(directory_name: str) -> str:
-    """디렉토리명에서 site_type을 결정합니다."""
-    if "scraped" in directory_name.lower():
+def determine_site_type(directory_name: str, site_code: str) -> str:
+    """디렉토리명과 사이트 코드에서 site_type을 결정합니다."""
+    # 특수 API 사이트 체크
+    if site_code in ["bizInfo", "sme"]:
+        return "api"
+    elif site_code == "kStartUp":
+        return "api_scrap"
+    elif "scraped" in directory_name.lower():
         return "Homepage"
     elif "eminwon" in directory_name.lower():
         return "Eminwon"
-    elif "data" in directory_name.lower():
-        return "Scraper"
     else:
         return "Unknown"
 
@@ -1100,16 +1319,23 @@ def main():
             sys.exit(1)
 
         # site_type 결정
-        site_type = determine_site_type(args.directory)
+        site_type = determine_site_type(args.directory, args.site_code)
 
         logger.info(f"기본 디렉토리: {base_directory}")
         logger.info(f"Site Type: {site_type}")
         logger.info(f"Site Code: {args.site_code}")
 
-        # 프로세서 초기화
+        # 프로세서 초기화 (bizInfo, sme는 지연 초기화 사용)
         logger.info("공고 사전 처리 프로그램 시작")
+        lazy_init = args.site_code in ["bizInfo", "sme"]
+        if lazy_init:
+            logger.info(f"{args.site_code}: AttachmentProcessor 지연 초기화 모드")
+
         processor = AnnouncementPreProcessor(
-            site_type=site_type, attach_force=args.attach_force
+            site_type=site_type,
+            attach_force=args.attach_force,
+            site_code=args.site_code,
+            lazy_init=lazy_init
         )
 
         # 사이트 디렉토리 처리 실행

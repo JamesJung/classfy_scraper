@@ -1,0 +1,65 @@
+{
+  "anyang": {
+    "name": "안양시",
+    "baseUrl": "https://www.anyang.go.kr",
+    "endpoints": {
+      "list": "/main/emwsWebList.do?key=4101&searchGosiSe=01,04",
+      "detail": ""
+    },
+    "selectors": {
+      "listTable": "table.p-table tbody tr",
+      "listTitle": "td:nth-child(2) a",
+      "listDate": "td:nth-child(4)",
+      "contentArea": "div.board_view, div.view_content, div.content",
+      "attachments": "div.file_list a, div.fileBox a"
+    },
+    "pagination": {
+      "type": "parameter",
+      "param": "pageIndex",
+      "startPage": 1
+    },
+    "detailNavigation": {
+      "type": "javascript",
+      "patterns": [
+        "goView\\s*\\(\\s*['\"]([^'\"]+)['\"]",
+        "location\\.href\\s*=\\s*['\"]([^'\"]+)['\"]",
+        "window\\.open\\s*\\(\\s*['\"]([^'\"]+)['\"\\]"
+      ]
+    },
+    "dateFormat": ["YYYY.MM.DD", "YYYY-MM-DD"],
+    "requiresJavaScript": true,
+    "customHandler": "anyang"
+  },
+  "wonju": {
+    "name": "원주시",
+    "baseUrl": "https://www.wonju.go.kr",
+    "endpoints": {
+      "list": "/www/selectBbsNttList.do?bbsNo=140&key=216",
+      "detail": ""
+    },
+    "selectors": {
+      "listTable": "table.p-table tbody tr, table.board_list tbody tr",
+      "listTitle": "td.p-subject a, td.al_left a, td:nth-child(2) a",
+      "listDate": "td:nth-child(5), td:nth-child(4)",
+      "contentArea": "div.board_view, div.view_content, div.content",
+      "attachments": "div.file_list a, ul.file_list li a"
+    },
+    "pagination": {
+      "type": "parameter",
+      "param": "pageIndex",
+      "startPage": 1
+    },
+    "detailNavigation": {
+      "type": "mixed",
+      "useDataAction": true,
+      "patterns": [
+        "req\\.post\\(this\\)",
+        "location\\.href\\s*=\\s*['\"]([^'\"]+)['\"]",
+        "goView\\s*\\(\\s*['\"]([^'\"]+)['\"\\]"
+      ]
+    },
+    "dateFormat": ["YYYY.MM.DD", "YYYY-MM-DD"],
+    "requiresJavaScript": true,
+    "customHandler": "wonju"
+  }
+}

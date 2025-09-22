@@ -1,0 +1,182 @@
+{
+  "anseong": {
+    "baseUrl": null,
+    "listUrl": null,
+    "listSelector": "scraped_data",
+    "titleSelector": null,
+    "dateSelector": null,
+    "dateFormat": "YYYY-MM-DD",
+    "detailType": "javascript"
+  },
+  "anyang": {
+    "baseUrl": null,
+    "listUrl": null,
+    "listSelector": "scraped_data",
+    "titleSelector": null,
+    "dateSelector": null,
+    "dateFormat": "YYYY-MM-DD",
+    "detailType": "javascript"
+  },
+  "boeun": {
+    "baseUrl": null,
+    "listUrl": null,
+    "listSelector": ", selectors.listSelector)\n                    const rows = document.querySelectorAll(selectors.listSelector);\n\n                    console.log(",
+    "titleSelector": null,
+    "dateSelector": null,
+    "dateFormat": "YYYY-MM-DD",
+    "detailType": "javascript"
+  },
+  "boseong": {
+    "baseUrl": null,
+    "listUrl": null,
+    "listSelector": ", selectors.listSelector)\n                    const rows = document.querySelectorAll(selectors.listSelector);\n\n                    console.log(",
+    "titleSelector": null,
+    "dateSelector": null,
+    "dateFormat": "YYYY-MM-DD",
+    "detailType": "javascript"
+  },
+  "buan": {
+    "baseUrl": null,
+    "listUrl": null,
+    "listSelector": ", selectors.listSelector)\n                    const rows = document.querySelectorAll(selectors.listSelector);\n\n                    console.log(",
+    "titleSelector": null,
+    "dateSelector": null,
+    "dateFormat": "YYYY-MM-DD",
+    "detailType": "javascript"
+  },
+  "busan": {
+    "baseUrl": "https://www.busan.go.kr",
+    "listUrl": null,
+    "listSelector": "scraped_data",
+    "titleSelector": null,
+    "dateSelector": null,
+    "dateFormat": "YYYY-MM-DD",
+    "detailType": "javascript"
+  },
+  "changwon": {
+    "baseUrl": null,
+    "listUrl": null,
+    "listSelector": "scraped_data",
+    "titleSelector": ", selectors.titleSelector, selectors.dateSelector)\n\n                        const titleElement = row.querySelector(selectors.titleSelector);\n                        const dateElement = row.querySelector(selectors.dateSelector);\n                        const linkElement = row.querySelector(",
+    "dateSelector": null,
+    "dateFormat": "YYYY-MM-DD",
+    "detailType": "javascript"
+  },
+  "cheongdo": {
+    "baseUrl": null,
+    "listUrl": null,
+    "listSelector": ", selectors.listSelector)\n                    const rows = document.querySelectorAll(selectors.listSelector);\n\n                    console.log(",
+    "titleSelector": null,
+    "dateSelector": null,
+    "dateFormat": "YYYY-MM-DD",
+    "detailType": "javascript"
+  },
+  "cheongju": {
+    "baseUrl": null,
+    "listUrl": null,
+    "listSelector": ", selectors.listSelector)\n                    const rows = document.querySelectorAll(selectors.listSelector);\n\n                    console.log(",
+    "titleSelector": null,
+    "dateSelector": null,
+    "dateFormat": "YYYY-MM-DD",
+    "detailType": "javascript"
+  },
+  "cheongyang": {
+    "baseUrl": "https://eminwon.cheongyang.go.kr",
+    "listUrl": null,
+    "listSelector": null,
+    "titleSelector": null,
+    "dateSelector": null,
+    "dateFormat": "YYYY-MM-DD",
+    "detailType": "url"
+  },
+  "chilgok": {
+    "baseUrl": null,
+    "listUrl": null,
+    "listSelector": "scraped_data",
+    "titleSelector": null,
+    "dateSelector": null,
+    "dateFormat": "YYYY-MM-DD",
+    "detailType": "javascript"
+  },
+  "chungbuk": {
+    "baseUrl": null,
+    "listUrl": null,
+    "listSelector": "scraped_data",
+    "titleSelector": null,
+    "dateSelector": null,
+    "dateFormat": "YYYY-MM-DD",
+    "detailType": "javascript"
+  },
+  "chungju": {
+    "baseUrl": null,
+    "listUrl": null,
+    "listSelector": ", selectors.listSelector)\n                    const rows = document.querySelectorAll(selectors.listSelector);\n\n                    console.log(",
+    "titleSelector": null,
+    "dateSelector": null,
+    "dateFormat": "YYYY-MM-DD",
+    "detailType": "javascript"
+  },
+  "chungnam": {
+    "baseUrl": null,
+    "listUrl": null,
+    "listSelector": "scraped_data",
+    "titleSelector": null,
+    "dateSelector": null,
+    "dateFormat": "YYYY-MM-DD",
+    "detailType": "javascript"
+  },
+  "cng": {
+    "baseUrl": null,
+    "listUrl": null,
+    "listSelector": "scraped_data",
+    "titleSelector": ", selectors.titleSelector, selectors.dateSelector)\n\n                        const titleElement = row.querySelector(selectors.titleSelector);\n                        const dateElement = row.querySelector(selectors.dateSelector);\n                        const linkElement = row.querySelector(",
+    "dateSelector": null,
+    "dateFormat": "YYYY-MM-DD",
+    "detailType": "javascript"
+  },
+  "cs": {
+    "baseUrl": null,
+    "listUrl": null,
+    "listSelector": ", selectors.listSelector)\n                    const rows = document.querySelectorAll(selectors.listSelector);\n\n                    console.log(",
+    "titleSelector": null,
+    "dateSelector": null,
+    "dateFormat": "YYYY-MM-DD",
+    "detailType": "javascript"
+  },
+  "cwg": {
+    "baseUrl": null,
+    "listUrl": null,
+    "listSelector": "scraped_data",
+    "titleSelector": null,
+    "dateSelector": null,
+    "dateFormat": "YYYY-MM-DD",
+    "detailType": "javascript"
+  },
+  "daegu": {
+    "baseUrl": null,
+    "listUrl": null,
+    "listSelector": "table.gosi tbody tr",
+    "titleSelector": "td:nth-child(2) a",
+    "dateSelector": "td:nth-child(4)",
+    "dateFormat": "YYYY-MM-DD",
+    "detailType": "url"
+  },
+  "daejeon": {
+    "baseUrl": null,
+    "listUrl": null,
+    "listSelector": "table tbody tr",
+    "titleSelector": "td:nth-child(2) a",
+    "dateSelector": "td:nth-child(4)",
+    "dateFormat": "YYYY-MM-DD",
+    "detailType": "url"
+  },
+  "ddc": {
+    "baseUrl": null,
+    "listUrl": null,
+    "listSelector": ", selectors.listSelector)\n                    const rows = document.querySelectorAll(selectors.listSelector);\n\n                    console.log(",
+    "titleSelector": null,
+    "dateSelector": null,
+    "dateFormat": "YYYY-MM-DD",
+    "detailType": "javascript"
+  }
+}

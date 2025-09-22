@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node:*)",
+      "Bash(find:*)",
+      "Bash(pkill:*)",
+      "Bash(timeout:*)",
+      "Bash(gtimeout:*)",
+      "Bash(head:*)",
+      "Bash(ls:*)",
+      "Read(//Users/jin/classfy_scraper/scraped_data/**)",
+      "Read(//Users/jin/classfy_scraper/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

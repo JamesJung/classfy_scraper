@@ -151,13 +151,13 @@ class EminwonIncrementalOrchestrator:
             if result.stderr and (self.test_mode or self.verbose):
                 # Show the Node.js debug output
                 self.logger.info(f"\n=== Node.js 수집 로그 ({region}) ===")
-                for line in result.stderr.split('\n'):
-                    if '수집된 공고 목록' in line:
+                for line in result.stderr.split("\n"):
+                    if "수집된 공고 목록" in line:
                         # Start of announcement list
                         self.logger.info(line)
-                    elif line.strip() and ('===' in line or '[' in line):
+                    elif line.strip() and ("===" in line or "[" in line):
                         self.logger.info(f"  {line}")
-            
+
             try:
                 data = json.loads(result.stdout)
                 if data.get("status") == "success":
@@ -165,15 +165,21 @@ class EminwonIncrementalOrchestrator:
                     self.logger.info(
                         f"Collected {len(announcements)} announcements from {region}"
                     )
-                    
+
                     # Show collected announcement titles in debug/verbose mode
                     if (self.test_mode or self.verbose) and announcements:
                         self.logger.info("Collected announcements summary:")
-                        for idx, ann in enumerate(announcements[:10], 1):  # Show first 10
-                            self.logger.info(f"  {idx}. [{ann.get('id')}] {ann.get('title')[:50]}... ({ann.get('date')})")
+                        for idx, ann in enumerate(
+                            announcements[:10], 1
+                        ):  # Show first 10
+                            self.logger.info(
+                                f"  {idx}. [{ann.get('id')}] {ann.get('title')[:50]}... ({ann.get('date')})"
+                            )
                         if len(announcements) > 10:
-                            self.logger.info(f"  ... and {len(announcements) - 10} more")
-                    
+                            self.logger.info(
+                                f"  ... and {len(announcements) - 10} more"
+                            )
+
                     return announcements
                 else:
                     self.logger.error(f"Collection failed for {region}")
@@ -190,42 +196,70 @@ class EminwonIncrementalOrchestrator:
             self.logger.error(f"Error collecting list for {region}: {e}")
             return []
 
-    def check_url_exists_in_db(self, url):
-        """Check if URL already exists in database"""
+    def check_url_exists_in_db(self, url, region=None):
+        """Check if URL already exists in database
+
+        중복 체크 방식:
+        1. 먼저 정확한 URL로 체크
+        2. URL이 없으면 announcement_id + region 조합으로 체크
+           (같은 지역 내에서만 ID 중복 체크)
+        """
         conn = mysql.connector.connect(**self.db_config)
         cursor = conn.cursor()
 
         # URL에서 announcement_id 추출 (더 정확한 중복 체크)
         import re
 
+        # self.logger.info(f"url =====.   {url}")
+
         id_match = re.search(r"not_ancmt_mgt_no=(\d+)", url)
 
-        if id_match:
+        # 먼저 정확한 URL로 체크
+        cursor.execute(
+            """
+            SELECT id FROM eminwon_url_registry 
+            WHERE announcement_url = %s
+            """,
+            (url,),
+        )
+        result = cursor.fetchone()
+        # self.logger.info(f"id_match =====.   {id_match}")
+        # self.logger.info(f"result =====.   {result}")
+
+        # URL이 없고, announcement_id가 있으며, region이 제공된 경우
+        # 같은 지역 내에서만 ID 중복 체크
+        if not result and id_match and region:
             announcement_id = id_match.group(1)
-            # announcement_id로도 체크
+
+            # 지역명 정규화 (구, 시, 군 제거)
+            normalized_region = region
+            if region.endswith("구"):
+                normalized_region = region[:-1]
+            elif region.endswith("시") and len(region) > 2:
+                normalized_region = region[:-1]
+            elif region.endswith("군"):
+                normalized_region = region[:-1]
+
             cursor.execute(
                 """
                 SELECT id FROM eminwon_url_registry 
-                WHERE announcement_url = %s OR announcement_id = %s
+                WHERE announcement_id = %s AND region LIKE %s
             """,
-                (url, announcement_id),
-            )
-        else:
-            cursor.execute(
-                """
-                SELECT id FROM eminwon_url_registry 
-                WHERE announcement_url = %s
-            """,
-                (url,),
+                (announcement_id, f"%{normalized_region}%"),
             )
 
-        result = cursor.fetchone()
+            self.logger.info(
+                f"SELECT id FROM eminwon_url_registry WHERE announcement_id = %s AND region LIKE %s ==> {announcement_id}, {normalized_region}"
+            )
+
+            result = cursor.fetchone()
+
         cursor.close()
         conn.close()
 
         return result is not None
 
-    def filter_new_announcements(self, announcements):
+    def filter_new_announcements(self, announcements, region=None):
         """Filter announcements to find only new ones"""
         new_announcements = []
         duplicate_details = []
@@ -235,20 +269,26 @@ class EminwonIncrementalOrchestrator:
             if not url:
                 continue
 
-            if not self.check_url_exists_in_db(url):
+            if not self.check_url_exists_in_db(url, region):
                 new_announcements.append(ann)
                 self.stats["new_found"] += 1
                 if self.verbose or self.test_mode:
-                    self.logger.info(f"  ✅ NEW: [{ann.get('id')}] {ann.get('title')[:50]}...")
+                    self.logger.info(
+                        f"  ✅ NEW: [{ann.get('id')}] {ann.get('title')[:50]}..."
+                    )
             else:
                 self.stats["duplicates"] += 1
                 duplicate_details.append(ann)
                 if self.verbose or self.test_mode:
-                    self.logger.info(f"  ⏭️  DUPLICATE: [{ann.get('id')}] {ann.get('title')[:50]}...")
+                    self.logger.info(
+                        f"  ⏭️  DUPLICATE: [{ann.get('id')}] {ann.get('title')[:50]}..."
+                    )
 
         # Summary of filtering results
         if self.verbose or self.test_mode:
-            self.logger.info(f"\n📊 필터링 결과: 신규 {len(new_announcements)}개, 중복 {len(duplicate_details)}개")
+            self.logger.info(
+                f"\n📊 필터링 결과: 신규 {len(new_announcements)}개, 중복 {len(duplicate_details)}개"
+            )
 
         return new_announcements
 
@@ -451,7 +491,7 @@ class EminwonIncrementalOrchestrator:
             self.stats["total_checked"] += len(announcements)
 
             # 2. Filter new announcements
-            new_announcements = self.filter_new_announcements(announcements)
+            new_announcements = self.filter_new_announcements(announcements, region)
             region_stats["new"] = len(new_announcements)
 
             if not new_announcements:
@@ -465,7 +505,7 @@ class EminwonIncrementalOrchestrator:
             # 3. Download new announcements with index
             if self.verbose or self.test_mode:
                 self.logger.info(f"\n🔽 다운로드 시작 ({len(new_announcements)}개)...")
-            
+
             for idx, ann in enumerate(new_announcements, start=1):
                 if self.test_mode and region_stats["downloaded"] >= 2:
                     self.logger.info(f"  ⚠️  테스트 모드: 2개 제한에 도달")
@@ -480,7 +520,9 @@ class EminwonIncrementalOrchestrator:
                 self.logger.info(f"  - 확인됨: {region_stats['checked']}개")
                 self.logger.info(f"  - 신규: {region_stats['new']}개")
                 self.logger.info(f"  - 다운로드 성공: {region_stats['downloaded']}개")
-                self.logger.info(f"  - 중복: {region_stats['checked'] - region_stats['new']}개")
+                self.logger.info(
+                    f"  - 중복: {region_stats['checked'] - region_stats['new']}개"
+                )
 
             return region_stats
 
@@ -586,11 +628,12 @@ def main():
     parser.add_argument(
         "--pages",
         type=int,
-        default=3,
+        default=7,
         help="Number of pages to collect per region (default: 3)",
     )
     parser.add_argument(
-        "--verbose", "-v",
+        "--verbose",
+        "-v",
         action="store_true",
         help="Show detailed Node.js collection logs",
     )
@@ -598,9 +641,7 @@ def main():
     args = parser.parse_args()
 
     orchestrator = EminwonIncrementalOrchestrator(
-        test_mode=args.test, 
-        specific_regions=args.regions,
-        verbose=args.verbose
+        test_mode=args.test, specific_regions=args.regions, verbose=args.verbose
     )
 
     # 페이지 수 설정 (테스트 모드면 1, 아니면 지정값 또는 기본값 3)

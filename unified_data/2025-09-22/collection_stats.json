@@ -1,0 +1,15 @@
+{
+  "timestamp": "2025-09-22T17:35:10.612985",
+  "sites_processed": [
+    "anyang",
+    "wonju"
+  ],
+  "stats": {
+    "total_checked": 20,
+    "new_found": 20,
+    "downloaded": 4,
+    "errors": 0,
+    "duplicates": 0
+  },
+  "elapsed_seconds": 57.47224
+}

@@ -14,6 +14,7 @@ import os
 import json
 import subprocess
 import mysql.connector
+import re
 from pathlib import Path
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -25,6 +26,11 @@ import sys
 
 
 class EminwonIncrementalOrchestrator:
+    def normalize_region_name(self, region: str) -> str:
+        """지역명 정규화 - 시/군/구 제거"""
+        normalized = re.sub(r"(시|군|구)$", "", region)
+        return normalized
+
     def __init__(self, test_mode=False, specific_regions=None, verbose=False):
         # Database configuration
         import os
@@ -248,9 +254,9 @@ class EminwonIncrementalOrchestrator:
                 (announcement_id, f"%{normalized_region}%"),
             )
 
-            self.logger.info(
-                f"SELECT id FROM eminwon_url_registry WHERE announcement_id = %s AND region LIKE %s ==> {announcement_id}, {normalized_region}"
-            )
+            # self.logger.info(
+            #     f"SELECT id FROM eminwon_url_registry WHERE announcement_id = %s AND region LIKE %s ==> {announcement_id}, {normalized_region}"
+            # )
 
             result = cursor.fetchone()
 
@@ -313,16 +319,19 @@ class EminwonIncrementalOrchestrator:
             else:
                 folder_name = f"{ann_id}_{safe_title}"
 
+            # 정규화된 지역명 사용
+            normalized_region = self.normalize_region_name(region)
+
             # Run Node.js detail scraper with title and date
             cmd = [
                 self.node_path,
                 self.detail_scraper_path,
                 "--region",
-                region,
+                normalized_region,  # 정규화된 지역명 사용
                 "--url",
                 announcement.get("url"),
                 "--output-dir",
-                str(self.output_dir / region),
+                str(self.output_dir / normalized_region),  # 정규화된 폴더 경로
                 "--folder-name",
                 folder_name,
             ]
@@ -377,8 +386,9 @@ class EminwonIncrementalOrchestrator:
 
                     # Rename folder if different
                     if new_folder_name != folder_name:
-                        old_path = self.output_dir / region / folder_name
-                        new_path = self.output_dir / region / new_folder_name
+                        normalized_region = self.normalize_region_name(region)
+                        old_path = self.output_dir / normalized_region / folder_name
+                        new_path = self.output_dir / normalized_region / new_folder_name
 
                         if old_path.exists():
                             import shutil
@@ -389,7 +399,7 @@ class EminwonIncrementalOrchestrator:
                             )
                             folder_name = new_folder_name
 
-                # Save to database with final folder name
+                # Save to database with final folder name (원래 지역명으로 저장)
                 self.save_to_database(region, announcement, folder_name)
                 return True
             else:

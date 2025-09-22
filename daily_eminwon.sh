@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# 기본 디렉토리 설정
+ROOT_DIR="/home/zium/classfy_scraper"
+LOG_DIR="/home/zium/classfy_scraper/logs"
+DATE=$(date +%Y%m%d)
+LOG_FILE="${LOG_DIR}/daily_${DATE}.log"
+
+# NVM 로드 (Node.js 사용을 위해)
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+# 환경 설정
+export PATH="/home/zium/.nvm/versions/node/v18.16.0/bin:$PATH:/usr/local/bin:/usr/bin:/bin"
+export NODE_PATH="/home/zium/.nvm/versions/node/v18.16.0/bin/node"
+cd $ROOT_DIR
+
+# logs 디렉토리가 없으면 생성
+mkdir -p $LOG_DIR
+
+# .env 파일 로드
+if [ -f .env ]; then
+    export $(cat .env | grep -v '^#' | xargs)
+fi
+
+echo "=== Eminwon 일일 수집 시작: $(date) ===" >> "$LOG_FILE"
+echo "Node version: $(node --version)" >> "$LOG_FILE"
+echo "Python version: $(python3 --version)" >> "$LOG_FILE"
+
+# 1. 증분 수집
+echo "[1/2] 증분 수집 시작..." >> "$LOG_FILE"
+/usr/bin/python3 eminwon_incremental_orchestrator.py >> "$LOG_FILE" 2>&1
+
+if [ $? -eq 0 ]; then
+    echo "[1/2] ✅ 증분 수집 완료" >> "$LOG_FILE"
+else
+    echo "[1/2] ❌ 증분 수집 실패" >> "$LOG_FILE"
+fi
+
+
+echo "=== 완료: $(date) ===" >> "$LOG_FILE"

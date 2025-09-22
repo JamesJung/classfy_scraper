@@ -638,7 +638,7 @@ def main():
     parser.add_argument(
         "--pages",
         type=int,
-        default=7,
+        default=4,
         help="Number of pages to collect per region (default: 3)",
     )
     parser.add_argument(

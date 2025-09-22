@@ -19,7 +19,7 @@ pdfminer
 langchain-community
 
 # HWP 파일 처리 (기존 프로젝트에서 사용)
-hwp5
+pyhwp==0.1b15
 olefile
 
 # 추가 유틸리티

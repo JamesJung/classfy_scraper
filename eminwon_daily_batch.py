@@ -35,11 +35,11 @@ class EminwonDailyBatch:
             pass
             
         self.db_config = {
-            'host': os.environ.get('DB_HOST', '192.168.0.95'),
-            'user': os.environ.get('DB_USER', 'root'),
-            'password': os.environ.get('DB_PASSWORD', 'b3UvSDS232GbdZ42'),
-            'database': os.environ.get('DB_NAME', 'subvention'),
-            'port': int(os.environ.get('DB_PORT', '3309')),
+            'host': os.environ.get('DB_HOST'),
+            'user': os.environ.get('DB_USER'),
+            'password': os.environ.get('DB_PASSWORD'),
+            'database': os.environ.get('DB_NAME'),
+            'port': int(os.environ.get('DB_PORT')),
             'charset': 'utf8mb4',
             'collation': 'utf8mb4_unicode_ci'
         }
@@ -155,14 +155,15 @@ class EminwonDailyBatch:
             return False
     
     def run_incremental_crawler(self):
-        """Run incremental crawler to collect new announcements"""
+        """Run incremental orchestrator to collect new announcements using Node.js"""
         self.logger.info("=" * 80)
-        self.logger.info("Step 2: Running Incremental Crawler")
+        self.logger.info("Step 2: Running Incremental Orchestrator (Node.js Integration)")
         self.logger.info("=" * 80)
         
         try:
+            # Use the new orchestrator instead of the old crawler
             result = subprocess.run(
-                ['python', 'eminwon_incremental_crawler.py'],
+                ['python', 'eminwon_incremental_orchestrator.py'],
                 capture_output=True,
                 text=True,
                 timeout=1800  # 30 minutes timeout

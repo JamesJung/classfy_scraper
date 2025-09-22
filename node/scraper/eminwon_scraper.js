@@ -47,10 +47,11 @@ class EminwonScraper {
         //https://eminwon.taean.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05&list_gubun=A
 
         this.baseUrl = `https://${hostUrl}`;
-        // this.listUrl = `https://${hostUrl}/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05&cpath=`;
+        this.listUrl = `https://${hostUrl}/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05&cpath=`;
 
         //태안의 경우는 이렇게 처리된다.
-        this.listUrl = `https://${hostUrl}/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05&list_gubun=A`
+        // this.listUrl = `https://${hostUrl}/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05&list_gubun=A`
+
         this.actionUrl = `https://${hostUrl}/emwp/gov/mogaha/ntis/web/ofr/action/OfrAction.do`;
         this.browser = null;
         this.context = null;
@@ -316,191 +317,192 @@ class EminwonScraper {
                 }
 
                 // 태안군 특별 처리: 홈페이지 메인 접근 후 리스트로 이동
-                if (this.region === '태안군' && pageNum === 1) {
-                    console.log('태안군 특별 처리: 홈페이지 메인 경유 방식');
+                // 태안군 로직 빼기....
+                // if (this.region === '태안군' && pageNum === 1) {
+                //     console.log('태안군 특별 처리: 홈페이지 메인 경유 방식');
 
+                //     try {
+                //         // 1. 먼저 메인 페이지로 접근하여 세션 생성
+                //         console.log('1. 태안군 홈페이지 메인 접근...');
+                //         await this.page.goto('https://www.taean.go.kr/', {
+                //             waitUntil: 'domcontentloaded',
+                //             timeout: 30000
+                //         });
+                //         await this.page.waitForTimeout(2000);
+
+                //         // 2. 이민원 메인 페이지로 이동
+                //         console.log('2. 이민원 메인 페이지 접근...');
+                //         await this.page.goto(`${this.baseUrl}/emwp/`, {
+                //             waitUntil: 'domcontentloaded',
+                //             timeout: 30000
+                //         });
+                //         await this.page.waitForTimeout(2000);
+
+                //         // 3. JSP 리스트 페이지로 이동
+                //         console.log('3. JSP 리스트 페이지 접근...');
+                //         await this.page.goto(this.listUrl, {
+                //             waitUntil: 'networkidle',
+                //             timeout: 30000
+                //         });
+                //         await this.page.waitForTimeout(3000);
+
+                //         // 4. 폼이 있으면 제출
+                //         const formExists = await this.page.evaluate(() => {
+                //             const form = document.querySelector('form[action*="OfrAction.do"]');
+                //             if (form) {
+                //                 const pageInput = form.querySelector('input[name="pageIndex"]');
+                //                 if (pageInput) pageInput.value = '1';
+                //                 form.submit();
+                //                 return true;
+                //             }
+                //             return false;
+                //         });
+
+                //         if (formExists) {
+                //             console.log('4. 폼 제출 완료, 페이지 로딩 대기...');
+                //             await this.page.waitForTimeout(5000);
+                //         }
+
+                //         console.log('태안군 특별 처리 완료');
+                //     } catch (taeanError) {
+                //         console.log('태안군 특별 처리 중 오류:', taeanError.message);
+                //         console.log('일반 방식으로 계속 진행합니다...');
+                //     }
+                // } else {
+                // 1단계: 먼저 초기 페이지 방문 (재시도 포함)
+                console.log('1단계: 초기 페이지 방문하여 세션 확보...');
+
+                let initialLoadSuccess = false;
+                let initialLoadAttempt = 0;
+                const maxInitialLoadAttempts = 3;
+
+                while (!initialLoadSuccess && initialLoadAttempt < maxInitialLoadAttempts) {
+                    initialLoadAttempt++;
                     try {
-                        // 1. 먼저 메인 페이지로 접근하여 세션 생성
-                        console.log('1. 태안군 홈페이지 메인 접근...');
-                        await this.page.goto('https://www.taean.go.kr/', {
-                            waitUntil: 'domcontentloaded',
-                            timeout: 30000
-                        });
-                        await this.page.waitForTimeout(2000);
+                        console.log(`초기 페이지 로드 시도 ${initialLoadAttempt}/${maxInitialLoadAttempts}`);
 
-                        // 2. 이민원 메인 페이지로 이동
-                        console.log('2. 이민원 메인 페이지 접근...');
-                        await this.page.goto(`${this.baseUrl}/emwp/`, {
-                            waitUntil: 'domcontentloaded',
-                            timeout: 30000
-                        });
-                        await this.page.waitForTimeout(2000);
-
-                        // 3. JSP 리스트 페이지로 이동
-                        console.log('3. JSP 리스트 페이지 접근...');
                         await this.page.goto(this.listUrl, {
                             waitUntil: 'networkidle',
+                            timeout: 45000
+                        });
+
+                        await this.page.waitForTimeout(4000);
+                        initialLoadSuccess = true;
+
+                    } catch (error) {
+                        console.warn(`초기 페이지 로드 시도 ${initialLoadAttempt} 실패: ${error.message}`);
+
+                        if (initialLoadAttempt < maxInitialLoadAttempts) {
+                            console.log('잠시 대기 후 재시도...');
+                            await this.delay(5000 * initialLoadAttempt);
+                        }
+                    }
+                }
+
+                if (!initialLoadSuccess) {
+                    console.log('JSP URL 로드 실패. 서블릿 URL로 폴백 시도...');
+
+                    // 서블릿 URL로 직접 접근 시도
+                    const servletUrl = `${this.baseUrl}/emwp/gov/mogaha/ntis/web/ofr/action/OfrAction.do?` +
+                        `jndinm=OfrNotAncmtEJB&context=NTIS&method=selectListOfrNotAncmt&` +
+                        `methodnm=selectListOfrNotAncmtHomepage&homepage_pbs_yn=Y&subCheck=Y&` +
+                        `ofr_pageSize=10&not_ancmt_se_code=01,02,03,04,05&title=%EA%B3%A0%EC%8B%9C%EA%B3%B5%EA%B3%A0&` +
+                        `initValue=Y&countYn=Y&list_gubun=A&Key=B_Subject&pageIndex=${pageNum}`;
+
+                    try {
+                        console.log('서블릿 URL로 직접 접근:', servletUrl);
+                        await this.page.goto(servletUrl, {
+                            waitUntil: 'domcontentloaded',
                             timeout: 30000
                         });
                         await this.page.waitForTimeout(3000);
+                        initialLoadSuccess = true;
+                        console.log('서블릿 URL 접근 성공');
+                    } catch (servletError) {
+                        console.error('서블릿 URL 접근도 실패:', servletError.message);
+                        throw new Error('초기 페이지 로드 실패 - JSP와 서블릿 모두 실패');
+                    }
+                }
 
-                        // 4. 폼이 있으면 제출
-                        const formExists = await this.page.evaluate(() => {
-                            const form = document.querySelector('form[action*="OfrAction.do"]');
-                            if (form) {
-                                const pageInput = form.querySelector('input[name="pageIndex"]');
-                                if (pageInput) pageInput.value = '1';
-                                form.submit();
+                console.log(`초기 페이지 URL: ${this.page.url()}`);
+
+                // 2단계: 페이지에서 자동으로 POST 요청이 실행되는지 대기
+                // 이미 OfrAction.do로 접근한 경우 리다이렉트 대기 건너뛰기
+                if (this.page.url().includes('OfrAction.do')) {
+                    console.log('이미 서블릿 URL로 접근함. 리다이렉트 단계 건너뛰기');
+                } else {
+                    console.log('2단계: 자동 리다이렉트 또는 폼 제출 대기...');
+
+                    try {
+                        // 5초간 URL 변경 대기
+                        await this.page.waitForFunction(
+                            () => window.location.href.includes('OfrAction.do'),
+                            { timeout: 10000 }
+                        );
+                        console.log('자동 리다이렉트 완료');
+                    } catch (waitError) {
+                        console.log('자동 리다이렉트 없음. 수동 폼 제출 시도...');
+
+                        // 페이지에 있는 폼을 찾아서 제출
+                        const formSubmitted = await this.page.evaluate(() => {
+                            // 페이지의 모든 폼 확인
+                            const forms = document.querySelectorAll('form');
+                            console.log(`페이지에서 발견된 폼 수: ${forms.length}`);
+
+                            for (let form of forms) {
+                                console.log(`폼 액션: ${form.action}, 메소드: ${form.method}`);
+
+                                if (form.action.includes('OfrAction.do')) {
+                                    // 페이지 번호 설정
+                                    const pageInput = form.querySelector('input[name="pageIndex"]');
+                                    if (pageInput) {
+                                        pageInput.value = '1';
+                                    }
+
+                                    form.submit();
+                                    return true;
+                                }
+                            }
+
+                            // 폼이 없는 경우 JavaScript 함수 실행 시도
+                            if (typeof search === 'function') {
+                                search();
                                 return true;
                             }
+
                             return false;
                         });
 
-                        if (formExists) {
-                            console.log('4. 폼 제출 완료, 페이지 로딩 대기...');
+                        if (formSubmitted) {
+                            console.log('폼 제출 또는 검색 함수 실행 완료');
                             await this.page.waitForTimeout(5000);
-                        }
+                        } else {
+                            console.log('폼 제출 실패. 서블릿 URL로 직접 접근 시도...');
 
-                        console.log('태안군 특별 처리 완료');
-                    } catch (taeanError) {
-                        console.log('태안군 특별 처리 중 오류:', taeanError.message);
-                        console.log('일반 방식으로 계속 진행합니다...');
-                    }
-                } else {
-                    // 1단계: 먼저 초기 페이지 방문 (재시도 포함)
-                    console.log('1단계: 초기 페이지 방문하여 세션 확보...');
+                            // 서블릿 URL로 직접 접근 (폴백)
+                            const servletUrl = `${this.baseUrl}/emwp/gov/mogaha/ntis/web/ofr/action/OfrAction.do?` +
+                                `jndinm=OfrNotAncmtEJB&context=NTIS&method=selectListOfrNotAncmt&` +
+                                `methodnm=selectListOfrNotAncmtHomepage&homepage_pbs_yn=Y&subCheck=Y&` +
+                                `ofr_pageSize=10&not_ancmt_se_code=01,02,03,04,05&title=%EA%B3%A0%EC%8B%9C%EA%B3%B5%EA%B3%A0&` +
+                                `initValue=Y&countYn=Y&list_gubun=A&Key=B_Subject&pageIndex=${pageNum}`;
 
-                    let initialLoadSuccess = false;
-                    let initialLoadAttempt = 0;
-                    const maxInitialLoadAttempts = 3;
+                            console.log('서블릿 URL로 이동:', servletUrl);
 
-                    while (!initialLoadSuccess && initialLoadAttempt < maxInitialLoadAttempts) {
-                        initialLoadAttempt++;
-                        try {
-                            console.log(`초기 페이지 로드 시도 ${initialLoadAttempt}/${maxInitialLoadAttempts}`);
-
-                            await this.page.goto(this.listUrl, {
-                                waitUntil: 'networkidle',
-                                timeout: 45000
-                            });
-
-                            await this.page.waitForTimeout(4000);
-                            initialLoadSuccess = true;
-
-                        } catch (error) {
-                            console.warn(`초기 페이지 로드 시도 ${initialLoadAttempt} 실패: ${error.message}`);
-
-                            if (initialLoadAttempt < maxInitialLoadAttempts) {
-                                console.log('잠시 대기 후 재시도...');
-                                await this.delay(5000 * initialLoadAttempt);
+                            try {
+                                await this.page.goto(servletUrl, {
+                                    waitUntil: 'domcontentloaded',
+                                    timeout: 30000
+                                });
+                                await this.page.waitForTimeout(3000);
+                                console.log('서블릿 URL 접근 성공');
+                            } catch (servletError) {
+                                console.log('서블릿 URL 접근도 실패:', servletError.message);
+                                return [];
                             }
                         }
-                    }
-
-                    if (!initialLoadSuccess) {
-                        console.log('JSP URL 로드 실패. 서블릿 URL로 폴백 시도...');
-
-                        // 서블릿 URL로 직접 접근 시도
-                        const servletUrl = `${this.baseUrl}/emwp/gov/mogaha/ntis/web/ofr/action/OfrAction.do?` +
-                            `jndinm=OfrNotAncmtEJB&context=NTIS&method=selectListOfrNotAncmt&` +
-                            `methodnm=selectListOfrNotAncmtHomepage&homepage_pbs_yn=Y&subCheck=Y&` +
-                            `ofr_pageSize=10&not_ancmt_se_code=01,02,03,04,05&title=%EA%B3%A0%EC%8B%9C%EA%B3%B5%EA%B3%A0&` +
-                            `initValue=Y&countYn=Y&list_gubun=A&Key=B_Subject&pageIndex=${pageNum}`;
-
-                        try {
-                            console.log('서블릿 URL로 직접 접근:', servletUrl);
-                            await this.page.goto(servletUrl, {
-                                waitUntil: 'domcontentloaded',
-                                timeout: 30000
-                            });
-                            await this.page.waitForTimeout(3000);
-                            initialLoadSuccess = true;
-                            console.log('서블릿 URL 접근 성공');
-                        } catch (servletError) {
-                            console.error('서블릿 URL 접근도 실패:', servletError.message);
-                            throw new Error('초기 페이지 로드 실패 - JSP와 서블릿 모두 실패');
-                        }
-                    }
-
-                    console.log(`초기 페이지 URL: ${this.page.url()}`);
-
-                    // 2단계: 페이지에서 자동으로 POST 요청이 실행되는지 대기
-                    // 이미 OfrAction.do로 접근한 경우 리다이렉트 대기 건너뛰기
-                    if (this.page.url().includes('OfrAction.do')) {
-                        console.log('이미 서블릿 URL로 접근함. 리다이렉트 단계 건너뛰기');
-                    } else {
-                        console.log('2단계: 자동 리다이렉트 또는 폼 제출 대기...');
-
-                        try {
-                            // 5초간 URL 변경 대기
-                            await this.page.waitForFunction(
-                                () => window.location.href.includes('OfrAction.do'),
-                                { timeout: 10000 }
-                            );
-                            console.log('자동 리다이렉트 완료');
-                        } catch (waitError) {
-                            console.log('자동 리다이렉트 없음. 수동 폼 제출 시도...');
-
-                            // 페이지에 있는 폼을 찾아서 제출
-                            const formSubmitted = await this.page.evaluate(() => {
-                                // 페이지의 모든 폼 확인
-                                const forms = document.querySelectorAll('form');
-                                console.log(`페이지에서 발견된 폼 수: ${forms.length}`);
-
-                                for (let form of forms) {
-                                    console.log(`폼 액션: ${form.action}, 메소드: ${form.method}`);
-
-                                    if (form.action.includes('OfrAction.do')) {
-                                        // 페이지 번호 설정
-                                        const pageInput = form.querySelector('input[name="pageIndex"]');
-                                        if (pageInput) {
-                                            pageInput.value = '1';
-                                        }
-
-                                        form.submit();
-                                        return true;
-                                    }
-                                }
-
-                                // 폼이 없는 경우 JavaScript 함수 실행 시도
-                                if (typeof search === 'function') {
-                                    search();
-                                    return true;
-                                }
-
-                                return false;
-                            });
-
-                            if (formSubmitted) {
-                                console.log('폼 제출 또는 검색 함수 실행 완료');
-                                await this.page.waitForTimeout(5000);
-                            } else {
-                                console.log('폼 제출 실패. 서블릿 URL로 직접 접근 시도...');
-
-                                // 서블릿 URL로 직접 접근 (폴백)
-                                const servletUrl = `${this.baseUrl}/emwp/gov/mogaha/ntis/web/ofr/action/OfrAction.do?` +
-                                    `jndinm=OfrNotAncmtEJB&context=NTIS&method=selectListOfrNotAncmt&` +
-                                    `methodnm=selectListOfrNotAncmtHomepage&homepage_pbs_yn=Y&subCheck=Y&` +
-                                    `ofr_pageSize=10&not_ancmt_se_code=01,02,03,04,05&title=%EA%B3%A0%EC%8B%9C%EA%B3%B5%EA%B3%A0&` +
-                                    `initValue=Y&countYn=Y&list_gubun=A&Key=B_Subject&pageIndex=${pageNum}`;
-
-                                console.log('서블릿 URL로 이동:', servletUrl);
-
-                                try {
-                                    await this.page.goto(servletUrl, {
-                                        waitUntil: 'domcontentloaded',
-                                        timeout: 30000
-                                    });
-                                    await this.page.waitForTimeout(3000);
-                                    console.log('서블릿 URL 접근 성공');
-                                } catch (servletError) {
-                                    console.log('서블릿 URL 접근도 실패:', servletError.message);
-                                    return [];
-                                }
-                            }
-                        } // catch 블록 닫기
-                    } // else 블록 닫기 (리다이렉트 대기 부분)
-                } // else 블록 닫기 (태안군 특별 처리)
+                    } // catch 블록 닫기
+                } // else 블록 닫기 (리다이렉트 대기 부분)
+                //} // else 블록 닫기 (태안군 특별 처리)
 
                 console.log(`최종 URL: ${this.page.url()}`);
 

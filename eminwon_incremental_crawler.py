@@ -26,11 +26,11 @@ class EminwonIncrementalCrawler:
             pass
             
         self.db_config = {
-            'host': os.environ.get('DB_HOST', '192.168.0.95'),
-            'user': os.environ.get('DB_USER', 'root'),
-            'password': os.environ.get('DB_PASSWORD', 'b3UvSDS232GbdZ42'),
-            'database': os.environ.get('DB_NAME', 'subvention'),
-            'port': int(os.environ.get('DB_PORT', '3309')),
+            'host': os.environ.get('DB_HOST'),
+            'user': os.environ.get('DB_USER'),
+            'password': os.environ.get('DB_PASSWORD'),
+            'database': os.environ.get('DB_NAME'),
+            'port': int(os.environ.get('DB_PORT')),
             'charset': 'utf8mb4',
             'collation': 'utf8mb4_unicode_ci'
         }

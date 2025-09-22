@@ -57,7 +57,12 @@
       "WebFetch(domain:www.seoul.go.kr)",
       "Bash(python:*)",
       "Bash(pip install:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(gtimeout:*)",
+      "Bash(do if [ -d \"$dir\" ])",
+      "Bash(then if [ ! -f \"$dir/content.md\" ])",
+      "Bash(mysql:*)",
+      "Read(//Users/**)"
     ],
     "deny": [],
     "ask": []

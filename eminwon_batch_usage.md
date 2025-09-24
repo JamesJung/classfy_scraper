@@ -1,7 +1,7 @@
 # Eminwon 배치 처리 시스템 사용법
 
 ## 개요
-`eminwon_batch_processor.py`는 eminwon 증분 수집 결과를 `announcement_pre_processor.py`로 병렬 처리하는 오케스트레이터입니다.
+`eminwon_batch_scraper_to_processor.py`는 eminwon 증분 수집 결과를 `announcement_pre_processor.py`로 병렬 처리하는 오케스트레이터입니다.
 
 ## 처리 흐름
 1. **Eminwon 증분 수집** → `eminwon_data_new/YYYY-MM-DD/지역명/` 생성
@@ -12,31 +12,31 @@
 
 ### 1. 오늘 날짜 데이터 처리
 ```bash
-python eminwon_batch_processor.py
+python eminwon_batch_scraper_to_processor.py
 ```
 
 ### 2. 특정 날짜 데이터 처리
 ```bash
-python eminwon_batch_processor.py --date 2025-09-22
+python eminwon_batch_scraper_to_processor.py --date 2025-09-22
 ```
 
 ### 3. 어제 날짜 데이터 처리
 ```bash
-python eminwon_batch_processor.py --yesterday
+python eminwon_batch_scraper_to_processor.py --yesterday
 ```
 
 ### 4. 워커 수 조정 (기본값: 5)
 ```bash
-python eminwon_batch_processor.py --workers 10
+python eminwon_batch_scraper_to_processor.py --workers 10
 ```
 
 ### 5. 강제 재처리
 ```bash
 # 이미 처리된 데이터도 다시 처리
-python eminwon_batch_processor.py --force
+python eminwon_batch_scraper_to_processor.py --force
 
 # 첨부파일도 강제 재처리
-python eminwon_batch_processor.py --force --attach-force
+python eminwon_batch_scraper_to_processor.py --force --attach-force
 ```
 
 ## 일일 배치 실행 (Cron)
@@ -52,14 +52,14 @@ crontab -e
 0 1 * * * cd /Users/jin/classfy_scraper && /usr/bin/python3 eminwon_incremental_orchestrator.py >> logs/eminwon_collect.log 2>&1
 
 # Eminwon 배치 처리 (매일 새벽 2시)
-0 2 * * * cd /Users/jin/classfy_scraper && /usr/bin/python3 eminwon_batch_processor.py >> logs/eminwon_batch.log 2>&1
+0 2 * * * cd /Users/jin/classfy_scraper && /usr/bin/python3 eminwon_batch_scraper_to_processor.py >> logs/eminwon_batch.log 2>&1
 ```
 
 ## 백그라운드 실행
 
 ### 1. nohup 사용
 ```bash
-nohup python eminwon_batch_processor.py --date 2025-09-22 > logs/batch_$(date +%Y%m%d).log 2>&1 &
+nohup python eminwon_batch_scraper_to_processor.py --date 2025-09-22 > logs/batch_$(date +%Y%m%d).log 2>&1 &
 ```
 
 ### 2. screen/tmux 사용
@@ -68,7 +68,7 @@ nohup python eminwon_batch_processor.py --date 2025-09-22 > logs/batch_$(date +%
 screen -S eminwon_batch
 
 # 배치 실행
-python eminwon_batch_processor.py --date 2025-09-22
+python eminwon_batch_scraper_to_processor.py --date 2025-09-22
 
 # screen 분리 (Ctrl+A, D)
 ```
@@ -188,7 +188,7 @@ fi
 
 # 2. 배치 처리
 echo "[2/2] 배치 처리 시작..."
-python eminwon_batch_processor.py --date $TODAY --workers 5 >> $LOG_DIR/eminwon_batch_$TODAY.log 2>&1
+python eminwon_batch_scraper_to_processor.py --date $TODAY --workers 5 >> $LOG_DIR/eminwon_batch_$TODAY.log 2>&1
 
 if [ $? -eq 0 ]; then
     echo "[2/2] ✅ 배치 처리 완료"
@@ -224,7 +224,7 @@ chmod +x daily_eminwon_pipeline.sh
 
 ## 관련 파일
 - `eminwon_incremental_orchestrator.py`: Eminwon 증분 수집
-- `eminwon_batch_processor.py`: 배치 처리 오케스트레이터  
+- `eminwon_batch_scraper_to_processor.py`: 배치 처리 오케스트레이터  
 - `announcement_pre_processor.py`: 개별 공고 처리
 - `logs/eminwon_batch_YYYY-MM-DD.log`: 처리 로그
 - `logs/eminwon_batch_results_YYYY-MM-DD.json`: 처리 결과

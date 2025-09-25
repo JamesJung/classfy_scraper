@@ -2264,8 +2264,6 @@ def extract_hwp_text_fallback(hwp_file_path: Path) -> str | None:
                 # 깨진 문자 정리 적용
                 cleaned_text = clean_hwp_extracted_text(extracted_text)
                 if len(cleaned_text) >= 10:
-                    # 추출된 텍스트는 ProcessedDataManager에서 처리됨
-
                     logger.info(
                         f"HWP 파일 대체 방법으로 텍스트 추출 성공: {hwp_file_path.name} ({len(cleaned_text)}자)"
                     )

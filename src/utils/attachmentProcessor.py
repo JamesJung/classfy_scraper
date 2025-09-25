@@ -190,16 +190,28 @@ class AttachmentProcessor:
         logger.info('단일 HWP FILE 처리')
 
         try:
-            # process_hwp_with_fallback는 Path 객체를 받고 내용을 직접 반환
+            # 마크다운 파일 경로 생성
+            md_path = hwp_file.parent / f"{hwp_file.stem}.md"
+
+            # 먼저 마크다운 변환 시도
+            if convert_hwp_to_markdown(hwp_file, md_path):
+                if md_path.exists():
+                    with open(md_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    if content and content.strip():
+                        logger.info(f"HWP 파일 마크다운 변환 성공: {hwp_file.name}")
+                        return content
+
+            # 마크다운 변환 실패 시 fallback으로 텍스트 추출
+            logger.info(f"마크다운 변환 실패, fallback 텍스트 추출 시도: {hwp_file.name}")
             content = process_hwp_with_fallback(hwp_file)
-            
-            
+
             if content and content.strip():
                 return content
             else:
                 logger.warning(f"HWP 파일에서 내용 추출 실패: {hwp_file.name}")
                 return None
-            
+
         except Exception as e:
             logger.error(f"HWP 파일 처리 실패 ({hwp_file}): {e}")
             return None

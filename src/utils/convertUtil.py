@@ -858,6 +858,9 @@ def convert_pdf_to_md_docling(pdf_path: str, output_path: str = None) -> bool:
                     table_structure_options=table_options,
                 )
                 
+                pipeline_options.do_ocr = True
+                pipeline_options.ocr_options.use_gpu = False
+                
                 pdf_format_options = PdfFormatOption(pipeline_options=pipeline_options)
                 converter = DocumentConverter(
                     format_options={InputFormat.PDF: pdf_format_options}

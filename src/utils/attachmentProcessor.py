@@ -458,45 +458,27 @@ class AttachmentProcessor:
     
     def get_all_content(self, directory_path: Path) -> str:
         """
-        content.md와 모든 첨부파일 내용을 출처 명시와 함께 결합하여 반환합니다.
-        
+        첨부파일 변환 내용만 결합하여 반환합니다 (content.md 제외).
+
         Args:
             directory_path: 처리할 디렉토리 경로
-            
+
         Returns:
-            출처가 명시된 결합된 모든 내용
+            첨부파일 변환 내용만 결합된 텍스트
         """
         all_content = []
-        
-        # content.md 읽기
-        content_md = directory_path / "content.md"
-        if content_md.exists():
-            try:
-                with open(content_md, 'r', encoding='utf-8') as f:
-                    content = f.read().strip()
-                if content:
-                    content_section = f"content.md: {content}"
-                    all_content.append(content_section)
-                    logger.info("content.md 내용 추가됨")
-            except Exception as e:
-                logger.error(f"content.md 읽기 실패: {e}")
-        
+
+        # content.md는 제외하고 첨부파일만 처리
         # 첨부파일 처리 및 내용 추가
         attachment_results = self.process_directory_attachments(directory_path)
         
         for filename, content in attachment_results.items():
             if content.strip():  # 내용이 있는 경우만 추가
-                # 파일 확장자 정보도 함께 표시
-                attachments_dir = directory_path / "attachments"
-                original_files = list(attachments_dir.glob(f"{filename}.*"))
-                file_extension = original_files[0].suffix if original_files else ""
-                
-                # 첨부파일 내용을 명확하게 구분하여 표시
-                attachment_section = f"첨부파일 {filename}{file_extension}:\n{content.strip()}"
-                all_content.append(attachment_section)
+                # 간단하게 파일 내용만 추가 (파일명 구분 없이)
+                all_content.append(content.strip())
         
         combined_content = "\n\n".join(all_content)
-        logger.info(f"출처 명시된 전체 내용 결합 완료: {len(combined_content)} 문자")
+        logger.info(f"첨부파일 내용 결합 완료 (content.md 제외): {len(combined_content)} 문자")
         
         return combined_content
 

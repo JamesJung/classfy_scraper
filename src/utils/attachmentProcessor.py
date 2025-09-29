@@ -264,11 +264,72 @@ class AttachmentProcessor:
         """ZIP 파일을 처리하여 내부 문서들의 내용을 추출합니다."""
         import zipfile
         import tempfile
+        import chardet
+
+        def detect_and_open_zip(zip_path: Path):
+            """ZIP 파일의 인코딩을 자동 감지하여 열기"""
+            # 다양한 인코딩 시도 순서 (한국에서 많이 사용하는 순서로)
+            encodings_to_try = [
+                'utf-8',      # 표준 UTF-8
+                'cp949',      # 한글 Windows (EUC-KR 확장)
+                'euc-kr',     # 한글 표준
+                'cp437',      # DOS/ZIP 기본
+                None          # 기본 시스템 인코딩
+            ]
+
+            for encoding in encodings_to_try:
+                try:
+                    # Python 3.11+ 버전 호환성 처리
+                    import sys
+                    if sys.version_info >= (3, 11):
+                        return zipfile.ZipFile(zip_path, 'r', metadata_encoding=encoding)
+                    else:
+                        # 구 버전 Python에서는 기본 인코딩만 사용
+                        return zipfile.ZipFile(zip_path, 'r')
+                except (UnicodeDecodeError, zipfile.BadZipFile) as e:
+                    logger.debug(f"ZIP 인코딩 {encoding} 실패: {e}")
+                    continue
+
+            # 모든 인코딩 실패 시 기본으로 열기
+            logger.warning(f"ZIP 파일 인코딩 자동 감지 실패, 기본 설정 사용: {zip_path}")
+            return zipfile.ZipFile(zip_path, 'r')
+
+        def fix_filename_encoding(filename: str) -> str:
+            """ZIP 내 파일명 인코딩 복구"""
+            # 이미 정상적인 UTF-8인지 확인
+            try:
+                filename.encode('utf-8')
+                # 한글이 포함되어 있는지 확인
+                if any('\uac00' <= c <= '\ud7af' for c in filename):
+                    return filename
+            except UnicodeEncodeError:
+                pass
+
+            # 깨진 문자가 있는 경우 다양한 인코딩으로 복구 시도
+            if any(ord(c) > 127 for c in filename):
+                # 깨진 문자가 있음
+                for enc_from, enc_to in [
+                    ('latin-1', 'cp949'),
+                    ('latin-1', 'euc-kr'),
+                    ('cp437', 'cp949'),
+                    ('iso-8859-1', 'cp949')
+                ]:
+                    try:
+                        fixed = filename.encode(enc_from).decode(enc_to)
+                        # 한글이 제대로 디코딩되었는지 확인
+                        if any('\uac00' <= c <= '\ud7af' for c in fixed):
+                            return fixed
+                    except (UnicodeDecodeError, UnicodeEncodeError):
+                        continue
+
+            # 복구 실패 시 원본 반환
+            return filename
 
         try:
             combined_content = []
 
-            with zipfile.ZipFile(zip_file, 'r') as zf:
+            # ZIP 파일 열기 (자동 인코딩 감지)
+            with detect_and_open_zip(zip_file) as zf:
                 # 임시 디렉토리 생성
                 with tempfile.TemporaryDirectory() as temp_dir:
                     temp_path = Path(temp_dir)
@@ -293,7 +354,9 @@ class AttachmentProcessor:
                             if file_ext not in supported_extensions:
                                 continue
 
-                            logger.info(f"ZIP 내부 파일 처리: {file}")
+                            # 파일명 인코딩 복구
+                            display_name = fix_filename_encoding(file)
+                            logger.info(f"ZIP 내부 파일 처리: {display_name}")
 
                             # 파일 형식에 따라 처리
                             content = None
@@ -307,8 +370,10 @@ class AttachmentProcessor:
                                 content = self._process_single_image(file_path)
 
                             if content and content.strip():
-                                combined_content.append(f"[{file}]\n{content}")
-                                logger.info(f"ZIP 내부 파일 처리 성공: {file} ({len(content)} 문자)")
+                                # 파일명 인코딩 복구
+                                display_name = fix_filename_encoding(file)
+                                combined_content.append(f"[{display_name}]\n{content}")
+                                logger.info(f"ZIP 내부 파일 처리 성공: {display_name} ({len(content)} 문자)")
 
             if combined_content:
                 result = "\n\n".join(combined_content)

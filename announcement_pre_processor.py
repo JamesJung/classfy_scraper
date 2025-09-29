@@ -66,9 +66,14 @@ class AnnouncementPreProcessor:
         """지연 초기화를 위한 property"""
         if self._lazy_init and self._attachment_processor is None:
             logger.info("지연 초기화: AttachmentProcessor 생성")
-            # 지연 import
-            from src.utils.attachmentProcessor import AttachmentProcessor
-            self._attachment_processor = AttachmentProcessor()
+            try:
+                # 지연 import
+                from src.utils.attachmentProcessor import AttachmentProcessor
+                self._attachment_processor = AttachmentProcessor()
+            except Exception as e:
+                logger.error(f"AttachmentProcessor 초기화 실패: {e}")
+                # 실패 시 None 반환하여 호출자가 처리하도록 함
+                return None
         return self._attachment_processor
 
     def _ensure_database_tables(self):
@@ -602,38 +607,42 @@ class AnnouncementPreProcessor:
                 is_duplicate_url = self._check_origin_url_exists(origin_url, site_code)
 
             # 4. 첨부파일 처리 (content.md와 분리)
+            combined_content = ""
+            attachment_filenames = []
+            attachment_files_info = []
+            attachment_error = None
+            
             try:
                 combined_content, attachment_filenames, attachment_files_info = (
                     self._process_attachments_separately(directory_path)
                 )
-
-                if not content_md.strip() and not combined_content.strip():
-                    logger.warning("처리할 내용이 없음")
-                    return self._save_processing_result(
-                        folder_name,
-                        site_code,
-                        content_md,
-                        combined_content,
-                        attachment_filenames=attachment_filenames,
-                        attachment_files_info=attachment_files_info,
-                        status="error",
-                        error_message="처리할 내용이 없음",
-                    )
-
                 logger.info(
                     f"첨부파일 내용 처리 완료: {len(combined_content)} 문자, 파일 {len(attachment_filenames)}개"
                 )
-
             except Exception as e:
-                logger.error(f"첨부파일 처리 실패: {e}")
+                # 첨부파일 처리 실패를 기록하지만 계속 진행
+                attachment_error = str(e)
+                logger.error(f"첨부파일 처리 중 예외 발생 (계속 진행): {e}")
+                # 빈 값으로 설정하고 계속 진행
+                combined_content = ""
+                attachment_filenames = []
+                attachment_files_info = []
+                
+            # content.md와 combined_content 모두 없는 경우에만 에러 처리
+            if not content_md.strip() and not combined_content.strip():
+                logger.warning("처리할 내용이 없음")
+                error_msg = "처리할 내용이 없음"
+                if attachment_error:
+                    error_msg += f" (첨부파일 오류: {attachment_error})"
                 return self._save_processing_result(
                     folder_name,
                     site_code,
                     content_md,
-                    "",
-                    attachment_filenames=[],
+                    combined_content,
+                    attachment_filenames=attachment_filenames,
+                    attachment_files_info=attachment_files_info,
                     status="error",
-                    error_message=f"첨부파일 처리 실패: {e}",
+                    error_message=error_msg,
                 )
 
             # 5. 제외 키워드가 있는 경우 제외 처리
@@ -955,147 +964,169 @@ class AnnouncementPreProcessor:
         }
 
         target_keywords = ["양식", "서류", "신청서", "동의서"]
-
+        
+        # 파일들을 우선순위에 따라 분류
+        priority_files = []  # 지원/공고 키워드가 있는 파일들
+        normal_files = []    # 일반 파일들
+        
+        # 모든 파일을 먼저 검사하여 분류
         for file_path in attachments_dir.iterdir():
             if file_path.is_file():
                 file_extension = file_path.suffix.lower()
                 filename = file_path.stem
-
-                logger.info(f"filename===={filename}{file_extension}")
                 lowercase_filename = filename.lower()
-
-                if any(keyword in lowercase_filename for keyword in target_keywords):
-                    logger.info(f"양식, 신청서 등은 SKIP===={filename}")
-                    continue
-
-                # 확장자가 없거나 지원하지 않는 파일은 건너뛰기
-                if not file_extension or file_extension not in supported_extensions:
-                    logger.info(f"지원하지 않는 파일 형식 건너뜀: {file_path.name}")
-                    continue
-
-                attachment_filenames.append(self._normalize_korean_text(file_path.name))
-                logger.info(f"첨부파일 처리 시작: {file_path.name}")
-
-                # 파일 정보 수집 (모든 파일에 대해)
-                # URL 매칭 시도 - 파일명으로 먼저 시도, 없으면 stem으로 시도
-                download_url = attachment_urls.get(file_path.name, "")
-                if not download_url:
-                    # 확장자 없는 이름으로도 시도
-                    download_url = attachment_urls.get(file_path.stem, "")
-
-                if download_url:
-                    logger.debug(
-                        f"URL 매칭 성공: {file_path.name} -> {download_url[:50]}..."
-                    )
-                else:
-                    logger.debug(
-                        f"URL 매칭 실패: {file_path.name}, 가능한 키: {list(attachment_urls.keys())[:3]}"
-                    )
-
-                file_info = {
-                    "filename": file_path.name,  # 확장자 포함된 전체 파일명
-                    "file_size": (
-                        file_path.stat().st_size if file_path.exists() else 0
-                    ),
-                    "conversion_success": False,
-                    "conversion_method": self._guess_conversion_method(
-                        file_extension
-                    ),
-                    "download_url": download_url,  # 다운로드 URL 추가
-                }
-
-                # md 파일이 아닌 경우만 attachment_files_info에 추가
-                if file_extension != ".md":
-                    attachment_files_info.append(file_info)
-
-                # 이미 .md 파일인 경우 직접 읽기
-                if file_extension == ".md":
-                    try:
-                        with open(file_path, "r", encoding="utf-8") as f:
-                            content = f.read()
-                        if content.strip():
-                            combined_content += f"\n\n=== {self._normalize_korean_text(file_path.name)} ===\n{content}"
-                            logger.info(
-                                f"첨부파일 .md 직접 읽기 성공: {file_path.name} ({len(content)} 문자)"
-                            )
-                            file_info["conversion_success"] = True
-                        else:
-                            logger.warning(
-                                f"첨부파일 .md 내용이 비어있음: {file_path.name}"
-                            )
-                    except Exception as e:
-                        logger.error(f"첨부파일 .md 직접 읽기 실패: {e}")
-                    continue
-
-                # 첨부파일명.md 파일이 있는지 확인
-                md_file_path = attachments_dir / f"{filename}.md"
-                logger.debug(f"md_file_path: {md_file_path}")
-
-                # attach_force가 True이면 기존 .md 파일을 무시하고 원본에서 재변환
-                if not self.attach_force and md_file_path.exists():
-                    # .md 파일이 있으면 그것을 읽음
-                    try:
-                        with open(md_file_path, "r", encoding="utf-8") as f:
-                            content = f.read()
-                        if content.strip():
-                            combined_content += f"\n\n=== {self._normalize_korean_text(filename)}.md ===\n{content}"
-                            logger.debug(
-                                f"첨부파일 .md 읽기 성공: {filename}.md ({len(content)} 문자)"
-                            )
-                            file_info["conversion_success"] = True
-                        else:
-                            logger.warning(
-                                f"첨부파일 .md 내용이 비어있음: {filename}.md"
-                            )
-                    except Exception as e:
-                        logger.error(f"첨부파일 .md 읽기 실패: {e}")
-                else:
-                    # .md 파일이 없거나 attach_force가 True이면 원본 파일을 변환
-                    if self.attach_force and md_file_path.exists():
-                        logger.info(
-                            f"--attach-force: 기존 .md 파일 무시하고 재변환: {file_path.name}"
-                        )
+                
+                # 지원하는 확장자만 처리
+                if file_extension and file_extension in supported_extensions:
+                    # 양식, 서류 등 제외 키워드 체크
+                    if any(keyword in lowercase_filename for keyword in target_keywords):
+                        continue
+                    
+                    # 지원/공고 키워드가 있는지 확인
+                    if "지원" in lowercase_filename or "공고" in lowercase_filename:
+                        priority_files.append(file_path)
+                        logger.info(f"우선순위 파일 발견 (지원/공고 키워드): {file_path.name}")
                     else:
-                        logger.info(f"첨부파일 변환 시작: {file_path.name}")
+                        normal_files.append(file_path)
+        
+        # 우선순위 파일들을 먼저 처리, 그 다음 일반 파일들 처리
+        all_files_ordered = priority_files + normal_files
+        
+        for file_path in all_files_ordered:
+            # 이미 위에서 필터링 했으므로 바로 처리
+            file_extension = file_path.suffix.lower()
+            filename = file_path.stem
 
-                    try:
-                        content = self.attachment_processor.process_single_file(
-                            file_path
+            logger.info(f"filename===={filename}{file_extension}")
+
+            attachment_filenames.append(self._normalize_korean_text(file_path.name))
+            logger.info(f"첨부파일 처리 시작: {file_path.name}")
+
+            # 파일 정보 수집 (모든 파일에 대해)
+            # URL 매칭 시도 - 파일명으로 먼저 시도, 없으면 stem으로 시도
+            download_url = attachment_urls.get(file_path.name, "")
+            if not download_url:
+                # 확장자 없는 이름으로도 시도
+                download_url = attachment_urls.get(file_path.stem, "")
+
+            if download_url:
+                logger.debug(
+                    f"URL 매칭 성공: {file_path.name} -> {download_url[:50]}..."
+                )
+            else:
+                logger.debug(
+                    f"URL 매칭 실패: {file_path.name}, 가능한 키: {list(attachment_urls.keys())[:3]}"
+                )
+
+            file_info = {
+                "filename": file_path.name,  # 확장자 포함된 전체 파일명
+                "file_size": (
+                    file_path.stat().st_size if file_path.exists() else 0
+                ),
+                "conversion_success": False,
+                "conversion_method": self._guess_conversion_method(
+                    file_extension
+                ),
+                "download_url": download_url,  # 다운로드 URL 추가
+            }
+
+            # md 파일이 아닌 경우만 attachment_files_info에 추가
+            if file_extension != ".md":
+                attachment_files_info.append(file_info)
+
+            # 이미 .md 파일인 경우 직접 읽기
+            if file_extension == ".md":
+                try:
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        content = f.read()
+                    if content.strip():
+                        combined_content += f"\n\n=== {self._normalize_korean_text(file_path.name)} ===\n{content}"
+                        logger.info(
+                            f"첨부파일 .md 직접 읽기 성공: {file_path.name} ({len(content)} 문자)"
+                        )
+                        file_info["conversion_success"] = True
+                    else:
+                        logger.warning(
+                            f"첨부파일 .md 내용이 비어있음: {file_path.name}"
+                        )
+                except Exception as e:
+                    logger.error(f"첨부파일 .md 직접 읽기 실패: {e}")
+                continue
+
+            # 첨부파일명.md 파일이 있는지 확인
+            md_file_path = attachments_dir / f"{filename}.md"
+            logger.debug(f"md_file_path: {md_file_path}")
+
+            # attach_force가 True이면 기존 .md 파일을 무시하고 원본에서 재변환
+            if not self.attach_force and md_file_path.exists():
+                # .md 파일이 있으면 그것을 읽음
+                try:
+                    with open(md_file_path, "r", encoding="utf-8") as f:
+                        content = f.read()
+                    if content.strip():
+                        combined_content += f"\n\n=== {self._normalize_korean_text(filename)}.md ===\n{content}"
+                        logger.debug(
+                            f"첨부파일 .md 읽기 성공: {filename}.md ({len(content)} 문자)"
+                        )
+                        file_info["conversion_success"] = True
+                    else:
+                        logger.warning(
+                            f"첨부파일 .md 내용이 비어있음: {filename}.md"
+                        )
+                except Exception as e:
+                    logger.error(f"첨부파일 .md 읽기 실패: {e}")
+            else:
+                # .md 파일이 없거나 attach_force가 True이면 원본 파일을 변환
+                if self.attach_force and md_file_path.exists():
+                    logger.info(
+                        f"--attach-force: 기존 .md 파일 무시하고 재변환: {file_path.name}"
+                    )
+                else:
+                    logger.info(f"첨부파일 변환 시작: {file_path.name}")
+
+                try:
+                    # attachment_processor가 None인 경우 처리
+                    if self.attachment_processor is None:
+                        logger.warning(f"AttachmentProcessor를 사용할 수 없어 파일 건너뜀: {file_path.name}")
+                        continue
+                        
+                    content = self.attachment_processor.process_single_file(
+                        file_path
+                    )
+
+                    if content and content.strip():
+                        combined_content += f"\n\n=== {self._normalize_korean_text(file_path.name)} ===\n{content}"
+                        logger.info(
+                            f"첨부파일 변환 성공: {file_path.name} ({len(content)} 문자)"
+                        )
+                        file_info["conversion_success"] = True
+
+                        # 변환된 내용을 .md 파일로 저장
+                        try:
+                            with open(md_file_path, "w", encoding="utf-8") as f:
+                                f.write(content)
+                            logger.debug(
+                                f"변환된 내용을 .md로 저장: {md_file_path}"
+                            )
+                        except Exception as save_e:
+                            logger.warning(f".md 파일 저장 실패: {save_e}")
+                    else:
+                        logger.warning(
+                            f"첨부파일에서 내용 추출 실패: {file_path.name}"
                         )
 
-                        if content and content.strip():
-                            combined_content += f"\n\n=== {self._normalize_korean_text(file_path.name)} ===\n{content}"
-                            logger.info(
-                                f"첨부파일 변환 성공: {file_path.name} ({len(content)} 문자)"
-                            )
-                            file_info["conversion_success"] = True
+                except Exception as e:
+                    error_msg = str(e)
+                    if "Invalid code point" in error_msg or "PDFSyntaxError" in error_msg or "No /Root object" in error_msg:
+                        logger.warning(f"손상된 PDF 파일 건너뛰기: {file_path.name}")
+                    elif "UnicodeDecodeError" in error_msg:
+                        logger.warning(f"인코딩 문제로 파일 건너뛰기: {file_path.name}")
+                    else:
+                        logger.error(f"첨부파일 변환 실패 ({file_path.name}): {e}")
 
-                            # 변환된 내용을 .md 파일로 저장
-                            try:
-                                with open(md_file_path, "w", encoding="utf-8") as f:
-                                    f.write(content)
-                                logger.debug(
-                                    f"변환된 내용을 .md로 저장: {md_file_path}"
-                                )
-                            except Exception as save_e:
-                                logger.warning(f".md 파일 저장 실패: {save_e}")
-                        else:
-                            logger.warning(
-                                f"첨부파일에서 내용 추출 실패: {file_path.name}"
-                            )
-
-                    except Exception as e:
-                        error_msg = str(e)
-                        if "Invalid code point" in error_msg or "PDFSyntaxError" in error_msg or "No /Root object" in error_msg:
-                            logger.warning(f"손상된 PDF 파일 건너뛰기: {file_path.name}")
-                        elif "UnicodeDecodeError" in error_msg:
-                            logger.warning(f"인코딩 문제로 파일 건너뛰기: {file_path.name}")
-                        else:
-                            logger.error(f"첨부파일 변환 실패 ({file_path.name}): {e}")
-
-                        # 변환 실패한 파일 정보 기록
-                        file_info["conversion_success"] = False
-                        file_info["error_message"] = error_msg[:200]  # 오류 메시지 일부만 저장
+                    # 변환 실패한 파일 정보 기록
+                    file_info["conversion_success"] = False
+                    file_info["error_message"] = error_msg[:200]  # 오류 메시지 일부만 저장
 
         logger.info(
             f"첨부파일 처리 완료: {len(attachment_filenames)}개 파일, {len(combined_content)} 문자"

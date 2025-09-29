@@ -1599,6 +1599,7 @@ def perform_ocr_on_image(image) -> str:
         img_array = np.array(image)
 
         # EasyOCR 리더 초기화 (한국어 + 영어)
+        logger.info("Tesseract 실패, EasyOCR로 fallback 시도 중...")
         reader = easyocr.Reader(["ko", "en"], gpu=False)
 
         # OCR 수행
@@ -1617,10 +1618,11 @@ def perform_ocr_on_image(image) -> str:
             if "|" in cleaned_text or "\t" in cleaned_text:
                 cleaned_text = format_as_markdown_table(cleaned_text)
 
+            logger.info(f"EasyOCR fallback 성공: {len(lines)}개 텍스트 추출")
             return cleaned_text
 
     except Exception as e:
-        logger.warning(f"EasyOCR 실패: {e}")
+        logger.warning(f"EasyOCR fallback 실패: {e}")
 
     logger.error("모든 OCR 방법 실패")
     return ""

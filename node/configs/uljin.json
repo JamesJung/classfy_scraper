@@ -1,0 +1,27 @@
+{
+    "siteCode": "uljin",
+    "siteName": "울진군",
+    "baseUrl": "https://www.uljin.go.kr",
+    "listUrl": "https://www.uljin.go.kr/index.uljin?menuCd=DOM_000000103002007000",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": ".bbs_list li",
+        "row": ".bbs_list li",
+        "link": "ul.bbs_list > li a strong",
+        "title": "ul.bbs_list > li a strong",
+        "date": "ul.bbs_list > li a em.info"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&startPage",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "ancmtMgtNo"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

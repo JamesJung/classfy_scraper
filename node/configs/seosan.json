@@ -1,0 +1,33 @@
+{
+    "siteCode": "seosan",
+    "siteName": "서산시",
+    "baseUrl": "https://www.seosan.go.kr",
+    "listUrl": "https://www.seosan.go.kr/common/program/eminwonView.jsp?jndinm=OfrNotAncmtEJB&context=NTIS&method=selectListOfrNotAncmt&methodnm=selectListOfrNotAncmtHomepage&not_ancmt_sj=&pageIndex=1&ofr_pageSize=10&homepage_pbs_yn=Y&subCheck=Y&not_ancmt_se_code=01%2C04%2C06&cha_dep_code_nm=&countYn=Y&list_gubun=&mobile_code=00",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.bbs_default",
+        "row": "table.bbs_default tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(5)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [
+        {
+            "pattern": "searchDetail\\(\\s*['\"]([^'\"]*)['\"]\\s*\\)",
+            "urlTemplate": "https://www.seosan.go.kr/common/program/eminwonView.jsp?",
+            "description": "searchDetail 함수 패턴"
+        }
+    ],
+    "announcementIdPattern": {
+        "urlParams": [
+            "not_ancmt_mgt_no"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

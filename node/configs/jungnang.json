@@ -1,0 +1,30 @@
+{
+    "siteCode": "jungnang",
+    "siteName": "중랑구",
+    "baseUrl": "https://www.jungnang.go.kr",
+    "listUrl": "https://www.jungnang.go.kr/portal/bbs/list/B0000117.do?menuNo=200475",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.inc_head",
+        "row": "table.inc_head tbody tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(5)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "seq",
+            "id",
+            "no",
+            "idx"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

@@ -1,0 +1,27 @@
+{
+    "siteCode": "yeosu",
+    "siteName": "여수시",
+    "baseUrl": "https://www.yeosu.go.kr",
+    "listUrl": "https://www.yeosu.go.kr/www/govt/news/notify/new_notifys",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.board_basic",
+        "row": "table.board_basic tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(5)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&page",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "idx"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

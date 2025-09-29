@@ -1,0 +1,27 @@
+{
+    "siteCode": "ulju",
+    "siteName": "울주군",
+    "baseUrl": "https://www.ulju.ulsan.kr",
+    "listUrl": "https://www.ulju.ulsan.kr/ulju/saeol/gosi/list.do?seCode=01&mId=0403010000&token=1757575484448",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.gosi",
+        "row": "table.gosi tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(5)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&page",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "notAncmtMgtNo"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

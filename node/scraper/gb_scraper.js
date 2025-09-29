@@ -530,10 +530,6 @@ class AnnouncementScraper {
                         const fileName = item.textContent.trim();
                         const downloadLink = item.href;
 
-                        console.log(`File Name: ${fileName}`);
-                        console.log(`Download Link: ${downloadLink}`);
-                        console.log('---');
-
                         attachments.push(
                             { name: fileName, url: downloadLink }
                         );

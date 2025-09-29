@@ -77,7 +77,7 @@ class AnnouncementScraper {
                 });
 
                 this.page.on('console', (msg) => {
-                    //console.log(`[브라우저 콘솔]: ${msg.text()}`);
+                    console.log(`[브라우저 콘솔]: ${msg.text()}`);
                 });
 
                 this.page.on('pageerror', (error) => {
@@ -226,6 +226,7 @@ class AnnouncementScraper {
                         const dateText = dateElement.textContent.trim();
                         const dept = deptElement ? deptElement.textContent.trim() : '';
 
+                        console.log("dateText", dateText)
                         // 상세 페이지 URL 추출
                         const href = titleElement.getAttribute('href');
                         let url = '';
@@ -245,7 +246,8 @@ class AnnouncementScraper {
                             title,
                             dateText,
                             dept,
-                            url
+                            url,
+                            listDate: dateText
                         });
                     });
 
@@ -362,7 +364,15 @@ class AnnouncementScraper {
                     timeout: config.browser.timeouts.default
                 });
 
-                const content = await this.page.evaluate(() => {
+                const evalOptions = { ...this.options, announcement }
+
+                const content = await this.page.evaluate((options) => {
+
+                    const {
+                        announcement
+                    } = options;
+
+
                     // 본문 내용 추출 - 다양한 셀렉터 시도
                     let contentArea = document.querySelector('.board_view .view_content');
                     if (!contentArea) contentArea = document.querySelector('.content');
@@ -372,25 +382,22 @@ class AnnouncementScraper {
 
                     const textContent = contentArea ? (contentArea.innerText || contentArea.textContent || '') : '';
 
-                    // 날짜 추출 (여러 패턴 시도)
-                    let dateText = '';
-
-                    // 패턴 1: 등록일 필드에서
-                    const dateField = document.querySelector('.board_view .date, .board_view .등록일');
-                    if (dateField) {
-                        dateText = dateField.textContent.trim();
-                    }
-
                     // 패턴 2: 테이블에서 등록일 찾기
+                    // 날짜 추출
+                    let dateText = '';
+                    //현재 등록일의 경우는 아예 클래스 등이 지정되어 있지 않다.
                     if (!dateText) {
-                        const thElements = document.querySelectorAll('.board_view th');
-                        for (const th of thElements) {
-                            if (th.textContent.includes('등록일')) {
-                                const td = th.nextElementSibling;
-                                if (td) {
-                                    dateText = td.textContent.trim();
-                                    break;
-                                }
+                        //이 부분을 처리하자
+
+                        //이 부분을 처리하자
+                        if (announcement && announcement.listDate) {
+                            dateText = announcement.listDate
+                        } else {
+                            const dateElement = document.querySelector('.p-author__info .p-split');
+
+                            if (dateElement) {
+                                // Get the text content, remove the "작성일 :" part, and trim whitespace
+                                dateText = dateElement.textContent.replace('작성일 :', '').trim();
                             }
                         }
                     }
@@ -425,10 +432,11 @@ class AnnouncementScraper {
                         dateText: dateText,
                         attachments: attachments
                     };
-                });
+                }, evalOptions);
 
                 // 날짜 파싱
                 const detailDate = this.extractDate(content.dateText);
+
 
                 return {
                     url: announcement.url,
@@ -548,28 +556,29 @@ class AnnouncementScraper {
 
         lines.push(`# ${announcement.title}`);
         lines.push('');
-        lines.push(`## 상세 URL : ${detailContent.url}`);
+        lines.push(`**원본 URL**:: ${detailContent.url}`);
         lines.push('');
 
+
         if (detailContent.date) {
-            lines.push(`**작성일:** ${detailContent.date.format('YYYY-MM-DD')}`);
+            lines.push(`**작성일**: ${detailContent.date.format('YYYY-MM-DD')}`);
             lines.push('');
         }
 
-        if (announcement.dept) {
-            lines.push(`**담당부서:** ${announcement.dept}`);
-            lines.push('');
-        }
+        // if (announcement.dept) {
+        //     lines.push(`**담당부서:** ${announcement.dept}`);
+        //     lines.push('');
+        // }
 
         if (detailContent.content) {
-            lines.push('## 본문');
+            lines.push('**내용**:');
             lines.push('');
             lines.push(detailContent.content);
         }
 
         if (detailContent.attachments && detailContent.attachments.length > 0) {
             lines.push('');
-            lines.push('## 첨부파일');
+            lines.push('**첨부파일**:');
             lines.push('');
             detailContent.attachments.forEach((att, i) => {
                 lines.push(`${i + 1}. ${att.name}:${att.url || ''}`);

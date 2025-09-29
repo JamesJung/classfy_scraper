@@ -1,0 +1,35 @@
+{
+    "siteCode": "gumi",
+    "siteName": "구미시",
+    "baseUrl": "https://www.gumi.go.kr",
+    "listUrl": "https://www.gumi.go.kr/portal/saeol/gosi/list.do?seCode=01&mid=0401040000&token=1757578906660",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.bod_list",
+        "row": "table.bod_list tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(6)",
+        "detail": {
+            "content": "div.bod_view",
+            "attachments": {
+                "selector": "a[href*='goDownload'], a[onclick*='goDownload']",
+                "type": "javascript",
+                "downloadFunction": "goDownload"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&page",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "notAncmtMgtNo"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

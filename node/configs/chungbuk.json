@@ -1,0 +1,37 @@
+{
+    "siteCode": "chungbuk",
+    "siteName": "충청북도",
+    "baseUrl": "https://www.chungbuk.go.kr",
+    "listUrl": "https://www.chungbuk.go.kr/www/selectGosiPblancList.do?key=422",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.p-table > tbody > tr",
+        "row": "table.p-table > tbody > tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(5)",
+                "detail": {
+                    "content": "div.boardView",
+                    "attachments": {
+                        "selector": "a[href*='download']",
+                        "type": "direct_url"
+                    }
+                }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "ancmt_mgt_no",
+            "id",
+            "no",
+            "idx"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

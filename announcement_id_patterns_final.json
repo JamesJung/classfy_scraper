@@ -1,0 +1,1141 @@
+{
+    "andong": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "notAncmtMgtNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "anseong": {
+        "onclickPatterns": [
+            {
+                "pattern": "boardView\\s*\\(\\s*['\"]([^'\"]+)['\"]\\s*,\\s*['\"]([^'\"]+)['\"]\\s*\\)",
+                "urlTemplate": "https://www.anseong.go.kr/portal/saeol/gosiView.do?notAncmtMgtNo={2}&mId=0501040000",
+                "description": "boardView(page, idx) 패턴"
+            }
+        ],
+        "announcementIdPattern": {
+            "urlParams": [
+                "notAncmtMgtNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "anyang": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "pageIndex",
+                "pageUnit",
+                "regiNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "boeun": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "nttNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "boseong": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "idx"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "buan": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "dataSid"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "busan": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "sno"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "changwon": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "not_ancmt_mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "cheongdo": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "notAncmtMgtNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "chilgok": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "notAncmtMgtNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "chungju": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "ancmt_mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "chungnam": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "pageIndex",
+                "nttId"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "cng": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "not_ancmt_mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "cs": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "not_ancmt_mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "cwg": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "nttNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "daejeon": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "sno",
+                "pageIndex"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "ddc": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "not_ancmt_mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "ddm": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "notAncmtMgtNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "dh": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "nttNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "djjunggu": {
+        "onclickPatterns": [
+            {
+                "pattern": "fn_search_detail\\s*\\(\\s*(\\d+)\\s*\\)",
+                "urlTemplate": "https://www.djjunggu.go.kr/prog/saeolGosi/GOSI/sub03_06/view.do?notAncmtMgtNo={1}",
+                "description": "fn_ 함수 패턴"
+            }
+        ],
+        "announcementIdPattern": {
+            "urlParams": [
+                "notAncmtMgtNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "ep": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "notAncmtMgtNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "eumseong": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "not_ancmt_mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "gangbuk": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "nttId"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "gangwha": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "seq"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "ganjin": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "idx"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "gb": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "B_STEP",
+                "B_NUM"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "gbgs": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "pageNo",
+                "parm_bod_uid"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "gbmg": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "notAncmtMgtNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "gc": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "notAncmtMgtNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "gccity": {
+        "onclickPatterns": [
+            {
+                "pattern": "location\\.href\\s*=\\s*['\"]([^'\"]+)['\"]",
+                "urlTemplate": "{1}//{2}{3}/{4}",
+                "description": "location 함수 패턴"
+            }
+        ],
+        "announcementIdPattern": {
+            "urlParams": [
+                "notAncmtMgtNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "geochang": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "not_ancmt_mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "geoje": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "idx"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "geumjeong": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "dataSid"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "gg": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "bIdx",
+                "page"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "gijang": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "dataSid"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "gimhae": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "not_ancmt_mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "gimje": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "dataSid",
+                "startPage"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "gjcity": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "notAncmtMgtNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "gm": {
+        "onclickPatterns": [
+            {
+                "pattern": "opDetail\\s*\\(\\s*['\"]([^'\"]+)['\"]\\s*\\)",
+                "urlTemplate": "https://www.gm.go.kr/pt/user/nftcBbs/BD_selectNftcBbsDetail.do?q_nftcBbsCode=1001&q_nftcBbsMgtno={1}&q_currPage=1",
+                "description": "opDetail(mgtno) 패턴"
+            }
+        ],
+        "announcementIdPattern": {
+            "urlParams": [
+                "q_nftcBbsMgtno"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "gn": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "gosiNttNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "gochang": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "dataSid"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "gokseong": {
+        "onclickPatterns": [
+            {
+                "pattern": "searchDetail\\(\\s*['\"]([^'\"]*)['\"]\\s*\\)",
+                "urlTemplate": "{1}//{2}/user/board/{3}",
+                "description": "searchDetail 함수 패턴"
+            }
+        ],
+        "announcementIdPattern": {
+            "urlParams": [
+                "not_ancmt_mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "goryeong": {
+        "onclickPatterns": [
+            {
+                "pattern": "fn_articleLink\\s*\\(\\s*(\\d+)\\s*\\)",
+                "urlTemplate": "https://www.goryeong.go.kr//kor/boardView.do?IDX=154&BRD_ID=1023&BOARD_IDX={1}",
+                "description": "fn_ 함수 패턴"
+            }
+        ],
+        "announcementIdPattern": {
+            "urlParams": [
+                "BOARD_IDX"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "goseong": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "dataSid"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "gp": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "not_ancmt_mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "gumi": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "notAncmtMgtNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "gunwi": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "not_ancmt_mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "guri": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "pageIndex",
+                "gosiNttNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "guro": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "nttNo",
+                "rowNum"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "gwanak": {
+        "onclickPatterns": [
+            {
+                "pattern": "doBbsFView\\(['\"]?(\\d+)['\"]?\\)",
+                "urlTemplate": "https://www.gwanak.go.kr/site/gwanak/ex/bbsNew/View.do?not_ancmt_mgt_no={1}&typeCode={2}",
+                "description": "doBbsFView 함수 패턴"
+            },
+            {
+                "pattern": "doBbsFView",
+                "urlTemplate": "https://www.gwanak.go.kr/site/gwanak/ex/bbsNew/View.do?not_ancmt_mgt_no={1}&typeCode={2}",
+                "description": "doBbsFView 함수 패턴"
+            }
+        ],
+        "announcementIdPattern": {
+            "urlParams": [
+                "not_ancmt_mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "gwangjin": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "notAncmtMgtNo",
+                "pageIndex"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "gwangju": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "sno"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "gwangsan": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "notSn"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "gwangyang": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "seq"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "gwd": {
+        "onclickPatterns": [
+            {
+                "pattern": "goPage\\((\\d+)\\)",
+                "urlTemplate": "https://state.gwd.go.kr/portal/bulletin/notification?pageIndex=1&recordCountPerPage=15&mode=&firstYN=N&articleSeq={1}&searchCondition=TITLE&searchKeyword=",
+                "description": "goPage 함수 패턴"
+            }
+        ],
+        "announcementIdPattern": {
+            "urlParams": [
+                "articleSeq"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "gyeongju": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "parm_bod_uid"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "gyeongnam": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "sno",
+                "searchCnt"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "gyeyang": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "seq"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "hadong": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "not_ancmt_mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "haman": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "not_ancmt_mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "hampyeong": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "SEQ"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "hc": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "not_ancmt_mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "hongcheon": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "not_ancmt_mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "hongseong": {
+        "onclickPatterns": [
+            {
+                "pattern": "fn_search_detail\\s*\\(\\s*['\"]?([^'\"]*?)['\"]?\\s*\\)",
+                "urlTemplate": "${this.baseUrl.replace(",
+                "description": "fn_ 함수 패턴"
+            }
+        ]
+    },
+    "hsg": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "nttNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "icbp": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "icdonggu": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "msg_seq"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "icheon": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "notAncmtMgtNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "inje": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "articleSeq"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "jangheung": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "v_cnt",
+                "idx"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "jecheon": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "nttNo",
+                "pageIndex"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "jeonbuk": {
+        "onclickPatterns": [
+            {
+                "pattern": "goPage\\((\\d+)\\)",
+                "urlTemplate": "https://state.gwd.go.kr/portal/bulletin/notification?pageIndex=1&recordCountPerPage=15&mode=&firstYN=N&articleSeq={1}&searchCondition=TITLE&searchKeyword=",
+                "description": "goPage 함수 패턴"
+            }
+        ],
+        "announcementIdPattern": {
+            "urlParams": [
+                "dataSid"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "jeonnam": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "seq"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "jindo": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "notAncmtMgtNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "jongno": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "nttId"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "junggu": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "cid"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "mapo": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "bcId"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "michuhol": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "sq"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "mokpo": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "idx"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "muan": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "idx"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "naju": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "idx"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "namdong": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "pgno",
+                "mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "namehae": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "not_ancmt_mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "namwon": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "page"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "nowon": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "q_bbscttSn"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "oc": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "nttNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "ongjin": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "pgno",
+                "mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "osan": {
+        "onclickPatterns": [
+            {
+                "pattern": "location\\.href\\s*=\\s*['\"]([^'\"]+)['\"]",
+                "urlTemplate": "{1}//{2}{3}/{4}",
+                "description": "location 함수 패턴"
+            }
+        ],
+        "announcementIdPattern": {
+            "urlParams": [
+                "notAncmtMgtNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "paju": {
+        "onclickPatterns": [
+            {
+                "pattern": "jsView\\(\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*\\)",
+                "urlTemplate": "{1}//{2}/user/board/{3}",
+                "description": "jsView 함수 패턴"
+            }
+        ],
+        "announcementIdPattern": {
+            "urlParams": [
+                "seq"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "pocheon": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "notAncmtMgtNo",
+                "pageIndex"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "pohang": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "notAncmtMgtNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "pyeongtaek": {
+        "onclickPatterns": [
+            {
+                "pattern": "boardView\\s*\\(\\s*['\"]([^'\"]+)['\"]\\s*,\\s*['\"]([^'\"]+)['\"]\\s*\\)",
+                "urlTemplate": "https://www.pyeongtaek.go.kr/pyeongtaek/saeol/gosiView.do?notAncmtMgtNo={2}&mId=0401020100&page={2}",
+                "description": "boardView(page, idx) 패턴"
+            },
+            {
+                "pattern": "location\\.href\\s*=\\s*['\"]([^'\"]+)['\"]",
+                "urlTemplate": "{1}//{2}{3}/{4}",
+                "description": "location 함수 패턴"
+            }
+        ],
+        "announcementIdPattern": {
+            "urlParams": [
+                "notAncmtMgtNo",
+                "page"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "sacheon": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "idx"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "samcheok": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "mgtNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "sancheong": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "nttNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "sb": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "notAncmtMgtNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "sd": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "nttNo",
+                "pageIndex"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "sejong": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "not_ancmt_mgt_no",
+                "pageIndex"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "seo": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "msg_seq"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "seogu": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "not_ancmt_mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "seosan": {
+        "onclickPatterns": [
+            {
+                "pattern": "searchDetail\\(\\s*['\"]([^'\"]*)['\"]\\s*\\)",
+                "urlTemplate": "https://www.seosan.go.kr/common/program/eminwonView.jsp?",
+                "description": "searchDetail 함수 패턴"
+            }
+        ],
+        "announcementIdPattern": {
+            "urlParams": [
+                "not_ancmt_mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "siheung": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "notAncmtMgtNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "sj": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "bod_uid"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "songpa": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "not_ancmt_mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "suncheon": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "seq"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "taebaek": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "nttNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "tongyeong": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "not_ancmt_mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "ui4u": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "notAncmtMgtNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "uiryung": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "gosiNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "uljin": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "ancmtMgtNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "ulju": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "notAncmtMgtNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "ulleung": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "not_ancmt_mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "usc": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "not_ancmt_mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "wonju": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "nttNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "yangcheon": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "not_ancmt_mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "yangsan": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "notAncmtMgtNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "yc": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "notAncmtMgtNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "yd": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "uid"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "ydp": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "notAncmtMgtNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "yeoju": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "not_ancmt_mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "yeongdo": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "not_ancmt_mgt_no",
+                "cpage"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "yeongju": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "not_ancmt_mgt_no"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "yeonje": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "notAncmtMgtNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "yeosu": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "idx"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "yongsan": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "nttId"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "yw": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "nttNo"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    },
+    "yyg": {
+        "announcementIdPattern": {
+            "urlParams": [
+                "idx"
+            ],
+            "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+        }
+    }
+}

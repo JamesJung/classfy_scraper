@@ -1,0 +1,27 @@
+{
+    "siteCode": "gunwi",
+    "siteName": "군위군",
+    "baseUrl": "https://www.gunwi.go.kr",
+    "listUrl": "https://www.gunwi.go.kr/ko/page.do?mnu_uid=666&boardType=notice",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.tbl_board",
+        "row": "table.tbl_board tbody tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(4)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageNo",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "not_ancmt_mgt_no"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

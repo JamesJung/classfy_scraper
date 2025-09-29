@@ -1,0 +1,34 @@
+{
+    "siteCode": "buan",
+    "siteName": "부안군",
+    "baseUrl": "https://www.buan.go.kr",
+    "listUrl": "https://www.buan.go.kr/board/list.buan?boardId=BBS_0000054&menuCd=DOM_000000103001003000&paging=ok",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.bbs_list_t",
+        "row": "table.bbs_list_t tbody tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(5)",
+        "detail": {
+            "content": "div.bbs_view",
+            "attachments": {
+                "selector": "a[href*='download']",
+                "type": "direct_url"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&startPage",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "dataSid"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

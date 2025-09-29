@@ -1,0 +1,30 @@
+{
+    "siteCode": "sdm",
+    "siteName": "서대문구",
+    "baseUrl": "https://www.sdm.go.kr",
+    "listUrl": "https://www.sdm.go.kr/news/notice/notice.do",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.boardList",
+        "row": "table.boardList tbody tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(4)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&cp",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "seq",
+            "id",
+            "no",
+            "idx"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

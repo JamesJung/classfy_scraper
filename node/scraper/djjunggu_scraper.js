@@ -469,14 +469,14 @@ class AnnouncementScraper {
                             // fn_egov_downFile('user_file_nm', 'sys_file_nm', 'file_path') 패턴
                             const regex = /fn_egov_downFile\s*\(\s*'([^']+)'\s*,\s*'([^']+)'\s*,\s*'([^']+)'\s*\)/;
                             const matches = href.match(regex);
-                            
+
                             if (matches) {
                                 const [, userFileNm, sysFileNm, filePath] = matches;
                                 // 실제 다운로드 URL 구성 - eminwon 서버의 FileDown.jsp 사용
                                 // fn_egov_downFile은 form.submit()을 사용하므로 POST 요청
                                 const encodedUserFileName = encodeURIComponent(userFileNm);
                                 const downloadUrl = `https://eminwon.djjunggu.go.kr/emwp/jsp/ofr/FileDown.jsp?user_file_nm=${encodeURI(encodedUserFileName)}&sys_file_nm=${sysFileNm}&file_path=${filePath}`;
-                                
+
                                 attachments.push({
                                     name: fileName || userFileNm,
                                     url: downloadUrl,
@@ -838,7 +838,7 @@ class AnnouncementScraper {
             // URL이 이미 실제 다운로드 URL인 경우
             if (attachment.url && attachment.url.startsWith('https://')) {
                 console.log('🎯 직접 다운로드 URL 사용');
-                
+
                 // 직접 HTTP 다운로드
                 const result = await this.downloadViaDirectUrl(attachment.url, attachDir, fileName);
                 if (result && result.success) {
@@ -849,13 +849,13 @@ class AnnouncementScraper {
                 }
 
             }
-            
+
             // javascript: URL인 경우
             else if (attachment.url && attachment.url.startsWith('javascript:')) {
                 console.log('❌ javascript: URL은 지원하지 않습니다.');
                 return { success: false, reason: 'javascript_url' };
             }
-            
+
             // 그 외의 경우
             else {
                 console.log('❌ 지원하지 않는 첨부파일 형식입니다.');
@@ -1133,16 +1133,16 @@ class AnnouncementScraper {
             // djjunggu의 경우 POST 요청 필요
             let method = 'GET';
             let data = null;
-            
+
             if (url.includes('eminwon.djjunggu.go.kr')) {
                 // URL에서 파라미터 추출
                 const urlObj = new URL(url);
                 const params = new URLSearchParams(urlObj.search);
-                
+
                 // POST 데이터 구성
                 data = `user_file_nm=${params.get('user_file_nm')}&sys_file_nm=${params.get('sys_file_nm')}&file_path=${params.get('file_path')}`;
                 method = 'POST';
-                
+
                 // POST 요청을 위해 URL에서 쿼리 파라미터 제거
                 url = url.split('?')[0];
                 console.log(`POST 요청으로 변환: ${url}`);
@@ -1220,7 +1220,7 @@ class AnnouncementScraper {
                 writer.on('finish', async () => {
                     const stats = await fs.stat(filePath);
                     console.log(`✅ 파일 다운로드 성공: ${cleanFileName} (${stats.size} bytes)`);
-                    
+
                     // 파일 크기 확인 (너무 작으면 에러 페이지일 수 있음)
                     if (stats.size < 200) {
                         try {
@@ -1234,7 +1234,7 @@ class AnnouncementScraper {
                             // 바이너리 파일일 수 있으므로 무시
                         }
                     }
-                    
+
                     resolve({ success: true, savedPath: filePath, fileName: cleanFileName, fileSize: stats.size });
                 });
                 writer.on('error', reject);
@@ -1547,23 +1547,23 @@ class AnnouncementScraper {
         lines.push('');
 
 
-        lines.push(`# 상세 URL : ${detailContent.url}`);
+        lines.push(`**원본 URL**: ${detailContent.url}`);
         lines.push('');
 
         if (detailContent.date) {
-            lines.push(`**작성일:** ${detailContent.date.format('YYYY-MM-DD')}`);
+            lines.push(`**작성일**: ${detailContent.date.format('YYYY-MM-DD')}`);
             lines.push('');
         }
 
         if (detailContent.content) {
-            lines.push('## 본문');
+            lines.push('**내용**:');
             lines.push('');
             lines.push(detailContent.content);
         }
 
         if (detailContent.attachments && detailContent.attachments.length > 0) {
             lines.push('');
-            lines.push('## 첨부파일');
+            lines.push('**첨부파일**:');
             lines.push('');
             detailContent.attachments.forEach((att, i) => {
                 // URL이 이미 실제 다운로드 URL인 경우 그대로 사용

@@ -1,0 +1,27 @@
+{
+    "siteCode": "yeoju",
+    "siteName": "여주시",
+    "baseUrl": "https://www.yeoju.go.kr",
+    "listUrl": "https://www.yeoju.go.kr/www/selectEminwonList.do?key=413",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.p-table",
+        "row": "table.p-table tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(5)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "not_ancmt_mgt_no"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

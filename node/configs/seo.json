@@ -1,0 +1,27 @@
+{
+    "siteCode": "seo",
+    "siteName": "서초구",
+    "baseUrl": "https://www.seo.incheon.kr",
+    "listUrl": "https://www.seo.incheon.kr/open_content/main/community/news/gosi.jsp",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.general_board",
+        "row": "table.general_board tbody tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(5)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pgno",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "msg_seq"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

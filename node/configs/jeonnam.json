@@ -1,0 +1,27 @@
+{
+    "siteCode": "jeonnam",
+    "siteName": "전라남도",
+    "baseUrl": "https://www.jeonnam.go.kr",
+    "listUrl": "https://www.jeonnam.go.kr/J0203/boardList.do?menuId=jeonnam0203000000",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.bbs_table > tbody > tr",
+        "row": "table.bbs_table > tbody > tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(4)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "seq"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

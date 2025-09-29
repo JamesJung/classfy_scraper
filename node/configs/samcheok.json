@@ -1,0 +1,27 @@
+{
+    "siteCode": "samcheok",
+    "siteName": "삼척시",
+    "baseUrl": "https://www.samcheok.go.kr",
+    "listUrl": "https://www.samcheok.go.kr/media/00084/00095.web",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": ".list1f1t3i1 .lst1 li",
+        "row": ".list1f1t3i1 .lst1 li",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(6)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&cpage",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "mgtNo"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

@@ -1,0 +1,28 @@
+{
+    "siteCode": "guro",
+    "siteName": "구로구",
+    "baseUrl": "https://www.guro.go.kr",
+    "listUrl": "https://www.guro.go.kr/www/selectBbsNttList.do?bbsNo=663&key=1791&",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.p-table",
+        "row": "table.p-table tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(5)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "nttNo",
+            "rowNum"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

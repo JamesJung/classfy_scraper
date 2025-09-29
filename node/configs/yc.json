@@ -1,0 +1,27 @@
+{
+    "siteCode": "yc",
+    "siteName": "양천구",
+    "baseUrl": "https://www.yc.go.kr",
+    "listUrl": "https://www.yc.go.kr/portal/saeol/gosi/list.do?mId=0301040000",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": ".conts table.bod_list",
+        "row": ".conts table.bod_list tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(5)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&page",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "notAncmtMgtNo"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

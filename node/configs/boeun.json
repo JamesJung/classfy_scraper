@@ -1,0 +1,34 @@
+{
+    "siteCode": "boeun",
+    "siteName": "보은군",
+    "baseUrl": "https://www.boeun.go.kr",
+    "listUrl": "https://www.boeun.go.kr/www/selectBbsNttList.do?bbsNo=66&key=194",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.p-table",
+        "row": "table.p-table tbody tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(4)",
+        "detail": {
+            "content": "#contents",
+            "attachments": {
+                "type": "custom",
+                "extractorName": "boeun"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "nttNo"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

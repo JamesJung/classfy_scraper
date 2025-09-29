@@ -1,0 +1,40 @@
+{
+    "siteCode": "goryeong",
+    "siteName": "고령군",
+    "baseUrl": "https://www.goryeong.go.kr",
+    "listUrl": "https://www.goryeong.go.kr/kor/boardList.do?IDX=154&BRD_ID=1023",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.boardList_table",
+        "row": "table.boardList_table tbody tr",
+        "link": "td.bL_tableTitle a",
+        "title": "td.bL_tableTitle a",
+        "date": "td:nth-child(5)",
+        "detail": {
+            "content": "table.boardView_table",
+            "attachments": {
+                "extractorName": "goryeong",
+                "type": "custom"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&page",
+        "maxPages": 10
+    },
+    "onclickPatterns": [
+        {
+            "pattern": "fn_articleLink\\s*\\(\\s*(\\d+)\\s*\\)",
+            "urlTemplate": "https://www.goryeong.go.kr//kor/boardView.do?IDX=154&BRD_ID=1023&BOARD_IDX={1}",
+            "description": "fn_ 함수 패턴"
+        }
+    ],
+    "announcementIdPattern": {
+        "urlParams": [
+            "BOARD_IDX"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

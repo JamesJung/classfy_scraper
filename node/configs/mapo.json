@@ -1,0 +1,27 @@
+{
+    "siteCode": "mapo",
+    "siteName": "마포구",
+    "baseUrl": "https://www.mapo.go.kr",
+    "listUrl": "https://www.mapo.go.kr/site/main/nPortal/list",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": ".bbs_list table",
+        "row": ".bbs_list table tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(6)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&cp",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "bcId"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

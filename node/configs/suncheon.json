@@ -1,0 +1,27 @@
+{
+    "siteCode": "suncheon",
+    "siteName": "순천시",
+    "baseUrl": "http://www.suncheon.go.kr",
+    "listUrl": "http://www.suncheon.go.kr/kr/news/0004/0005/0001/",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.bbsList",
+        "row": "table.bbsList tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(5)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "seq"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

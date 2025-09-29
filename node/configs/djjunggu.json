@@ -1,0 +1,41 @@
+{
+    "siteCode": "djjunggu",
+    "siteName": "대전중구",
+    "baseUrl": "https://www.djjunggu.go.kr",
+    "listUrl": "https://www.djjunggu.go.kr/prog/saeolGosi/GOSI/sub03_06/list.do",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": ".no-more-tables table.table-default",
+        "row": ".no-more-tables table.table-default tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(5)",
+        "detail": {
+            "content": "div.program--contents",
+            "attachments": {
+                "selector": "a[href*='fn_egov_downFile'], a[onclick*='fn_egov_downFile']",
+                "type": "javascript",
+                "downloadFunction": "fn_egov_downFile"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "?pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [
+        {
+            "pattern": "fn_search_detail\\s*\\(\\s*['\"]?(\\d+)['\"]?\\s*\\)",
+            "urlTemplate": "https://www.djjunggu.go.kr/prog/saeolGosi/GOSI/sub03_06/view.do?notAncmtMgtNo={1}",
+            "description": "fn_ 함수 패턴 (따옴표 선택적)"
+        }
+    ],
+    "announcementIdPattern": {
+        "urlParams": [
+            "notAncmtMgtNo"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

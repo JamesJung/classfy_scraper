@@ -1,0 +1,34 @@
+{
+    "siteCode": "goseong",
+    "siteName": "고성군",
+    "baseUrl": "https://www.goseong.go.kr",
+    "listUrl": "https://www.goseong.go.kr/board/list.goseong?boardId=BBS_0000015&menuCd=DOM_000000103001014000&contentsSid=29&cpath=",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.list01",
+        "row": "table.list01 tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(5)",
+        "detail": {
+            "content": "#sub_contentnw",
+            "attachments": {
+                "selector": "a[href*='FileDown']",
+                "type": "direct_url"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&startPage",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "dataSid"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

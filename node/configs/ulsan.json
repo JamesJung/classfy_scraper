@@ -1,0 +1,30 @@
+{
+    "siteCode": "ulsan",
+    "siteName": "울산광역시",
+    "baseUrl": "https://www.ulsan.go.kr",
+    "listUrl": "https://www.ulsan.go.kr/u/rep/transfer/notice/list.ulsan?mId=001004002000000000",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.tbl_bd_list > tbody > tr",
+        "row": "table.tbl_bd_list > tbody > tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(6)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&curPage",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "seq",
+            "id",
+            "no",
+            "idx"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

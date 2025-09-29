@@ -1,0 +1,40 @@
+{
+    "siteCode": "daegu",
+    "siteName": "대구",
+    "baseUrl": "https://www.daegu.go.kr",
+    "listUrl": "https://www.daegu.go.kr/index.do?menu_id=00940170",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "#bbsList tbody",
+        "row": "#bbsList tbody tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(4)",
+        "detail": {
+            "content": "table.p-table",
+            "attachments": {
+                "extractorName": "daegu",
+                "type": "custom"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [
+        {
+            "pattern": "fn_goLinkView\\s*\\(\\s*['\"]([^'\"]+)['\"]\\s*,\\s*['\"]([^'\"]+)['\"]\\s*\\)",
+            "urlTemplate": "https://www.daegu.go.kr/index.do?menu_id=00940170&menu_link=/front/daeguSidoGosi/daeguSidoGosiView.do&sno={1}&gosi_gbn={2}",
+            "description": "fn_goLinkView(page, idx) 패턴"
+        }
+    ],
+    "announcementIdPattern": {
+        "urlParams": [
+            "sno"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

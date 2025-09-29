@@ -1,0 +1,34 @@
+{
+    "siteCode": "gbgs",
+    "siteName": "고창군",
+    "baseUrl": "https://www.gbgs.go.kr",
+    "listUrl": "https://www.gbgs.go.kr/open_content/ko/page.do?mnu_uid=2160",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "#content table.table_st02",
+        "row": "#content table.table_st02  tbody tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(5)",
+        "detail": {
+            "content": "#content",
+            "attachments": {
+                "extractorName": "gbgs",
+                "type": "custom"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageNo",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "parm_bod_uid"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

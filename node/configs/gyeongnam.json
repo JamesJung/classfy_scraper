@@ -1,0 +1,28 @@
+{
+    "siteCode": "gyeongnam",
+    "siteName": "경상남도",
+    "baseUrl": "https://www.gyeongnam.go.kr",
+    "listUrl": "https://www.gyeongnam.go.kr/index.gyeong?menuCd=DOM_000000135003009000",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.A-13 > tbody > tr",
+        "row": "table.A-13 > tbody > tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td.date"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&page",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "sno",
+            "searchCnt"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

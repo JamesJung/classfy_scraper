@@ -113,7 +113,7 @@ class AnnouncementScraper {
                 }
 
                 // 재시도 전 대기
-                await this.delay(2000 * retries);
+                await this.delay(4000 * retries);
             }
         }
     }

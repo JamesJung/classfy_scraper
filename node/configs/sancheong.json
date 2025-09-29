@@ -1,0 +1,27 @@
+{
+    "siteCode": "sancheong",
+    "siteName": "산청군",
+    "baseUrl": "https://www.sancheong.go.kr",
+    "listUrl": "https://www.sancheong.go.kr/www/selectBbsNttList.do?key=158&bbsNo=118&integrDeptCode=&searchCtgry=%EC%9D%BC%EB%B0%98%EA%B3%B5%EA%B3%A0",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.bbs_default_list",
+        "row": "table.bbs_default_list tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(5)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "nttNo"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

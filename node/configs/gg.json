@@ -1,0 +1,28 @@
+{
+    "siteCode": "gg",
+    "siteName": "강진군",
+    "baseUrl": "https://www.gg.go.kr",
+    "listUrl": "https://www.gg.go.kr/bbs/board.do?bsIdx=469&menuId=1547",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "#boardList > tbody > tr",
+        "row": "#boardList > tbody > tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(5)"
+    },
+    "pagination": {
+        "type": "javascript",
+        "function": "gotoPage",
+        "param": "&page",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "bIdx"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

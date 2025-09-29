@@ -1,0 +1,27 @@
+{
+    "siteCode": "seogu",
+    "siteName": "서구",
+    "baseUrl": "https://www.seogu.gwangju.kr",
+    "listUrl": "https://www.seogu.gwangju.kr/menu.es?mid=a10807010000",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.tstyle_list",
+        "row": "table.tstyle_list tbody tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(4)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&nPage",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "not_ancmt_mgt_no"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

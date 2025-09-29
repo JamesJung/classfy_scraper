@@ -1,0 +1,33 @@
+{
+    "siteCode": "gwd",
+    "siteName": "강원도",
+    "baseUrl": "https://state.gwd.go.kr",
+    "listUrl": "https://state.gwd.go.kr/portal/bulletin/notification",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.skinTb-data-resList > tbody > tr",
+        "row": "table.skinTb-data-resList > tbody > tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(4)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [
+        {
+            "pattern": "goPage\\((\\d+)\\)",
+            "urlTemplate": "https://state.gwd.go.kr/portal/bulletin/notification?pageIndex=1&recordCountPerPage=15&mode=&firstYN=N&articleSeq={1}&searchCondition=TITLE&searchKeyword=",
+            "description": "goPage 함수 패턴"
+        }
+    ],
+    "announcementIdPattern": {
+        "urlParams": [
+            "articleSeq"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

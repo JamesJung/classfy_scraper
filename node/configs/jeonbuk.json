@@ -1,0 +1,33 @@
+{
+    "siteCode": "jeonbuk",
+    "siteName": "전라북도",
+    "baseUrl": "https://www.jeonbuk.go.kr",
+    "listUrl": "https://www.jeonbuk.go.kr/board/list.jeonbuk?boardId=BBS_0000129&menuCd=DOM_000000102002005000&contentsSid=1379&cpath=",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.bbs_table > tbody > tr",
+        "row": "table.bbs_table > tbody > tr",
+        "link": "td:nth-child(4) a",
+        "title": "td:nth-child(4) a",
+        "date": "td:nth-child(6)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&startPage",
+        "maxPages": 10
+    },
+    "onclickPatterns": [
+        {
+            "pattern": "goPage\\((\\d+)\\)",
+            "urlTemplate": "https://state.gwd.go.kr/portal/bulletin/notification?pageIndex=1&recordCountPerPage=15&mode=&firstYN=N&articleSeq={1}&searchCondition=TITLE&searchKeyword=",
+            "description": "goPage 함수 패턴"
+        }
+    ],
+    "announcementIdPattern": {
+        "urlParams": [
+            "dataSid"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

@@ -29,6 +29,9 @@ echo "Eminwon Batch Processor 시작: $(date)" >> "$LOG_FILE"
 echo "처리 대상: ${YESTERDAY}" >> "$LOG_FILE"
 echo "========================================" >> "$LOG_FILE"
 
+# 시작 시간 기록
+START_TIME=$(date +%s)
+
 # Python 및 환경 확인
 echo "Python version: $(python3 --version)" >> "$LOG_FILE"
 echo "Working directory: $(pwd)" >> "$LOG_FILE"
@@ -66,8 +69,15 @@ else
     # echo "Eminwon batch processing failed on $(date)" | mail -s "Batch Processing Failed" admin@example.com
 fi
 
+# 종료 시간 및 총 실행 시간 계산
+END_TIME=$(date +%s)
+ELAPSED_TIME=$((END_TIME - START_TIME))
+ELAPSED_MIN=$((ELAPSED_TIME / 60))
+ELAPSED_SEC=$((ELAPSED_TIME % 60))
+
 echo "========================================" >> "$LOG_FILE"
 echo "Eminwon Batch Processor 종료: $(date)" >> "$LOG_FILE"
+echo "총 실행 시간: ${ELAPSED_MIN}분 ${ELAPSED_SEC}초" >> "$LOG_FILE"
 echo "========================================" >> "$LOG_FILE"
 echo "" >> "$LOG_FILE"
 

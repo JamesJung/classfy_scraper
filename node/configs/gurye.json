@@ -1,0 +1,30 @@
+{
+    "siteCode": "gurye",
+    "siteName": "구례군",
+    "baseUrl": "https://www.gurye.go.kr",
+    "listUrl": "https://www.gurye.go.kr/board/GosiList.do?not_ancmt_se_code=01,04,06,07&menuNo=115004002001&pageIndex=1",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.board_list",
+        "row": "table.board_list tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(5)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "seq",
+            "id",
+            "no",
+            "idx"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

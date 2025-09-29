@@ -1,0 +1,42 @@
+{
+    "siteCode": "gokseong",
+    "siteName": "곡성군",
+    "baseUrl": "https://www.gokseong.go.kr",
+    "listUrl": "https://www.gokseong.go.kr/board/GosiList.do?menuNo=102001003000",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.board_list",
+        "row": "table.board_list tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(5)",
+        "detail": {
+            "content": "div.board_view",
+            "attachments": {
+                "selector": "a[href*='goDownLoad']",
+                "type": "custom",
+                "extractorName": "gokseong",
+                "downloadFunction": "goDownLoad"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [
+        {
+            "pattern": "searchDetail\\(\\s*['\"]([^'\"]*)['\"]\\s*\\)",
+            "urlTemplate": "https://www.gokseong.go.kr/board/GosiView.do?menuNo=102001003000&searchCnd=0&not_ancmt_mgt_no={1}&not_ancmt_se_code=&list_gubun=&srhCate=title&searchWrd=",
+            "description": "searchDetail 함수 패턴"
+        }
+    ],
+    "announcementIdPattern": {
+        "urlParams": [
+            "not_ancmt_mgt_no"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

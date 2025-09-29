@@ -1,0 +1,34 @@
+{
+    "siteCode": "busan",
+    "siteName": "부산광역시",
+    "baseUrl": "https://www.busan.go.kr",
+    "listUrl": "https://www.busan.go.kr/nbgosi?conGosiGbn=",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.boardList",
+        "row": "table.boardList tbody tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(4)",
+        "detail": {
+            "content": "div.boardView",
+            "attachments": {
+                "selector": "a[href*='download']",
+                "type": "direct_url"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&curPage",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "sno"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

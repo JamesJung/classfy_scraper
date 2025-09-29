@@ -1,0 +1,27 @@
+{
+    "siteCode": "jindo",
+    "siteName": "진도군",
+    "baseUrl": "https://www.jindo.go.kr",
+    "listUrl": "https://www.jindo.go.kr/home/gosi/general.cs?m=878",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.gosi_list",
+        "row": "table.gosi_list tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(4)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "notAncmtMgtNo"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

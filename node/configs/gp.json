@@ -1,0 +1,34 @@
+{
+    "siteCode": "gp",
+    "siteName": "김포시",
+    "baseUrl": "https://www.gp.go.kr",
+    "listUrl": "https://www.gp.go.kr/portal/selectGosiList.do?key=2148&not_ancmt_se_code=01",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.bbs_default_list",
+        "row": "table.bbs_default_list tbody tr",
+        "link": "td:nth-child(4) a",
+        "title": "td:nth-child(4) a",
+        "date": "td:nth-child(3)",
+        "detail": {
+            "content": "#printContent",
+            "attachments": {
+                "selector": "a[href*='FileDown']",
+                "type": "direct_url"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "not_ancmt_mgt_no"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

@@ -475,7 +475,6 @@ class AnnouncementScraper {
                         // 다운로드 링크가 포함된 <a> 태그를 찾습니다.
                         downloadLink = item
 
-                        console.log("downloadLink", item, downloadLink)
                         if (downloadLink) {
                             // onclick 속성 값을 가져옵니다.
                             const onclickAttribute = downloadLink.getAttribute('onclick');
@@ -484,7 +483,6 @@ class AnnouncementScraper {
                             const regex = /goDownLoad\('([^']+)',\s*'([^']+)',\s*'([^']+)'\)/;
                             const matches = onclickAttribute.match(regex);
 
-                            console.log("matches", matches)
                             if (matches && matches.length === 4) {
                                 const user_file_nm = matches[1];
                                 const systemFileName = matches[2];
@@ -1000,23 +998,23 @@ class AnnouncementScraper {
         lines.push('');
 
 
-        lines.push(`# 상세 URL : ${detailContent.url}`);
+        lines.push(`**원본 URL**: ${detailContent.url}`);
         lines.push('');
 
         if (detailContent.date) {
-            lines.push(`**작성일:** ${detailContent.date.format('YYYY-MM-DD')}`);
+            lines.push(`**작성일**: ${detailContent.date.format('YYYY-MM-DD')}`);
             lines.push('');
         }
 
         if (detailContent.content) {
-            lines.push('## 본문');
+            lines.push('**내용**:');
             lines.push('');
             lines.push(detailContent.content);
         }
 
         if (attachmentFiles && attachmentFiles.length > 0) {
             lines.push('');
-            lines.push('## 첨부파일');
+            lines.push('**첨부파일**:');
             lines.push('');
             attachmentFiles.forEach((file, i) => {
                 if (typeof file === 'object' && file.fileName && file.downloadUrl) {

@@ -1,0 +1,273 @@
+{
+    "pyeongtaek": {
+        "onclickPatterns": [
+            {
+                "pattern": "boardView\\s*\\(\\s*['\"]([^'\"]+)['\"]\\s*,\\s*['\"]([^'\"]+)['\"]\\s*\\)",
+                "urlTemplate": "https://www.pyeongtaek.go.kr/pyeongtaek/saeol/gosiView.do?notAncmtMgtNo={2}&mId=0401020100&page={2}",
+                "description": "boardView(page, idx) 패턴"
+            },
+            {
+                "pattern": "location\\.href\\s*=\\s*['\"]([^'\"]+)['\"]",
+                "urlTemplate": "{1}//{2}{3}/{4}",
+                "description": "location 함수 패턴"
+            },
+            {
+                "pattern": "boardView\\s*\\(\\s*['\"]([^'\"]+)['\"]\\s*,\\s*['\"]([^'\"]+)['\"]\\s*\\)",
+                "urlTemplate": "https://www.pyeongtaek.go.kr/pyeongtaek/saeol/gosiView.do?notAncmtMgtNo={2}&mId=0401020100&page={2}",
+                "description": "boardView(page, idx) 패턴"
+            },
+            {
+                "pattern": "location\\.href\\s*=\\s*['\"]([^'\"]+)['\"]",
+                "urlTemplate": "{1}//{2}{3}/{4}",
+                "description": "location 함수 패턴"
+            },
+            {
+                "pattern": "boardView\\s*\\(\\s*['\"]([^'\"]+)['\"]\\s*,\\s*['\"]([^'\"]+)['\"]\\s*\\)",
+                "urlTemplate": "https://www.pyeongtaek.go.kr/pyeongtaek/saeol/gosiView.do?notAncmtMgtNo={2}&mId=0401020100&page={2}",
+                "description": "boardView(page, idx) 패턴"
+            },
+            {
+                "pattern": "location\\.href\\s*=\\s*['\"]([^'\"]+)['\"]",
+                "urlTemplate": "{1}//{2}{3}/{4}",
+                "description": "location 함수 패턴"
+            }
+        ]
+    },
+    "goryeong": {
+        "onclickPatterns": [
+            {
+                "pattern": "fn_articleLink\\s*\\(\\s*(\\d+)\\s*\\)",
+                "urlTemplate": "https://www.goryeong.go.kr//kor/boardView.do?IDX=154&BRD_ID=1023&BOARD_IDX={1}",
+                "description": "fn_ 함수 패턴"
+            },
+            {
+                "pattern": "fn_articleLink\\s*\\(\\s*(\\d+)\\s*\\)",
+                "urlTemplate": "https://www.goryeong.go.kr//kor/boardView.do?IDX=154&BRD_ID=1023&BOARD_IDX={1}",
+                "description": "fn_ 함수 패턴"
+            },
+            {
+                "pattern": "fn_articleLink\\s*\\(\\s*(\\d+)\\s*\\)",
+                "urlTemplate": "https://www.goryeong.go.kr//kor/boardView.do?IDX=154&BRD_ID=1023&BOARD_IDX={1}",
+                "description": "fn_ 함수 패턴"
+            }
+        ]
+    },
+    "djjunggu": {
+        "onclickPatterns": [
+            {
+                "pattern": "fn_search_detail\\s*\\(\\s*(\\d+)\\s*\\)",
+                "urlTemplate": "https://www.djjunggu.go.kr/prog/saeolGosi/GOSI/sub03_06/view.do?notAncmtMgtNo={1}",
+                "description": "fn_ 함수 패턴"
+            },
+            {
+                "pattern": "fn_search_detail\\s*\\(\\s*(\\d+)\\s*\\)",
+                "urlTemplate": "https://www.djjunggu.go.kr/prog/saeolGosi/GOSI/sub03_06/view.do?notAncmtMgtNo={1}",
+                "description": "fn_ 함수 패턴"
+            },
+            {
+                "pattern": "fn_search_detail\\s*\\(\\s*(\\d+)\\s*\\)",
+                "urlTemplate": "https://www.djjunggu.go.kr/prog/saeolGosi/GOSI/sub03_06/view.do?notAncmtMgtNo={1}",
+                "description": "fn_ 함수 패턴"
+            }
+        ]
+    },
+    "hongseong": {
+        "onclickPatterns": [
+            {
+                "pattern": "fn_search_detail\\s*\\(\\s*['\"]?([^'\"]*?)['\"]?\\s*\\)",
+                "urlTemplate": "${this.baseUrl.replace(",
+                "description": "fn_ 함수 패턴"
+            },
+            {
+                "pattern": "fn_search_detail\\s*\\(\\s*['\"]?([^'\"]*?)['\"]?\\s*\\)",
+                "urlTemplate": "${this.baseUrl.replace(",
+                "description": "fn_ 함수 패턴"
+            },
+            {
+                "pattern": "fn_search_detail\\s*\\(\\s*['\"]?([^'\"]*?)['\"]?\\s*\\)",
+                "urlTemplate": "${this.baseUrl.replace(",
+                "description": "fn_ 함수 패턴"
+            }
+        ]
+    },
+    "paju": {
+        "onclickPatterns": [
+            {
+                "pattern": "jsView\\(\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*\\)",
+                "urlTemplate": "{1}//{2}/user/board/{3}",
+                "description": "jsView 함수 패턴"
+            },
+            {
+                "pattern": "jsView\\(\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*\\)",
+                "urlTemplate": "{1}//{2}/user/board/{3}",
+                "description": "jsView 함수 패턴"
+            },
+            {
+                "pattern": "jsView\\(\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*,\\s*['\"]([^'\"]*)['\"]\\s*\\)",
+                "urlTemplate": "{1}//{2}/user/board/{3}",
+                "description": "jsView 함수 패턴"
+            }
+        ]
+    },
+    "gccity": {
+        "onclickPatterns": [
+            {
+                "pattern": "location\\.href\\s*=\\s*['\"]([^'\"]+)['\"]",
+                "urlTemplate": "{1}//{2}{3}/{4}",
+                "description": "location 함수 패턴"
+            },
+            {
+                "pattern": "location\\.href\\s*=\\s*['\"]([^'\"]+)['\"]",
+                "urlTemplate": "{1}//{2}{3}/{4}",
+                "description": "location 함수 패턴"
+            },
+            {
+                "pattern": "location\\.href\\s*=\\s*['\"]([^'\"]+)['\"]",
+                "urlTemplate": "{1}//{2}{3}/{4}",
+                "description": "location 함수 패턴"
+            }
+        ]
+    },
+    "jeonbuk": {
+        "onclickPatterns": [
+            {
+                "pattern": "goPage\\((\\d+)\\)",
+                "urlTemplate": "https://state.gwd.go.kr/portal/bulletin/notification?pageIndex=1&recordCountPerPage=15&mode=&firstYN=N&articleSeq={1}&searchCondition=TITLE&searchKeyword=",
+                "description": "goPage 함수 패턴"
+            },
+            {
+                "pattern": "goPage\\((\\d+)\\)",
+                "urlTemplate": "https://state.gwd.go.kr/portal/bulletin/notification?pageIndex=1&recordCountPerPage=15&mode=&firstYN=N&articleSeq={1}&searchCondition=TITLE&searchKeyword=",
+                "description": "goPage 함수 패턴"
+            }
+        ]
+    },
+    "gwd": {
+        "onclickPatterns": [
+            {
+                "pattern": "goPage\\((\\d+)\\)",
+                "urlTemplate": "https://state.gwd.go.kr/portal/bulletin/notification?pageIndex=1&recordCountPerPage=15&mode=&firstYN=N&articleSeq={1}&searchCondition=TITLE&searchKeyword=",
+                "description": "goPage 함수 패턴"
+            },
+            {
+                "pattern": "goPage\\((\\d+)\\)",
+                "urlTemplate": "https://state.gwd.go.kr/portal/bulletin/notification?pageIndex=1&recordCountPerPage=15&mode=&firstYN=N&articleSeq={1}&searchCondition=TITLE&searchKeyword=",
+                "description": "goPage 함수 패턴"
+            }
+        ]
+    },
+    "gm": {
+        "onclickPatterns": [
+            {
+                "pattern": "opDetail\\s*\\(\\s*['\"]([^'\"]+)['\"]\\s*\\)",
+                "urlTemplate": "https://www.gm.go.kr/pt/user/nftcBbs/BD_selectNftcBbsDetail.do?q_nftcBbsCode=1001&q_nftcBbsMgtno={1}&q_currPage=1",
+                "description": "opDetail(mgtno) 패턴"
+            },
+            {
+                "pattern": "opDetail\\s*\\(\\s*['\"]([^'\"]+)['\"]\\s*\\)",
+                "urlTemplate": "https://www.gm.go.kr/pt/user/nftcBbs/BD_selectNftcBbsDetail.do?q_nftcBbsCode=1001&q_nftcBbsMgtno={1}&q_currPage=1",
+                "description": "opDetail(mgtno) 패턴"
+            },
+            {
+                "pattern": "opDetail\\s*\\(\\s*['\"]([^'\"]+)['\"]\\s*\\)",
+                "urlTemplate": "https://www.gm.go.kr/pt/user/nftcBbs/BD_selectNftcBbsDetail.do?q_nftcBbsCode=1001&q_nftcBbsMgtno={1}&q_currPage=1",
+                "description": "opDetail(mgtno) 패턴"
+            }
+        ]
+    },
+    "gwanak": {
+        "onclickPatterns": [
+            {
+                "pattern": "doBbsFView\\(['\"]?(\\d+)['\"]?\\)",
+                "urlTemplate": "https://www.gwanak.go.kr/site/gwanak/ex/bbsNew/View.do?not_ancmt_mgt_no={1}&typeCode={2}",
+                "description": "doBbsFView 함수 패턴"
+            },
+            {
+                "pattern": "doBbsFView",
+                "urlTemplate": "https://www.gwanak.go.kr/site/gwanak/ex/bbsNew/View.do?not_ancmt_mgt_no={1}&typeCode={2}",
+                "description": "doBbsFView 함수 패턴"
+            },
+            {
+                "pattern": "doBbsFView\\(['\"]?(\\d+)['\"]?\\)",
+                "urlTemplate": "https://www.gwanak.go.kr/site/gwanak/ex/bbsNew/View.do?not_ancmt_mgt_no={1}&typeCode={2}",
+                "description": "doBbsFView 함수 패턴"
+            }
+        ]
+    },
+    "seosan": {
+        "onclickPatterns": [
+            {
+                "pattern": "searchDetail\\(\\s*['\"]([^'\"]*)['\"]\\s*\\)",
+                "urlTemplate": "https://www.seosan.go.kr/common/program/eminwonView.jsp?",
+                "description": "searchDetail 함수 패턴"
+            },
+            {
+                "pattern": "searchDetail\\(\\s*['\"]([^'\"]*)['\"]\\s*\\)",
+                "urlTemplate": "https://www.seosan.go.kr/common/program/eminwonView.jsp?",
+                "description": "searchDetail 함수 패턴"
+            },
+            {
+                "pattern": "searchDetail\\(\\s*['\"]([^'\"]*)['\"]\\s*\\)",
+                "urlTemplate": "https://www.seosan.go.kr/common/program/eminwonView.jsp?",
+                "description": "searchDetail 함수 패턴"
+            }
+        ]
+    },
+    "osan": {
+        "onclickPatterns": [
+            {
+                "pattern": "location\\.href\\s*=\\s*['\"]([^'\"]+)['\"]",
+                "urlTemplate": "{1}//{2}{3}/{4}",
+                "description": "location 함수 패턴"
+            },
+            {
+                "pattern": "location\\.href\\s*=\\s*['\"]([^'\"]+)['\"]",
+                "urlTemplate": "{1}//{2}{3}/{4}",
+                "description": "location 함수 패턴"
+            },
+            {
+                "pattern": "location\\.href\\s*=\\s*['\"]([^'\"]+)['\"]",
+                "urlTemplate": "{1}//{2}{3}/{4}",
+                "description": "location 함수 패턴"
+            }
+        ]
+    },
+    "anseong": {
+        "onclickPatterns": [
+            {
+                "pattern": "boardView\\s*\\(\\s*['\"]([^'\"]+)['\"]\\s*,\\s*['\"]([^'\"]+)['\"]\\s*\\)",
+                "urlTemplate": "https://www.anseong.go.kr/portal/saeol/gosiView.do?notAncmtMgtNo={2}&mId=0501040000",
+                "description": "boardView(page, idx) 패턴"
+            },
+            {
+                "pattern": "boardView\\s*\\(\\s*['\"]([^'\"]+)['\"]\\s*,\\s*['\"]([^'\"]+)['\"]\\s*\\)",
+                "urlTemplate": "https://www.anseong.go.kr/portal/saeol/gosiView.do?notAncmtMgtNo={2}&mId=0501040000",
+                "description": "boardView(page, idx) 패턴"
+            },
+            {
+                "pattern": "boardView\\s*\\(\\s*['\"]([^'\"]+)['\"]\\s*,\\s*['\"]([^'\"]+)['\"]\\s*\\)",
+                "urlTemplate": "https://www.anseong.go.kr/portal/saeol/gosiView.do?notAncmtMgtNo={2}&mId=0501040000",
+                "description": "boardView(page, idx) 패턴"
+            }
+        ]
+    },
+    "gokseong": {
+        "onclickPatterns": [
+            {
+                "pattern": "searchDetail\\(\\s*['\"]([^'\"]*)['\"]\\s*\\)",
+                "urlTemplate": "{1}//{2}/user/board/{3}",
+                "description": "searchDetail 함수 패턴"
+            },
+            {
+                "pattern": "searchDetail\\(\\s*['\"]([^'\"]*)['\"]\\s*\\)",
+                "urlTemplate": "{1}//{2}/user/board/{3}",
+                "description": "searchDetail 함수 패턴"
+            },
+            {
+                "pattern": "searchDetail\\(\\s*['\"]([^'\"]*)['\"]\\s*\\)",
+                "urlTemplate": "{1}//{2}/user/board/{3}",
+                "description": "searchDetail 함수 패턴"
+            }
+        ]
+    }
+}

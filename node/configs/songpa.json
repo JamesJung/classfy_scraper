@@ -1,0 +1,27 @@
+{
+    "siteCode": "songpa",
+    "siteName": "송파구",
+    "baseUrl": "https://www.songpa.go.kr",
+    "listUrl": "https://www.songpa.go.kr/www/selectGosiList.do?key=2776&",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.p-table",
+        "row": "table.p-table tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(5)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "not_ancmt_mgt_no"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

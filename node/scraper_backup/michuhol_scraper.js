@@ -577,9 +577,9 @@ class AnnouncementScraper {
             const currentFiles = await fs.readdir(attachDir);
             // 새로 추가된 파일들 찾기
             const newFiles = currentFiles.filter(f => !existingFiles.includes(f));
-            
+
             console.log(`새로 다운로드된 파일 ${newFiles.length}개 발견`);
-            
+
             // 파일 크기순으로 정렬 (큰 파일부터)
             const fileInfos = [];
             for (const file of newFiles) {
@@ -587,13 +587,13 @@ class AnnouncementScraper {
                 fileInfos.push({ name: file, size: stats.size });
             }
             fileInfos.sort((a, b) => b.size - a.size);
-            
+
             // 첨부파일 목록과 매칭하여 이름 변경
             for (let i = 0; i < Math.min(fileInfos.length, attachments.length); i++) {
                 const oldPath = path.join(attachDir, fileInfos[i].name);
                 const newName = sanitize(attachments[i].name || `attachment_${i + 1}`, { replacement: '_' });
                 const newPath = path.join(attachDir, newName);
-                
+
                 if (oldPath !== newPath && fileInfos[i].size > 200) { // 200B 이상인 파일만 (에러 파일 제외)
                     try {
                         await fs.move(oldPath, newPath, { overwrite: true });
@@ -823,7 +823,7 @@ class AnnouncementScraper {
 
             if (matches) {
                 const [, url, userFileNm, sysFileNm, filePath, originalFileName] = matches;
-                
+
                 // 마지막 파라미터가 원본 파일명 (URL 디코딩 필요)
                 let decodedOriginalName = originalFileName;
                 try {
@@ -833,7 +833,7 @@ class AnnouncementScraper {
                 } catch (e) {
                     decodedOriginalName = originalFileName;
                 }
-                
+
                 fileName = decodedOriginalName || userFileNm;
 
                 // 파일명 디코딩 시도
@@ -858,7 +858,7 @@ class AnnouncementScraper {
 
                 // 브라우저 클릭 방식으로 다운로드
                 const downloadResult = await this.downloadViaBrowserClick(url, userFileNm, sysFileNm, filePath, originalFileName, attachDir, displayFileName);
-                
+
                 if (downloadResult && downloadResult.success) {
                     const elapsed = Date.now() - startTime;
                     console.log(`✅ 브라우저 클릭 방식으로 다운로드 성공!`);
@@ -908,11 +908,11 @@ class AnnouncementScraper {
     async downloadViaBrowserClick(url, userFileNm, sysFileNm, filePath, originalFileName, attachDir, displayFileName) {
         try {
             console.log('🖱️ 브라우저에서 실제 링크 클릭 방식 다운로드 시작...');
-            
+
             // 파일명 정리
             const cleanFileName = sanitize(displayFileName, { replacement: '_' });
             const expectedFilePath = path.join(attachDir, cleanFileName);
-            
+
             console.log(`다운로드할 파일: ${cleanFileName}`);
             console.log(`저장 경로: ${expectedFilePath}`);
 
@@ -921,7 +921,7 @@ class AnnouncementScraper {
 
             // CDP 세션 설정
             const client = await this.page.context().newCDPSession(this.page);
-            
+
             // 다운로드 동작 설정
             await client.send('Page.setDownloadBehavior', {
                 behavior: 'allow',
@@ -937,18 +937,18 @@ class AnnouncementScraper {
                 const downloadHandler = async (download) => {
                     try {
                         clearTimeout(timeout);
-                        
+
                         // 다운로드가 제안한 파일명으로 저장 (서버가 제공한 이름)
                         const suggestedFilename = download.suggestedFilename();
                         const tempPath = path.join(attachDir, suggestedFilename);
                         console.log(`서버 제안 파일명: ${suggestedFilename}`);
-                        
+
                         await download.saveAs(tempPath);
-                        
+
                         // 파일 크기 확인
                         const stats = await fs.stat(tempPath);
                         console.log(`다운로드 완료: ${tempPath} (${stats.size} bytes)`);
-                        
+
                         // 134B 에러 파일 체크
                         if (stats.size < 200) {
                             try {
@@ -962,7 +962,7 @@ class AnnouncementScraper {
                                 // 바이너리 파일일 수 있으므로 읽기 오류는 무시
                             }
                         }
-                        
+
                         // 정상 파일인 경우 원하는 이름으로 변경
                         const finalPath = path.join(attachDir, cleanFileName);
                         if (tempPath !== finalPath) {
@@ -974,7 +974,7 @@ class AnnouncementScraper {
                             console.log(`파일명 변경: ${suggestedFilename} → ${cleanFileName}`);
                         }
                         console.log(`✅ 파일 저장 완료: ${finalPath} (${stats.size} bytes)`);
-                        
+
                         resolve({ success: true, savedPath: finalPath, fileSize: stats.size });
                     } catch (error) {
                         clearTimeout(timeout);
@@ -987,28 +987,28 @@ class AnnouncementScraper {
 
             // 현재 페이지에서 해당 파일명의 링크를 찾아서 클릭
             console.log('페이지에서 첨부파일 링크 찾기...');
-            
+
             const clicked = await this.page.evaluate((targetFileName) => {
                 // 모든 첨부파일 링크 찾기
                 const links = document.querySelectorAll('a[href*="fnFileDown"]');
-                
+
                 for (const link of links) {
                     // 링크 텍스트나 title이 대상 파일명과 일치하는지 확인
-                    if (link.textContent.includes(targetFileName.substring(0, 20)) || 
+                    if (link.textContent.includes(targetFileName.substring(0, 20)) ||
                         (link.title && link.title.includes(targetFileName.substring(0, 20)))) {
                         console.log('찾은 링크:', link.href);
                         link.click();
                         return true;
                     }
                 }
-                
+
                 // 못 찾았으면 모든 fnFileDown 링크 중 첫번째 클릭
                 if (links.length > 0) {
                     console.log('첫번째 fnFileDown 링크 클릭:', links[0].href);
                     links[0].click();
                     return true;
                 }
-                
+
                 return false;
             }, displayFileName);
 
@@ -1019,43 +1019,43 @@ class AnnouncementScraper {
             // 다운로드 완료 대기
             console.log('다운로드 대기 중...');
             const result = await downloadPromise;
-            
+
             // 결과 검증
             if (result.fileSize < 200) {
                 throw new Error(`파일이 너무 작음 (${result.fileSize} bytes) - 에러 페이지일 가능성`);
             }
-            
+
             return result;
 
         } catch (error) {
             console.error('브라우저 실제 클릭 다운로드 실패:', error.message);
-            
+
             // 타임아웃이나 다운로드 이벤트가 발생하지 않은 경우
             // 직접 HTTP 요청 방식으로 시도
             console.log('폴백: 직접 HTTP 요청 방식 시도...');
-            
+
             // Referer와 Cookie를 현재 페이지에서 가져오기
             const cookies = await this.page.context().cookies();
             const cookieString = cookies.map(c => `${c.name}=${c.value}`).join('; ');
             const currentUrl = this.page.url();
-            
+
             return await this.downloadViaAxiosWithSession(url, userFileNm, sysFileNm, filePath, attachDir, displayFileName, cookieString, currentUrl);
         }
     }
-    
+
     /**
      * Axios를 사용한 세션 기반 다운로드
      */
     async downloadViaAxiosWithSession(url, userFileNm, sysFileNm, filePath, attachDir, displayFileName, cookieString, referer) {
         try {
             console.log('Axios 세션 기반 다운로드 시작...');
-            
+
             const downloadUrl = url || 'https://eminwon.michuhol.go.kr/emwp/jsp/ofr/FileDownNew.jsp';
             const postData = `user_file_nm=${userFileNm}&sys_file_nm=${sysFileNm}&file_path=${filePath}`;
-            
+
             console.log(`Cookie: ${cookieString ? 'Present' : 'None'}`);
             console.log(`Referer: ${referer}`);
-            
+
             const response = await axios({
                 method: 'POST',
                 url: downloadUrl,
@@ -1072,13 +1072,13 @@ class AnnouncementScraper {
                     'Cookie': cookieString
                 }
             });
-            
+
             const safeFileName = displayFileName.replace(/[\/\\:*?"<>|]/g, '_');
             const savePath = path.join(attachDir, safeFileName);
             const writer = fs.createWriteStream(savePath);
-            
+
             response.data.pipe(writer);
-            
+
             return new Promise((resolve, reject) => {
                 writer.on('finish', async () => {
                     // 파일 크기 확인
@@ -1096,7 +1096,7 @@ class AnnouncementScraper {
                 });
                 writer.on('error', reject);
             });
-            
+
         } catch (error) {
             console.error('Axios 세션 다운로드 실패:', error.message);
             throw error;
@@ -1436,36 +1436,36 @@ class AnnouncementScraper {
         lines.push('');
 
 
-        lines.push(`# 상세 URL : ${detailContent.url}`);
+        lines.push(`**원본 URL**: ${detailContent.url}`);
         lines.push('');
 
         if (detailContent.date) {
-            lines.push(`**작성일:** ${detailContent.date.format('YYYY-MM-DD')}`);
+            lines.push(`**작성일**: ${detailContent.date.format('YYYY-MM-DD')}`);
             lines.push('');
         }
 
         if (detailContent.content) {
-            lines.push('## 본문');
+            lines.push('**내용**:');
             lines.push('');
             lines.push(detailContent.content);
         }
 
         if (detailContent.attachments && detailContent.attachments.length > 0) {
             lines.push('');
-            lines.push('## 첨부파일');
+            lines.push('**첨부파일**:');
             lines.push('');
             detailContent.attachments.forEach((att, i) => {
                 // fnFileDown 패턴에서 실제 다운로드 URL 추출
                 let downloadUrl = att.url;
                 const regex = /fnFileDown\('([^']+)',\s*'([^']+)',\s*'([^']+)',\s*'([^']+)',\s*'([^']+)'\)/;
                 const matches = downloadUrl.match(regex);
-                
+
                 if (matches) {
                     const [, url, userFileNm, sysFileNm, filePath, originalFileName] = matches;
                     // POST 파라미터로 실제 다운로드 URL 구성
                     downloadUrl = `${url}?user_file_nm=${userFileNm}&sys_file_nm=${sysFileNm}&file_path=${filePath}`;
                 }
-                
+
                 // 파일명:실제 다운 URL 형식으로 출력
                 lines.push(`${i + 1}. ${att.name}:${downloadUrl}`);
             });

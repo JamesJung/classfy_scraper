@@ -1,0 +1,28 @@
+{
+    "siteCode": "sd",
+    "siteName": "성동구",
+    "baseUrl": "https://www.sd.go.kr",
+    "listUrl": "https://www.sd.go.kr/main/selectBbsNttList.do?bbsNo=184&key=1473&",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.p-table",
+        "row": "table.p-table tbody tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(3)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "nttNo",
+            "pageIndex"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

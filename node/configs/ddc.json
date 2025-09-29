@@ -1,0 +1,34 @@
+{
+    "siteCode": "ddc",
+    "siteName": "동대문구",
+    "baseUrl": "https://www.ddc.go.kr",
+    "listUrl": "https://www.ddc.go.kr/ddc/selectGosiList.do?key=340&not_ancmt_se_code=04",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.bbs_default",
+        "row": "table.bbs_default tbody tr",
+        "link": "td.subject a",
+        "title": "td.subject a",
+        "date": "td:nth-child(5)",
+        "detail": {
+            "content": "#board",
+            "attachments": {
+                "extractorName": "ddc",
+                "type": "custom"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "not_ancmt_mgt_no"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

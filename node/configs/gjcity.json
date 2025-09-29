@@ -1,0 +1,35 @@
+{
+    "siteCode": "gjcity",
+    "siteName": "광주시",
+    "baseUrl": "https://www.gjcity.go.kr",
+    "listUrl": "https://www.gjcity.go.kr/portal/saeol/gosi/list.do?mId=0202010000",
+    "dateFormat": "YYYY-MM-DD",
+    "selectors": {
+        "list": "table.bod_list",
+        "row": "table.bod_list tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(5)",
+        "detail": {
+            "content": "div.bod_view",
+            "attachments": {
+                "selector": "a[href*='goDownload'], a[onclick*='goDownload']",
+                "type": "javascript",
+                "downloadFunction": "goDownload"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&page",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "notAncmtMgtNo"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

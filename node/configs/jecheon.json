@@ -1,0 +1,28 @@
+{
+    "siteCode": "jecheon",
+    "siteName": "제천시",
+    "baseUrl": "https://www.jecheon.go.kr",
+    "listUrl": "https://www.jecheon.go.kr/www/selectBbsNttList.do?bbsNo=18&key=5233",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.p-table",
+        "row": "table.p-table tbody tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(5)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "nttNo",
+            "pageIndex"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

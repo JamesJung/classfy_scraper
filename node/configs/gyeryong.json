@@ -1,0 +1,30 @@
+{
+    "siteCode": "gyeryong",
+    "siteName": "계룡시",
+    "baseUrl": "https://gyeryong.go.kr",
+    "listUrl": "https://gyeryong.go.kr/kr/html/sub03/030102.html",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.table-bordered",
+        "row": "table.table-bordered tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(5)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&GotoPage",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "seq",
+            "id",
+            "no",
+            "idx"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

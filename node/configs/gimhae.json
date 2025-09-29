@@ -1,0 +1,34 @@
+{
+    "siteCode": "gimhae",
+    "siteName": "김해시",
+    "baseUrl": "https://www.gimhae.go.kr",
+    "listUrl": "https://www.gimhae.go.kr/03360/00023/00029.web",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": ".list1f1t3i1 .lst1",
+        "row": ".list1f1t3i1 .lst1 li",
+        "link": "a.a1",
+        "title": "a.a1 strong.t1",
+        "date": "a.a1 i.wrap1t3 span.t3:nth-child(2)",
+        "detail": {
+            "content": "div.view01",
+            "attachments": {
+                "selector": "a[href*='DownloadEx']",
+                "type": "direct_url"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "?cpage",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "not_ancmt_mgt_no"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

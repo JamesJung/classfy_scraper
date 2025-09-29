@@ -250,6 +250,7 @@ class AnnouncementScraper {
                             const onclick = titleElement.getAttribute('onclick');
                             const dataAction = titleElement.getAttribute('data-action');
 
+                            console.log("dateText", dateText)
                             results.push({
                                 title,
                                 dateText,
@@ -382,8 +383,15 @@ class AnnouncementScraper {
                 });
                 await this.page.waitForTimeout(2000);
 
+                const evalOptions = { ...this.options, announcement }
+
                 // 페이지 내용 추출
                 const content = await this.page.evaluate((options) => {
+
+                    const {
+                        announcement
+                    } = options;
+
                     // 헤더, 사이드바, 푸터 등 제거
                     const excludeSelectors = [
                         'header', 'nav', 'aside', 'footer',
@@ -420,43 +428,35 @@ class AnnouncementScraper {
 
                     // 날짜 추출
                     let dateText = '';
-                    const dateSelectors = [
-                        '.date', '.reg-date', '.write-date', '.post-date',
-                        '[class*="date"]', '[id*="date"]'
-                    ];
+                    // const dateSelectors = [
+                    //     '.date', '.reg-date', '.write-date', '.post-date',
+                    //     '[class*="date"]', '[id*="date"]'
+                    // ];
 
-                    for (const selector of dateSelectors) {
-                        const dateElement = document.querySelector(selector);
-                        if (dateElement) {
-                            dateText = dateElement.textContent.trim();
-                            break;
-                        }
-                    }
+                    // for (const selector of dateSelectors) {
+                    //     const dateElement = document.querySelector(selector);
+                    //     if (dateElement) {
+                    //         dateText = dateElement.textContent.trim();
+                    //         break;
+                    //     }
+                    // }
 
                     //현재 등록일의 경우는 아예 클래스 등이 지정되어 있지 않다.
                     if (!dateText) {
                         //이 부분을 처리하자
                         console.log("dateText 재처리")
 
-                        const rows = document.querySelectorAll('tr.problem');
-                        let startDate = '';
+                        //이 부분을 처리하자
+                        if (announcement && announcement.listDate) {
+                            dateText = announcement.listDate
+                        } else {
+                            const dateElement = document.querySelector('.p-author__info .p-split');
 
-                        rows.forEach(row => {
-                            const header = row.querySelector('th');
-                            // Check if the <th> tag contains the text "게재(공고)기간"
-                            if (header && header.textContent.trim() === '게재(공고)기간') {
-                                // Get the text from the following <td> tag
-                                const dateCell = header.nextElementSibling;
-                                if (dateCell) {
-                                    // "2025-09-11 ~ 2025-09-18"에서 앞 부분만 추출
-                                    const dateRange = dateCell.textContent.trim();
-                                    startDate = dateRange.split(' ~ ')[0];
-                                }
+                            if (dateElement) {
+                                // Get the text content, remove the "작성일 :" part, and trim whitespace
+                                dateText = dateElement.textContent.replace('작성일 :', '').trim();
                             }
-                        });
-
-
-                        dateText = startDate
+                        }
 
                     }
                     console.log("dateText ", dateText)
@@ -513,7 +513,7 @@ class AnnouncementScraper {
                         attachments: attachments
                     };
 
-                }, this.options);
+                }, evalOptions);
 
                 // 날짜 파싱
                 const detailDate = this.extractDate(content.dateText);
@@ -766,23 +766,23 @@ class AnnouncementScraper {
 
         console.log(announcement, detailContent)
 
-        lines.push(`# 상세 URL : ${detailContent.url}`);
+        lines.push(`**원본 URL**: ${detailContent.url}`);
         lines.push('');
 
         if (detailContent.date) {
-            lines.push(`**작성일:** ${detailContent.date.format('YYYY-MM-DD')}`);
+            lines.push(`**작성일**: ${detailContent.date.format('YYYY-MM-DD')}`);
             lines.push('');
         }
 
         if (detailContent.content) {
-            lines.push('## 본문');
+            lines.push('**내용**:');
             lines.push('');
             lines.push(detailContent.content);
         }
 
         if (detailContent.attachments && detailContent.attachments.length > 0) {
             lines.push('');
-            lines.push('## 첨부파일');
+            lines.push('**첨부파일**:');
             lines.push('');
             detailContent.attachments.forEach((att, i) => {
                 lines.push(`${i + 1}. ${att.name}:${att.url}`);

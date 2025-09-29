@@ -17,6 +17,7 @@ failed/
 backup/
 output/
 test_output/
+scraped_incremental/
 
 # ===== Node.js scraper data =====
 node/scraped_data/
@@ -28,6 +29,7 @@ node/scraper/eminwon_data22/
 node/scraper/-page/
 node/test_output/
 node/node_modules/
+
 
 # Node scraper temporary files
 node/scraper/debug_screenshot_*.png

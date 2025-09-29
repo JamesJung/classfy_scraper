@@ -1,0 +1,27 @@
+{
+    "siteCode": "uiryung",
+    "siteName": "의령군",
+    "baseUrl": "https://www.uiryeong.go.kr",
+    "listUrl": "https://www.uiryeong.go.kr/board/list.uiryeong?boardId=BBS_0000070&menuCd=DOM_000000203003001001&contentsSid=201",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.list01",
+        "row": "table.list01 tbody tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(4)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&startPage",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "gosiNo"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

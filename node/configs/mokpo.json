@@ -1,0 +1,27 @@
+{
+    "siteCode": "mokpo",
+    "siteName": "목포시",
+    "baseUrl": "https://www.mokpo.go.kr",
+    "listUrl": "https://www.mokpo.go.kr/www/mokpo_news/notification/public_notice",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "#content table.board_basic",
+        "row": "#content table.board_basic tbody tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(4)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&page",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "idx"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

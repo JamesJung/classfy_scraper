@@ -1,0 +1,30 @@
+{
+    "siteCode": "yeongam",
+    "siteName": "영암군",
+    "baseUrl": "https://www.yeongam.go.kr",
+    "listUrl": "https://www.yeongam.go.kr/home/www/open_information/yeongam_news/announcement/yeongam.go",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table#board_list_table",
+        "row": "table#board_list_table tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(5)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&page",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "seq",
+            "id",
+            "no",
+            "idx"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

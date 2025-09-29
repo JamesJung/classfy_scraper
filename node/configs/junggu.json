@@ -1,0 +1,27 @@
+{
+    "siteCode": "junggu",
+    "siteName": "중구",
+    "baseUrl": "https://www.junggu.seoul.kr",
+    "listUrl": "https://www.junggu.seoul.kr/content.do?cmsid=14232",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": ".board_list table",
+        "row": ".board_list table tbody tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(3)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&page",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "cid"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

@@ -1,0 +1,34 @@
+{
+    "siteCode": "ganghwa",
+    "siteName": "강화군",
+    "baseUrl": "https://www.ganghwa.go.kr",
+    "listUrl": "https://www.ganghwa.go.kr/open_content/main/ganghwa/news/announce.jsp",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.general_board",
+        "row": "table.general_board tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(5)",
+        "detail": {
+            "content": "#contents",
+            "attachments": {
+                "selector": "a[href*='FileDownNew']",
+                "type": "direct_url"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "?pgno",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "seq"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

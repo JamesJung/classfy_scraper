@@ -1,0 +1,27 @@
+{
+    "siteCode": "sj",
+    "siteName": "세종시",
+    "baseUrl": "https://sj.go.kr",
+    "listUrl": "https://sj.go.kr/page.do?mnu_uid=1044&",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.bod_list",
+        "row": "table.bod_list tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(5)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageNo",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "bod_uid"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

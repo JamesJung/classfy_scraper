@@ -1,0 +1,34 @@
+{
+    "siteCode": "geumsan",
+    "siteName": "금산군",
+    "baseUrl": "https://www.geumsan.go.kr",
+    "listUrl": "https://www.geumsan.go.kr/kr/html/sub03/030302.html",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.table-bordered",
+        "row": "table.table-bordered tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(5)",
+        "detail": {
+            "content": ".program--contents",
+            "attachments": {
+                "selector": "a[href*='download']",
+                "type": "direct_url"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "?GotoPage",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "mng_no"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

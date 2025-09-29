@@ -1,0 +1,35 @@
+{
+    "siteCode": "geoje",
+    "siteName": "거제시",
+    "baseUrl": "https://www.geoje.go.kr",
+    "listUrl": "https://www.geoje.go.kr/index.geoje?menuCd=DOM_000008902001002001",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.list01",
+        "row": "table.list01 tbody tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(5)",
+        "detail": {
+            "content": "div.view01",
+            "attachments": {
+                "selector": "a[href*='goDownLoad'], a[onclick*='goDownLoad']",
+                "type": "javascript",
+                "downloadFunction": "goDownLoad"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&startPage",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "idx"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

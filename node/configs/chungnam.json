@@ -1,0 +1,35 @@
+{
+    "siteCode": "chungnam",
+    "siteName": "충청남도",
+    "baseUrl": "https://www.chungnam.go.kr",
+    "listUrl": "https://www.chungnam.go.kr/cnportal/province/province/list.do?menuNo=500487",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": ".txt-board table",
+        "row": ".txt-board table tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(6)",
+        "detail": {
+            "content": "#content",
+            "attachments": {
+                "type": "custom",
+                "extractorName": "chungnam",
+                "selector": "td ul li"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "nttId"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

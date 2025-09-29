@@ -1,0 +1,27 @@
+{
+    "siteCode": "yd",
+    "siteName": "영등포구",
+    "baseUrl": "https://www.yd.go.kr",
+    "listUrl": "https://www.yd.go.kr/?page_id=763",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": ".kboard-list table",
+        "row": ".kboard-list table tbody tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(4)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageid",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "uid"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

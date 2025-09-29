@@ -1,0 +1,41 @@
+{
+    "siteCode": "gm",
+    "siteName": "광명시",
+    "baseUrl": "https://www.gm.go.kr",
+    "listUrl": "https://www.gm.go.kr/pt/user/nftcBbs/BD_selectNftcBbsList.do?q_nftcBbsCode=1001",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.bbsList",
+        "row": "table.bbsList tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(5)",
+        "detail": {
+            "content": "div.sub_content_cont_rt_cont",
+            "attachments": {
+                "selector": "a[href*='fileDownNow'], a[onclick*='fileDownNow']",
+                "type": "javascript",
+                "downloadFunction": "fileDownNow"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&q_currPage",
+        "maxPages": 10
+    },
+    "onclickPatterns": [
+        {
+            "pattern": "opDetail\\s*\\(\\s*['\"]([^'\"]+)['\"]\\s*\\)",
+            "urlTemplate": "https://www.gm.go.kr/pt/user/nftcBbs/BD_selectNftcBbsDetail.do?q_nftcBbsCode=1001&q_nftcBbsMgtno={1}&q_currPage=1",
+            "description": "opDetail(mgtno) 패턴"
+        }
+    ],
+    "announcementIdPattern": {
+        "urlParams": [
+            "q_nftcBbsMgtno"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

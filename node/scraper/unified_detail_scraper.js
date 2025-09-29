@@ -24,17 +24,17 @@ class UnifiedDetailScraper {
         this.onclick = options.onclick || '';
         this.dataAction = options.dataAction || '';
         this.verbose = options.verbose || false;
-        
+
         // 설정 로드
         const configPath = path.join(__dirname, 'scrapers_config.json');
         const configs = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        
+
         if (!configs[this.siteCode]) {
             throw new Error(`사이트 '${this.siteCode}'에 대한 설정을 찾을 수 없습니다.`);
         }
-        
+
         this.config = configs[this.siteCode];
-        
+
         // 커스텀 핸들러 로드
         if (this.config.customHandler) {
             const handlerPath = path.join(__dirname, 'custom_handlers', `${this.config.customHandler}_handler.js`);
@@ -45,7 +45,7 @@ class UnifiedDetailScraper {
                 }
             }
         }
-        
+
         // axios 설정
         this.axiosInstance = axios.create({
             httpsAgent: new https.Agent({
@@ -71,7 +71,7 @@ class UnifiedDetailScraper {
         });
 
         this.page = await context.newPage();
-        
+
         // 다운로드 이벤트 처리
         this.page.on('download', async (download) => {
             const fileName = download.suggestedFilename();
@@ -88,49 +88,49 @@ class UnifiedDetailScraper {
     async scrapeDetail() {
         try {
             await this.init();
-            
+
             if (this.verbose) {
                 console.error(`\n=== ${this.config.name} 상세 페이지 처리 ===`);
                 console.error(`제목: ${this.title}`);
                 console.error(`URL: ${this.announcementUrl}`);
             }
-            
+
             // 상세 페이지 URL 결정
             const detailUrl = await this.determineDetailUrl();
-            
+
             if (!detailUrl) {
                 throw new Error('상세 페이지 URL을 결정할 수 없습니다.');
             }
-            
+
             if (this.verbose) {
                 console.error(`[${this.siteCode}] 상세 페이지 접속: ${detailUrl}`);
             }
-            
+
             // 상세 페이지 이동
             await this.page.goto(detailUrl, { waitUntil: 'networkidle', timeout: 30000 });
-            
+
             // 커스텀 핸들러 실행 (있는 경우)
             if (this.customHandler?.beforeExtract) {
                 await this.customHandler.beforeExtract(this.page);
             }
-            
+
             // 콘텐츠 추출
             const content = await this.extractContent();
-            
+
             // 첨부파일 추출
             const attachments = await this.extractAttachments();
-            
+
             // 저장
             await this.saveContent(content, attachments);
-            
+
             // 첨부파일 다운로드
             if (attachments.length > 0) {
                 await this.downloadAttachments(attachments);
             }
-            
+
             // 실제 제목 추출 (페이지에서)
             const actualTitle = await this.extractActualTitle();
-            
+
             // 성공 응답
             console.log(JSON.stringify({
                 status: 'success',
@@ -159,17 +159,17 @@ class UnifiedDetailScraper {
         if (this.customHandler?.determineDetailUrl) {
             return await this.customHandler.determineDetailUrl(this);
         }
-        
+
         // 1. 이미 완전한 URL인 경우
         if (this.announcementUrl && this.announcementUrl.startsWith('http')) {
             return this.announcementUrl;
         }
-        
+
         // 2. data-action 속성 사용 (원주시 등)
         if (this.config.detailNavigation?.useDataAction && this.dataAction) {
             return new URL(this.dataAction, this.config.baseUrl).toString();
         }
-        
+
         // 3. onclick에서 JavaScript 패턴 추출
         if (this.onclick && this.config.detailNavigation?.patterns) {
             for (const pattern of this.config.detailNavigation.patterns) {
@@ -185,12 +185,12 @@ class UnifiedDetailScraper {
                 }
             }
         }
-        
+
         // 4. 상대 URL을 절대 URL로 변환
         if (this.announcementUrl && this.announcementUrl.startsWith('/')) {
             return new URL(this.announcementUrl, this.config.baseUrl).toString();
         }
-        
+
         return this.announcementUrl;
     }
 
@@ -204,14 +204,14 @@ class UnifiedDetailScraper {
                     '.view_title', '.subject', '.tit',
                     'td.title', 'div.title'
                 ];
-                
+
                 for (const selector of selectors) {
                     const element = document.querySelector(selector);
                     if (element && element.textContent.trim()) {
                         return element.textContent.trim();
                     }
                 }
-                
+
                 return null;
             });
         } catch (error) {
@@ -224,11 +224,11 @@ class UnifiedDetailScraper {
         if (this.customHandler?.extractContent) {
             return await this.customHandler.extractContent(this.page, this.config);
         }
-        
+
         return await this.page.evaluate((config) => {
             // 여러 콘텐츠 선택자 시도
             const selectors = config.selectors.contentArea.split(',').map(s => s.trim());
-            
+
             for (const selector of selectors) {
                 const contentElement = document.querySelector(selector);
                 if (contentElement) {
@@ -239,7 +239,7 @@ class UnifiedDetailScraper {
                     }
                 }
             }
-            
+
             // 폴백: body 전체에서 추출
             const bodyText = document.body.innerText || document.body.textContent || '';
             return bodyText.trim();
@@ -251,21 +251,21 @@ class UnifiedDetailScraper {
         if (this.customHandler?.extractAttachments) {
             return await this.customHandler.extractAttachments(this.page, this.config);
         }
-        
+
         return await this.page.evaluate((config) => {
             const attachments = [];
-            
+
             // 여러 첨부파일 선택자 시도
             const selectors = config.selectors.attachments.split(',').map(s => s.trim());
-            
+
             for (const selector of selectors) {
                 const links = document.querySelectorAll(selector);
-                
+
                 links.forEach(link => {
                     const name = link.textContent.trim();
                     const url = link.href || '';
                     const onclick = link.getAttribute('onclick') || '';
-                    
+
                     // 파일명이 있고 중복이 아닌 경우만 추가
                     if (name && !attachments.find(a => a.name === name)) {
                         // 확장자 체크 (이미지, 문서 등)
@@ -274,11 +274,11 @@ class UnifiedDetailScraper {
                             '.ppt', '.pptx', '.hwp', '.hwpx', '.zip',
                             '.jpg', '.jpeg', '.png', '.gif', '.txt'
                         ];
-                        
-                        const hasExtension = fileExtensions.some(ext => 
+
+                        const hasExtension = fileExtensions.some(ext =>
                             name.toLowerCase().includes(ext) || url.toLowerCase().includes(ext)
                         );
-                        
+
                         if (hasExtension || onclick.includes('download') || onclick.includes('file')) {
                             attachments.push({
                                 name: name,
@@ -289,7 +289,7 @@ class UnifiedDetailScraper {
                     }
                 });
             }
-            
+
             return attachments;
         }, this.config);
     }
@@ -297,7 +297,7 @@ class UnifiedDetailScraper {
     async downloadAttachments(attachments) {
         const attachDir = path.join(this.outputDir, this.folderName, 'attachments');
         await fs.ensureDir(attachDir);
-        
+
         for (const attachment of attachments) {
             try {
                 // 커스텀 핸들러의 다운로드 로직 (있는 경우)
@@ -305,24 +305,24 @@ class UnifiedDetailScraper {
                     await this.customHandler.downloadAttachment(this.page, attachment, attachDir);
                     continue;
                 }
-                
+
                 // 직접 URL 다운로드
                 if (attachment.url && attachment.url.startsWith('http')) {
                     const fileName = sanitize(attachment.name);
                     const filePath = path.join(attachDir, fileName);
-                    
+
                     const response = await this.axiosInstance.get(attachment.url, {
                         responseType: 'stream'
                     });
-                    
+
                     const writer = fs.createWriteStream(filePath);
                     response.data.pipe(writer);
-                    
+
                     await new Promise((resolve, reject) => {
                         writer.on('finish', resolve);
                         writer.on('error', reject);
                     });
-                    
+
                     if (this.verbose) {
                         console.error(`[${this.siteCode}] 첨부파일 다운로드 완료: ${fileName}`);
                     }
@@ -331,7 +331,7 @@ class UnifiedDetailScraper {
                     await this.page.evaluate((onclick) => {
                         eval(onclick);
                     }, attachment.onclick);
-                    
+
                     // 다운로드 대기
                     await this.delay(2000);
                 }
@@ -344,16 +344,16 @@ class UnifiedDetailScraper {
     async saveContent(content, attachments) {
         const folderPath = path.join(this.outputDir, this.folderName);
         await fs.ensureDir(folderPath);
-        
+
         // content.md 생성
         let markdown = `# ${this.title}\n\n`;
         markdown += `**원본 URL**: ${this.announcementUrl}\n\n`;
         markdown += `**작성일**: ${this.date}\n\n`;
         markdown += `## 내용\n\n${content}\n`;
-        
+
         // 첨부파일 정보 추가
         if (attachments.length > 0) {
-            markdown += `\n## 첨부파일\n`;
+            markdown += `\n**첨부파일**:\n`;
             for (const att of attachments) {
                 markdown += `- ${att.name}`;
                 if (att.url) {
@@ -362,11 +362,11 @@ class UnifiedDetailScraper {
                 markdown += '\n';
             }
         }
-        
+
         // 파일 저장
         const contentPath = path.join(folderPath, 'content.md');
         await fs.writeFile(contentPath, markdown, 'utf-8');
-        
+
         if (this.verbose) {
             console.error(`[${this.siteCode}] content.md 저장 완료: ${folderPath}`);
         }

@@ -1,0 +1,27 @@
+{
+    "siteCode": "hampyeong",
+    "siteName": "함평군",
+    "baseUrl": "https://www.hampyeong.go.kr",
+    "listUrl": "https://www.hampyeong.go.kr/pg/GosiList.do?pageId=www273",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "div.board_list_body .body_row",
+        "row": "div.board_list_body .body_row",
+        "link": "div.subject a",
+        "title": "div.subject a",
+        "date": "div.regdate"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "SEQ"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

@@ -1,0 +1,35 @@
+{
+    "siteCode": "gc",
+    "siteName": "거창군",
+    "baseUrl": "https://www.gc.go.kr",
+    "listUrl": "https://www.gc.go.kr/portal/saeol/gosi/list.do?seCode=01&mId=1202180100",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.bod_list",
+        "row": "table.bod_list tbody tr",
+        "link": "td.list_tit a",
+        "title": "td.list_tit a",
+        "date": "td.list_date",
+        "detail": {
+            "content": ".bod_view",
+            "attachments": {
+                "selector": "a[onclick*='goDownload']",
+                "type": "javascript",
+                "downloadFunction": "goDownload"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&page",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "notAncmtMgtNo"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

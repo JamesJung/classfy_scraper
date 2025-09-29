@@ -1,0 +1,35 @@
+{
+    "siteCode": "ddm",
+    "siteName": "동대문구",
+    "baseUrl": "https://www.ddm.go.kr",
+    "listUrl": "https://www.ddm.go.kr/www/selectEminwonWebList.do?key=3291&searchNotAncmtSeCode=01,02,04,05,06,07",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.p-table",
+        "row": "table.p-table tbody tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(5)",
+        "detail": {
+            "content": "#contents",
+            "attachments": {
+                "selector": "a[href*='goDownLoad']",
+                "type": "javascript",
+                "downloadFunction": "goDownLoad"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "notAncmtMgtNo"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

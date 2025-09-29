@@ -1,0 +1,28 @@
+{
+    "siteCode": "ongjin",
+    "siteName": "옹진군",
+    "baseUrl": "https://www.ongjin.go.kr",
+    "listUrl": "https://www.ongjin.go.kr/open_content/main/community/board/announce.jsp",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.general_board",
+        "row": "table.general_board tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(5)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pgno",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "pgno",
+            "mgt_no"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

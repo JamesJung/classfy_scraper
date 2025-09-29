@@ -38,7 +38,7 @@ class AnnouncementScraper {
         this.processedTitles = new Set();
         this.counter = 1;
         this.dateFormat = options.dateFormat || 'YYYY-MM-DD';
-        
+
         this.targetDate = options.targetDate || null;
         this.options = options;
     }
@@ -126,7 +126,7 @@ class AnnouncementScraper {
             const maxConsecutiveErrors = 5;
 
             console.log(`\n=== 스크래핑 시작 ===`);
-            
+
             if (this.targetDate) {
                 const targetMoment = moment(this.targetDate, 'YYYYMMDD');
                 console.log(`대상 날짜: ${targetMoment.format('YYYY-MM-DD')} (${this.targetDate} 이후 공고만 수집)`);
@@ -297,7 +297,7 @@ class AnnouncementScraper {
                     console.log(`리스트 날짜 ${listDate.format('YYYY-MM-DD')}가 대상 날짜(${targetMoment.format('YYYY-MM-DD')}) 이전입니다.`);
                     return true; // 스크래핑 중단
                 }
-            } 
+            }
             // targetYear만 설정된 경우 연도 체크
             else if (listDate && listDate.year() < this.targetYear) {
                 console.log(`리스트 날짜 ${listDate.format('YYYY-MM-DD')}가 대상 연도(${this.targetYear}) 이전입니다.`);
@@ -316,7 +316,7 @@ class AnnouncementScraper {
                 return false;
             }
 
-            
+
             // 4. 상세 페이지에서 날짜 재확인
             if (this.targetDate) {
                 const targetMoment = moment(this.targetDate, 'YYYYMMDD');
@@ -732,23 +732,23 @@ class AnnouncementScraper {
 
         console.log(announcement, detailContent)
 
-        lines.push(`# 상세 URL : ${detailContent.url}`);
+        lines.push(`**원본 URL**: ${detailContent.url}`);
         lines.push('');
 
         if (detailContent.date) {
-            lines.push(`**작성일:** ${detailContent.date.format('YYYY-MM-DD')}`);
+            lines.push(`**작성일**: ${detailContent.date.format('YYYY-MM-DD')}`);
             lines.push('');
         }
 
         if (detailContent.content) {
-            lines.push('## 본문');
+            lines.push('**내용**:');
             lines.push('');
             lines.push(detailContent.content);
         }
 
         if (detailContent.attachments && detailContent.attachments.length > 0) {
             lines.push('');
-            lines.push('## 첨부파일');
+            lines.push('**첨부파일**:');
             lines.push('');
             detailContent.attachments.forEach((att, i) => {
                 lines.push(`${i + 1}. ${att.name}:${att.url}`);
@@ -894,7 +894,7 @@ class AnnouncementScraper {
         }
 
         // 다양한 날짜 형식 시도
-        
+
         // YY.MM.DD 형식 체크 (예: 24.12.31)
         const yymmddMatch = cleanText.match(/^(\d{2})\.(\d{1,2})\.(\d{1,2})$/);
         if (yymmddMatch) {

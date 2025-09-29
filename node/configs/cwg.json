@@ -1,0 +1,34 @@
+{
+    "siteCode": "cwg",
+    "siteName": "철원군",
+    "baseUrl": "https://www.cwg.go.kr",
+    "listUrl": "https://www.cwg.go.kr/www/selectBbsNttList.do?bbsNo=25&key=1226",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.p-table",
+        "row": "table.p-table tbody tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(6)",
+        "detail": {
+            "content": "table.p-table",
+            "attachments": {
+                "extractorName": "boeun",
+                "type": "custom"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "nttNo"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

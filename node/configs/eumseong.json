@@ -1,0 +1,34 @@
+{
+    "siteCode": "eumseong",
+    "siteName": "음성군",
+    "baseUrl": "https://www.eumseong.go.kr",
+    "listUrl": "https://www.eumseong.go.kr/www/selectEminwonList.do?pageUnit=10&searchCnd=all&key=352&ofr_pageSize=10",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.p-table",
+        "row": "table.p-table tbody tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(4)",
+        "detail": {
+            "content": "#contents",
+            "attachments": {
+                "selector": "a[href*='FileDown'], a[onclick*='FileDown']",
+                "type": "direct_url"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "not_ancmt_mgt_no"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

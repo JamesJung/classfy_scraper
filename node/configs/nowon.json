@@ -1,0 +1,27 @@
+{
+    "siteCode": "nowon",
+    "siteName": "노원구",
+    "baseUrl": "https://www.nowon.kr",
+    "listUrl": "https://www.nowon.kr/www/user/bbs/BD_selectBbsList.do?q_bbsCode=1003&q_clCode=0&q_estnColumn1=11&q_ntceSiteCode=11",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.table-list",
+        "row": "table.table-list tbody tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(4)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&q_currPage",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "q_bbscttSn"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

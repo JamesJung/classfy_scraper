@@ -85,7 +85,7 @@ class AnnouncementScraper {
 
                 this.page.on('console', (msg) => {
                     // console.log, console.warn, console.error 등 모든 브라우저 콘솔 메시지를 처리
-                    //console.log(`[브라우저 콘솔]: ${msg.text()}`);
+                    console.log(`[브라우저 콘솔]: ${msg.text()}`);
                 });
 
                 this.page.on('pageerror', (error) => {
@@ -245,6 +245,7 @@ class AnnouncementScraper {
                             const title = titleElement.textContent.trim();
                             const dateText = dateElement.textContent.trim();
 
+                            console.log("dateText", dateText, title)
                             // 다양한 방식으로 링크 정보 추출
                             const href = titleElement.href;
                             const onclick = titleElement.getAttribute('onclick');
@@ -382,8 +383,15 @@ class AnnouncementScraper {
                 });
                 await this.page.waitForTimeout(2000);
 
+                const evalOptions = { ...this.options, announcement }
+
                 // 페이지 내용 추출
                 const content = await this.page.evaluate((options) => {
+
+                    const {
+                        announcement
+                    } = options;
+
                     // 헤더, 사이드바, 푸터 등 제거
                     const excludeSelectors = [
                         'header', 'nav', 'aside', 'footer',
@@ -419,38 +427,24 @@ class AnnouncementScraper {
 
                     // 날짜 추출
                     let dateText = '';
-                    const dateSelectors = [
-                        '.date', '.reg-date', '.write-date', '.post-date',
-                        '[class*="date"]', '[id*="date"]'
-                    ];
-
-                    for (const selector of dateSelectors) {
-                        const dateElement = document.querySelector(selector);
-                        if (dateElement) {
-                            dateText = dateElement.textContent.trim();
-                            break;
-                        }
-                    }
-
                     //현재 등록일의 경우는 아예 클래스 등이 지정되어 있지 않다.
                     if (!dateText) {
                         //이 부분을 처리하자
-                        console.log("dateText 재처리")
+                        console.log("!!!!dateText 재처리")
 
-                        const infoElements = document.querySelectorAll('.info p.btxt');
-                        let date = '';
+                        //이 부분을 처리하자
+                        if (announcement && announcement.listDate) {
+                            dateText = announcement.listDate
+                        } else {
+                            const dateElement = document.querySelector('.p-author__info .p-split');
 
-                        infoElements.forEach(p => {
-                            // <strong> 태그의 텍스트가 '게재일'인지 확인
-                            const strongTag = p.querySelector('strong');
-                            if (strongTag && strongTag.textContent.trim() === '게재일') {
-                                // <p> 태그의 전체 텍스트에서 '게재일'을 제거하고 날짜만 남김
-                                date = p.textContent.replace('게재일', '').trim();
+                            if (dateElement) {
+                                // Get the text content, remove the "작성일 :" part, and trim whitespace
+                                dateText = dateElement.textContent.replace('작성일 :', '').trim();
                             }
-                        });
-                        if (date) dateText = date
-
+                        }
                     }
+
                     console.log("dateText ", dateText)
 
                     // 첨부파일 링크 추출
@@ -482,7 +476,7 @@ class AnnouncementScraper {
                         attachments: attachments
                     };
 
-                }, this.options);
+                }, evalOptions);
 
                 // 날짜 파싱
                 const detailDate = this.extractDate(content.dateText);
@@ -1093,23 +1087,23 @@ class AnnouncementScraper {
         lines.push('');
 
 
-        lines.push(`# 상세 URL : ${detailContent.url}`);
+        lines.push(`**원본 URL**: ${detailContent.url}`);
         lines.push('');
 
         if (detailContent.date) {
-            lines.push(`**작성일:** ${detailContent.date.format('YYYY-MM-DD')}`);
+            lines.push(`**작성일**: ${detailContent.date.format('YYYY-MM-DD')}`);
             lines.push('');
         }
 
         if (detailContent.content) {
-            lines.push('## 본문');
+            lines.push('**내용**:');
             lines.push('');
             lines.push(detailContent.content);
         }
 
         if (detailContent.attachments && detailContent.attachments.length > 0) {
             lines.push('');
-            lines.push('## 첨부파일');
+            lines.push('**첨부파일**:');
             lines.push('');
             detailContent.attachments.forEach((att, i) => {
                 // URL 추출 - goDownLoad 패턴인 경우 실제 다운로드 URL 생성

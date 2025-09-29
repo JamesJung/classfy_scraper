@@ -334,7 +334,11 @@ class AnnouncementScraper {
             console.log(`\n처리 중: ${announcement.title}`);
 
             // 1. 리스트에서 날짜 확인
+            console.log("announcement.dateText", announcement.dateText)
             const listDate = this.extractDate(announcement.dateText);
+            console.log("listDate", listDate)
+
+
 
             // targetDate가 설정된 경우 해당 날짜 이전 체크
             if (this.targetDate) {
@@ -1019,6 +1023,15 @@ class AnnouncementScraper {
 
         // 텍스트 정리
         let cleanText = dateText.trim();
+
+        // HH:MM:SS 형식 체크 (예: 09:04:09) - 오늘 날짜로 변환
+        const timeMatch = cleanText.match(/^(\d{2}):(\d{2}):(\d{2})$/);
+        if (timeMatch) {
+            // 오늘 날짜를 YYYY-MM-DD 형식으로 반환
+            const today = moment();
+            console.log(`시간 형식 ${cleanText}을(를) 오늘 날짜 ${today.format('YYYY-MM-DD')}로 변환`);
+            return today;
+        }
 
         // "등록일\n2025-09-10" 같은 형식에서 날짜만 추출
         const dateMatch = cleanText.match(/(\d{4}[-.\\/]\d{1,2}[-.\\/]\d{1,2})/);

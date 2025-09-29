@@ -1,0 +1,27 @@
+{
+    "siteCode": "gwangsan",
+    "siteName": "광산구",
+    "baseUrl": "https://www.gwangsan.go.kr",
+    "listUrl": "https://www.gwangsan.go.kr/notList.do?pageId=www12&searchNotSe=01",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.type_noline",
+        "row": "table.type_noline tbody tr",
+        "link": "td.subject a, td.tl a, td:nth-child(3) a",
+        "title": "td.subject a, td.tl a, td:nth-child(3) a",
+        "date": "td:nth-child(4)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&movePage",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "notSn"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

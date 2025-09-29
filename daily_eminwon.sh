@@ -24,6 +24,9 @@ if [ -f .env ]; then
 fi
 
 echo "=== Eminwon 일일 수집 시작: $(date) ===" >> "$LOG_FILE"
+
+# 시작 시간 기록
+START_TIME=$(date +%s)
 echo "Node version: $(node --version)" >> "$LOG_FILE"
 echo "Python version: $(python3 --version)" >> "$LOG_FILE"
 
@@ -38,4 +41,11 @@ else
 fi
 
 
+# 종료 시간 및 총 실행 시간 계산
+END_TIME=$(date +%s)
+ELAPSED_TIME=$((END_TIME - START_TIME))
+ELAPSED_MIN=$((ELAPSED_TIME / 60))
+ELAPSED_SEC=$((ELAPSED_TIME % 60))
+
 echo "=== 완료: $(date) ===" >> "$LOG_FILE"
+echo "총 실행 시간: ${ELAPSED_MIN}분 ${ELAPSED_SEC}초" >> "$LOG_FILE"

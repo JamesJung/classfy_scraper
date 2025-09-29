@@ -62,7 +62,16 @@
       "Bash(do if [ -d \"$dir\" ])",
       "Bash(then if [ ! -f \"$dir/content.md\" ])",
       "Bash(mysql:*)",
-      "Read(//Users/**)"
+      "Read(//Users/**)",
+      "Bash(npx playwright install:*)",
+      "Bash(source .env)",
+      "Bash(source:*)",
+      "Bash(git checkout:*)",
+      "Bash(git pull:*)",
+      "WebFetch(domain:www.cng.go.kr)",
+      "WebFetch(domain:www.djjunggu.go.kr)",
+      "WebFetch(domain:www.geumsan.go.kr)",
+      "WebFetch(domain:www.gokseong.go.kr)"
     ],
     "deny": [],
     "ask": []

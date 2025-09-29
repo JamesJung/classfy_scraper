@@ -1,0 +1,30 @@
+{
+    "siteCode": "haenam",
+    "siteName": "해남군",
+    "baseUrl": "https://www.haenam.go.kr",
+    "listUrl": "https://www.haenam.go.kr/index.9is?contentUid=18e3368f7913117f017915ea3b971122&nowPageNum=1&recordCountPerPage=10&searchType=&keyword=",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.board_list",
+        "row": "table.board_list tbody tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(5)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&nowPageNum",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "seq",
+            "id",
+            "no",
+            "idx"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

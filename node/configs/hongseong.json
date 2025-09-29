@@ -1,0 +1,36 @@
+{
+    "siteCode": "hongseong",
+    "siteName": "홍성군",
+    "baseUrl": "https://www.hongseong.go.kr",
+    "listUrl": "https://www.hongseong.go.kr/prog/saeolGosi/kor/sub03_0204/all/list.do",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.board_list",
+        "row": "table.board_list tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(5)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [
+        {
+            "pattern": "fn_search_detail\\s*\\(\\s*['\"]?([^'\"]*?)['\"]?\\s*\\)",
+            "urlTemplate": "${this.baseUrl.replace(",
+            "description": "fn_ 함수 패턴"
+        }
+    ],
+    "announcementIdPattern": {
+        "urlParams": [
+            "seq",
+            "id",
+            "no",
+            "idx"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

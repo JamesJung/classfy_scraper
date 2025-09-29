@@ -1,0 +1,41 @@
+{
+    "siteCode": "anseong",
+    "siteName": "안동시",
+    "baseUrl": "https://www.andong.go.kr",
+    "listUrl": "https://www.andong.go.kr/portal/saeol/gosi/list.do?seCode=04&mId=0401020300",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.bod_list",
+        "row": "table.bod_list tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(5)",
+        "detail": {
+            "content": "#sub_body",
+            "attachments": {
+                "selector": "a[href*='goDownload'], a[onclick*='goDownload']",
+                "type": "javascript",
+                "downloadFunction": "goDownload"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&page",
+        "maxPages": 10
+    },
+    "onclickPatterns": [
+        {
+            "pattern": "boardView\\s*\\(\\s*['\"]([^'\"]+)['\"]\\s*,\\s*['\"]([^'\"]+)['\"]\\s*\\)",
+            "urlTemplate": "https://www.anseong.go.kr/portal/saeol/gosiView.do?notAncmtMgtNo={2}&mId=0501040000",
+            "description": "boardView(page, idx) 패턴"
+        }
+    ],
+    "announcementIdPattern": {
+        "urlParams": [
+            "notAncmtMgtNo"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

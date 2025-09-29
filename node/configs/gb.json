@@ -1,0 +1,34 @@
+{
+    "siteCode": "gb",
+    "siteName": "경상북도",
+    "baseUrl": "https://www.gb.go.kr",
+    "listUrl": "https://www.gb.go.kr/Main/page.do?mnu_uid=6789&LARGE_CODE=720&MEDIUM_CODE=50&SMALL_CODE=10&SMALL_CODE2=30&",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.bbsList",
+        "row": "table.bbsList tbody tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(6)",
+        "detail": {
+            "content": ".bbsView",
+            "attachments": {
+                "extractorName": "gb",
+                "type": "custom"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&Start",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "B_NUM"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

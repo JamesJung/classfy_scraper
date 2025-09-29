@@ -1,0 +1,27 @@
+{
+    "siteCode": "yangcheon",
+    "siteName": "양천구",
+    "baseUrl": "https://www.yangcheon.go.kr",
+    "listUrl": "https://www.yangcheon.go.kr/site/yangcheon/ex/seol/seolCollectList.do",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.basic-list",
+        "row": "table.basic-list tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(5)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "not_ancmt_mgt_no"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

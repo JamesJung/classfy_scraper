@@ -1,0 +1,34 @@
+{
+    "siteCode": "gangbuk",
+    "siteName": "강북구",
+    "baseUrl": "https://www.gangbuk.go.kr",
+    "listUrl": "https://www.gangbuk.go.kr/portal/bbs/B0000245/list.do?menuNo=200082",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": ".bd-list table",
+        "row": ".bd-list table tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(5)",
+        "detail": {
+            "content": "#contents",
+            "attachments": {
+                "selector": ".file-lists dd.item a.file",
+                "type": "direct_url"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "nttId"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

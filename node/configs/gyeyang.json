@@ -1,0 +1,27 @@
+{
+    "siteCode": "gyeyang",
+    "siteName": "계양구",
+    "baseUrl": "https://www.gyeyang.go.kr",
+    "listUrl": "https://www.gyeyang.go.kr/open_content/main/open_info/admin/gosi.jsp",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.board_list",
+        "row": "table.board_list tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(5)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pgno",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "seq"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

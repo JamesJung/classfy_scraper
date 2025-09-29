@@ -1,0 +1,27 @@
+{
+    "siteCode": "wonju",
+    "siteName": "원주시",
+    "baseUrl": "https://www.wonju.go.kr",
+    "listUrl": "https://www.wonju.go.kr/www/selectBbsNttList.do?bbsNo=140&key=216&",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.p-table",
+        "row": "table.p-table tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(4)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "nttNo"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

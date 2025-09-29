@@ -1,0 +1,37 @@
+{
+    "siteCode": "gangjin",
+    "siteName": "강진군",
+    "baseUrl": "https://www.gangjin.go.kr",
+    "listUrl": "https://www.gangjin.go.kr/www/government/notice/gosi",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": ".board_list table.board_basic",
+        "row": ".board_list table.board_basic tbody tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(4)",
+        "detail": {
+            "content": "#content",
+            "attachments": {
+                "extractorName": "gangjin",
+                "type": "custom"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "?page",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "seq",
+            "id",
+            "no",
+            "idx"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

@@ -775,29 +775,29 @@ class AnnouncementScraper {
 
         console.log(announcement, detailContent)
 
-        lines.push(`# 상세 URL : ${detailContent.url}`);
+        lines.push(`**원본 URL**: ${detailContent.url}`);
         lines.push('');
 
         if (detailContent.date) {
-            lines.push(`**작성일:** ${detailContent.date.format('YYYY-MM-DD')}`);
+            lines.push(`**작성일**: ${detailContent.date.format('YYYY-MM-DD')}`);
             lines.push('');
         }
 
         if (detailContent.content) {
-            lines.push('## 본문');
+            lines.push('**내용**:');
             lines.push('');
             lines.push(detailContent.content);
         }
 
         if (detailContent.attachments && detailContent.attachments.length > 0) {
             lines.push('');
-            lines.push('## 첨부파일');
+            lines.push('**첨부파일**:');
             lines.push('');
             detailContent.attachments.forEach((att, i) => {
                 // 부산시 다운로드 URL 생성
                 const baseUrl = 'https://www.busan.go.kr';
                 let downloadUrl = '';
-                
+
                 if (att.url) {
                     // 이미 절대 URL인 경우
                     if (att.url.startsWith('http')) {
@@ -815,7 +815,7 @@ class AnnouncementScraper {
                         downloadUrl = att.url;
                     }
                 }
-                
+
                 lines.push(`${i + 1}. ${att.name}${downloadUrl ? ': ' + downloadUrl : ''}`);
             });
         }

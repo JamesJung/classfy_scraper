@@ -1,0 +1,27 @@
+{
+    "siteCode": "icbp",
+    "siteName": "인천부평구",
+    "baseUrl": "https://www.icbp.go.kr",
+    "listUrl": "https://www.icbp.go.kr/main/participation/news/announce.jsp",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": ".etcList li",
+        "row": ".etcList li",
+        "link": ".tit a",
+        "title": ".tit a",
+        "date": ".list_info li:nth-child(2)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pgno",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "mgt_no"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

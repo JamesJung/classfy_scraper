@@ -1,0 +1,28 @@
+{
+    "siteCode": "sejong",
+    "siteName": "세종특별자치시",
+    "baseUrl": "https://www.sejong.go.kr",
+    "listUrl": "https://www.sejong.go.kr/prog/publicNotice/kor/sub02_0303/C1/list.do?pageIndex=1",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "div.table-responsive table",
+        "row": "div.table-responsive table tbody tr",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(5)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "not_ancmt_mgt_no",
+            "pageIndex"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

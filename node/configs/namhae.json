@@ -1,0 +1,30 @@
+{
+    "siteCode": "namhae",
+    "siteName": "남해군",
+    "baseUrl": "https://www.namhae.go.kr",
+    "listUrl": "https://www.namhae.go.kr/modules/saeol/gosi.do?&pageCd=SM010110000&siteGubun=socialm&_csrf_parameterName=CSRFToken&_csrf_token=952e47cb-a1d1-4abf-882c-4eb16efe2afd",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": ".list1f1t3i1 .lst1 li",
+        "row": ".list1f1t3i1 .lst1 li",
+        "link": "a.a1 strong.t1",
+        "title": "a.a1 strong.t1",
+        "date": "i.wrap1t3 span.t3:nth-child(2)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&cpage",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "seq",
+            "id",
+            "no",
+            "idx"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

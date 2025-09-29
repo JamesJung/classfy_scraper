@@ -1,0 +1,34 @@
+{
+    "siteCode": "gochang",
+    "siteName": "고창군",
+    "baseUrl": "https://www.gochang.go.kr",
+    "listUrl": "https://www.gochang.go.kr/board/list.gochang?boardId=BBS_0000180&menuCd=DOM_000000102003007000&contentsSid=2682&cpath=",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "ul.bbs_list > li",
+        "row": "ul.bbs_list > li",
+        "link": "a",
+        "title": "a strong",
+        "date": "a em.info",
+        "detail": {
+            "content": "div.bbs_view",
+            "attachments": {
+                "selector": "a[href*='download'], a[onclick*='download']",
+                "type": "direct_url"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&startPage",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "dataSid"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

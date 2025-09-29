@@ -92,7 +92,7 @@ class AnnouncementScraper {
                         get: () => ['ko-KR', 'ko', 'en-US', 'en']
                     });
                 });
-                
+
                 this.page = await this.context.newPage();
 
                 // 타임아웃 설정
@@ -243,13 +243,13 @@ class AnnouncementScraper {
 
                 // 개발자 도구 감지 페이지가 나타나면 대기
                 await this.page.waitForTimeout(2000);
-                
+
                 // 개발자 도구 감지 팝업 확인 및 처리
                 const hasBlocker = await this.page.evaluate(() => {
                     const text = document.body.innerText || '';
                     return text.includes('개발자 도구 감지');
                 });
-                
+
                 if (hasBlocker) {
                     console.log('개발자 도구 감지 페이지 발견. 우회 시도...');
                     // 페이지 새로고침
@@ -262,7 +262,7 @@ class AnnouncementScraper {
 
                 // 동적 컨텐츠 로딩 대기
                 await this.page.waitForTimeout(2000);
-                
+
                 // tbody가 있는지 확인
                 const hasTable = await this.page.evaluate(() => {
                     const tbody = document.querySelector('tbody');
@@ -955,23 +955,23 @@ class AnnouncementScraper {
         lines.push('');
 
 
-        lines.push(`# 상세 URL : ${detailContent.url}`);
+        lines.push(`**원본 URL**: ${detailContent.url}`);
         lines.push('');
 
         if (detailContent.date) {
-            lines.push(`**작성일:** ${detailContent.date.format('YYYY-MM-DD')}`);
+            lines.push(`**작성일**: ${detailContent.date.format('YYYY-MM-DD')}`);
             lines.push('');
         }
 
         if (detailContent.content) {
-            lines.push('## 본문');
+            lines.push('**내용**:');
             lines.push('');
             lines.push(detailContent.content);
         }
 
         if (detailContent.attachments && detailContent.attachments.length > 0) {
             lines.push('');
-            lines.push('## 첨부파일');
+            lines.push('**첨부파일**:');
             lines.push('');
             detailContent.attachments.forEach((att, i) => {
                 lines.push(`${i + 1}. ${att.name}`);

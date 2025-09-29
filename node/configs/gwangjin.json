@@ -1,0 +1,28 @@
+{
+    "siteCode": "gwangjin",
+    "siteName": "광진구",
+    "baseUrl": "https://www.gwangjin.go.kr",
+    "listUrl": "https://www.gwangjin.go.kr/portal/bbs/B0000378/list.do?menuNo=200192",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "div.table table",
+        "row": "div.table table tbody tr",
+        "link": "td:nth-child(4) a",
+        "title": "td:nth-child(4) a",
+        "date": "td:nth-child(6)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "notAncmtMgtNo",
+            "pageIndex"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

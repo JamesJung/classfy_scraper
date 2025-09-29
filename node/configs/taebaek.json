@@ -1,0 +1,27 @@
+{
+    "siteCode": "taebaek",
+    "siteName": "태백시",
+    "baseUrl": "https://www.taebaek.go.kr",
+    "listUrl": "https://www.taebaek.go.kr/www/selectBbsNttList.do?bbsNo=25&key=352",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": "table.bbs_default",
+        "row": "table.bbs_default tbody tr",
+        "link": "td:nth-child(2) a",
+        "title": "td:nth-child(2) a",
+        "date": "td:nth-child(4)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&pageIndex",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "nttNo"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

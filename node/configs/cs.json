@@ -1,0 +1,34 @@
+{
+    "siteCode": "cs",
+    "siteName": "창원시",
+    "baseUrl": "https://www.cs.go.kr",
+    "listUrl": "https://www.cs.go.kr/news/00002679/00006203.web",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": ".list1table4",
+        "row": ".list1table4 li",
+        "link": "span.t2 a",
+        "title": "span.t2 a",
+        "date": "span.t5",
+        "detail": {
+            "content": "div.board",
+            "attachments": {
+                "selector": "a[href*='FileDown']",
+                "type": "direct_url"
+            }
+        }
+    },
+    "pagination": {
+        "type": "query",
+        "param": "?&cpage",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "not_ancmt_mgt_no"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

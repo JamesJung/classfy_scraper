@@ -1,0 +1,27 @@
+{
+    "siteCode": "haman",
+    "siteName": "함안군",
+    "baseUrl": "https://www.haman.go.kr",
+    "listUrl": "https://www.haman.go.kr/00059/06642/06644.web",
+    "dateFormat": "YYYY.MM.DD",
+    "selectors": {
+        "list": ".list1f1t3i1 .lst1 li",
+        "row": ".list1f1t3i1 .lst1 li",
+        "link": "td:nth-child(3) a",
+        "title": "td:nth-child(3) a",
+        "date": "td:nth-child(6)"
+    },
+    "pagination": {
+        "type": "query",
+        "param": "&cpage",
+        "maxPages": 10
+    },
+    "onclickPatterns": [],
+    "announcementIdPattern": {
+        "urlParams": [
+            "not_ancmt_mgt_no"
+        ],
+        "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
+    },
+    "dailyPages": 3
+}

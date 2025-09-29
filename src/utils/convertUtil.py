@@ -1650,13 +1650,13 @@ def perform_ocr_on_image(image) -> str:
         # 결과 정리
         lines = []
         for bbox, text, confidence in results:
-            if confidence > 0.5 and len(text.strip()) > 1:  # 신뢰도 50% 이상
+            if confidence > 0.2 and len(text.strip()) > 1:  # 신뢰도 30% 이상 (지역명 등 포함)
                 lines.append(text.strip())
 
         if lines:
-            cleaned_text = "\n".join(lines)
+            cleaned_text = "\n".join(lines)  # 줄바꿈으로 결합하여 레이아웃 보존
 
-            # 표 형태 감지 및 마크다운 테이블로 변핒 시도
+            # 표 형태 감지 및 마크다운 테이블로 변환 시도
             if "|" in cleaned_text or "\t" in cleaned_text:
                 cleaned_text = format_as_markdown_table(cleaned_text)
 

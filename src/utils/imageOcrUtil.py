@@ -296,12 +296,13 @@ class ImageOCRProcessor:
                             # 결과 텍스트 결합
                             extracted_texts = []
                             for bbox, text, confidence in results:
-                                # 신뢰도가 0.5 이상인 텍스트만 사용
-                                if confidence >= 0.5:
+                                # 신뢰도가 0.3 이상인 텍스트만 사용 (0.5에서 하향 조정)
+                                # 중요 지역명 등이 0.4 정도 신뢰도로 나오는 경우 포함
+                                if confidence >= 0.2:
                                     extracted_texts.append(text.strip())
 
                             if extracted_texts:
-                                combined_text = " ".join(extracted_texts)
+                                combined_text = "\n".join(extracted_texts)  # 줄바꿈으로 결합하여 레이아웃 보존
                                 logger.debug(f"EasyOCR 성공: {len(combined_text)} 문자 추출")
                                 return combined_text
 

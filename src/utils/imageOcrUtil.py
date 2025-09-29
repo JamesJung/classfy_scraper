@@ -64,8 +64,10 @@ class ImageOCRProcessor:
             lazy_init: True이면 지연 초기화, False이면 즉시 초기화
         """
         self.reader = None
+        self.use_easyocr_first = True  # EasyOCR을 우선 사용
         self.use_tesseract = TESSERACT_AVAILABLE
         self.tesseract_lang = 'kor+eng'  # 한국어 + 영어
+        self.supported_langs = None  # EasyOCR 지원 언어 저장
 
         if not lazy_init:
             self._initialize_reader()
@@ -73,31 +75,72 @@ class ImageOCRProcessor:
     def _initialize_reader(self):
         """OCR 리더를 지연 초기화합니다."""
         try:
-            # Tesseract 사용 가능 여부 확인
-            if TESSERACT_AVAILABLE:
+            # 1. EasyOCR 우선 초기화 (우선순위 1)
+            if EASYOCR_AVAILABLE:
+                try:
+                    # 한국어와 영어 지원 확인 및 리더 초기화
+                    logger.info("EasyOCR 리더 초기화 중... (우선순위 1)")
+
+                    # ko, en 지원 여부는 설치된 모델에 따라 다름
+                    # 모델이 없으면 자동으로 다운로드함
+                    try:
+                        self.reader = easyocr.Reader(["ko", "en"], gpu=True)
+                        self.supported_langs = ["ko", "en"]
+                        logger.info("EasyOCR 리더 초기화 완료 (한국어, 영어)")
+                    except Exception as lang_error:
+                        # 한국어 모델이 없으면 영어만 사용
+                        logger.warning(f"한국어 모델 로드 실패: {lang_error}")
+                        logger.info("영어 전용 모드로 시도...")
+                        self.reader = easyocr.Reader(["en"], gpu=True)
+                        self.supported_langs = ["en"]
+                        logger.info("EasyOCR 리더 초기화 완료 (영어만)")
+
+                except Exception as e:
+                    logger.warning(f"EasyOCR 초기화 실패, Tesseract로 폴백: {e}")
+                    self.reader = None
+                    self.use_easyocr_first = False
+
+            # 2. Tesseract 폴백 확인 (우선순위 2)
+            if TESSERACT_AVAILABLE and (self.reader is None or not self.use_easyocr_first):
                 try:
                     # Tesseract 바이너리 확인
                     pytesseract.get_tesseract_version()
-                    logger.info("Tesseract OCR 사용 가능")
-                    self.use_tesseract = True
+
+                    # 사용 가능한 언어 확인
+                    try:
+                        langs = pytesseract.get_languages()
+                        has_korean = 'kor' in langs
+                        has_english = 'eng' in langs
+
+                        if not has_korean and not has_english:
+                            logger.warning("Tesseract에 한국어/영어 언어팩이 없습니다")
+                            self.use_tesseract = False
+                        else:
+                            if has_korean and has_english:
+                                self.tesseract_lang = 'kor+eng'
+                            elif has_korean:
+                                self.tesseract_lang = 'kor'
+                            else:
+                                self.tesseract_lang = 'eng'
+
+                            logger.info(f"Tesseract OCR 사용 가능 (폴백): {self.tesseract_lang}")
+                            self.use_tesseract = True
+                    except:
+                        # get_languages 실패 시 기본값 사용
+                        logger.info("Tesseract OCR 사용 가능 (폴백)")
+                        self.use_tesseract = True
+
                 except Exception as e:
-                    logger.warning(f"Tesseract 바이너리를 찾을 수 없습니다: {e}")
-                    logger.warning("Tesseract를 설치하세요: sudo apt-get install tesseract-ocr tesseract-ocr-kor")
+                    logger.warning(f"Tesseract 확인 실패: {e}")
                     self.use_tesseract = False
 
-            # Tesseract를 사용할 수 없으면 EasyOCR로 폴백
-            if not self.use_tesseract:
-                if not EASYOCR_AVAILABLE:
-                    logger.error(
-                        "Tesseract와 EasyOCR 모두 사용할 수 없습니다. pytesseract 또는 easyocr를 설치해주세요."
-                    )
-                    self.reader = None
-                    return
+            # 두 OCR 모두 사용 불가 시 에러
+            if self.reader is None and not self.use_tesseract:
+                logger.error(
+                    "EasyOCR과 Tesseract 모두 사용할 수 없습니다. "
+                    "pip install easyocr 또는 pip install pytesseract를 실행해주세요."
+                )
 
-                if self.reader is None:
-                    logger.info("EasyOCR 리더 초기화 중... (한국어, 영어) - Fallback mode")
-                    self.reader = easyocr.Reader(["ko", "en"], gpu=True)
-                    logger.info("EasyOCR 리더 초기화 완료")
         except Exception as e:
             logger.error(f"OCR 리더 초기화 실패: {e}")
             self.reader = None
@@ -217,7 +260,7 @@ class ImageOCRProcessor:
     def _perform_ocr(self, image: Image.Image) -> str | None:
         """
         PIL Image에 대해 OCR을 수행합니다.
-        Tesseract를 우선 시도하고, 실패시 EasyOCR로 폴백합니다.
+        EasyOCR을 우선 시도하고, 실패시 Tesseract로 폴백합니다.
 
         Args:
             image: PIL Image 객체
@@ -235,10 +278,42 @@ class ImageOCRProcessor:
             if image.mode != "RGB":
                 image = image.convert("RGB")
 
-            # 1. Tesseract 시도
+            # 1. EasyOCR 우선 시도 (우선순위 1)
+            if self.use_easyocr_first and EASYOCR_AVAILABLE:
+                if self.reader is None:
+                    self._initialize_reader()
+
+                if self.reader is not None:
+                    try:
+                        logger.debug("EasyOCR 실행 중... (우선순위 1)")
+                        # PIL Image를 numpy 배열로 변환
+                        import numpy as np
+                        image_array = np.array(image)
+
+                        # EasyOCR에 numpy 배열 전달
+                        results = self.reader.readtext(image_array)
+                        if results:
+                            # 결과 텍스트 결합
+                            extracted_texts = []
+                            for bbox, text, confidence in results:
+                                # 신뢰도가 0.5 이상인 텍스트만 사용
+                                if confidence >= 0.5:
+                                    extracted_texts.append(text.strip())
+
+                            if extracted_texts:
+                                combined_text = " ".join(extracted_texts)
+                                logger.debug(f"EasyOCR 성공: {len(combined_text)} 문자 추출")
+                                return combined_text
+
+                        logger.debug("EasyOCR에서 텍스트를 찾지 못함, Tesseract로 폴백")
+
+                    except Exception as easyocr_error:
+                        logger.warning(f"EasyOCR 실패, Tesseract로 폴백: {easyocr_error}")
+
+            # 2. Tesseract 폴백 (우선순위 2)
             if self.use_tesseract and TESSERACT_AVAILABLE:
                 try:
-                    logger.debug("Tesseract OCR 실행 중...")
+                    logger.debug("Tesseract OCR 실행 중... (폴백)")
                     # Tesseract 설정
                     custom_config = r'--oem 3 --psm 6'  # OEM 3: Default, PSM 6: 균일한 텍스트 블록
 
@@ -250,50 +325,16 @@ class ImageOCRProcessor:
                     )
 
                     if text and text.strip():
-                        logger.debug(f"Tesseract OCR 성공: {len(text.strip())} 문자 추출")
+                        logger.debug(f"Tesseract OCR 성공 (폴백): {len(text.strip())} 문자 추출")
                         return text.strip()
                     else:
-                        logger.debug("Tesseract OCR에서 텍스트를 찾지 못함, EasyOCR로 폴백")
+                        logger.debug("Tesseract OCR에서도 텍스트를 찾지 못함")
 
                 except Exception as tesseract_error:
-                    logger.warning(f"Tesseract OCR 실패, EasyOCR로 폴백: {tesseract_error}")
+                    logger.error(f"Tesseract OCR 실패: {tesseract_error}")
 
-            # 2. EasyOCR 폴백
-            if not self.use_tesseract or not TESSERACT_AVAILABLE:
-                if self.reader is None:
-                    self._initialize_reader()
-
-                if self.reader is None:
-                    logger.error("OCR 리더가 초기화되지 않았습니다")
-                    return None
-
-                try:
-                    logger.debug("EasyOCR 실행 중...")
-                    # PIL Image를 numpy 배열로 변환
-                    import numpy as np
-                    image_array = np.array(image)
-
-                    # EasyOCR에 numpy 배열 전달
-                    results = self.reader.readtext(image_array)
-                    if not results:
-                        logger.debug("EasyOCR에서 텍스트를 찾지 못함")
-                        return None
-
-                    # 결과 텍스트 결합
-                    extracted_texts = []
-                    for bbox, text, confidence in results:
-                        # 신뢰도가 0.5 이상인 텍스트만 사용
-                        if confidence >= 0.5:
-                            extracted_texts.append(text.strip())
-
-                    if extracted_texts:
-                        combined_text = " ".join(extracted_texts)
-                        logger.debug(f"EasyOCR 성공: {len(combined_text)} 문자 추출")
-                        return combined_text
-
-                except Exception as easyocr_error:
-                    logger.error(f"EasyOCR 실행 중 오류: {easyocr_error}")
-
+            # 모든 OCR 실패
+            logger.warning("EasyOCR과 Tesseract 모두에서 텍스트를 추출할 수 없습니다")
             return None
 
         except Exception as e:

@@ -1632,10 +1632,45 @@ def perform_ocr_on_image(image) -> str:
     Returns:
         str: 추출된 텍스트
     """
-    # 1차 시도: Tesseract OCR
+    # 1차 시도: EasyOCR (우선순위 1)
+    try:
+        import easyocr
+        import numpy as np
+
+        # PIL Image를 numpy array로 변환
+        img_array = np.array(image)
+
+        # EasyOCR 리더 초기화 (한국어 + 영어)
+        logger.info("EasyOCR 실행 중... (우선순위 1)")
+        reader = easyocr.Reader(["ko", "en"], gpu=True)  # GPU 사용 활성화
+
+        # OCR 수행
+        results = reader.readtext(img_array)
+
+        # 결과 정리
+        lines = []
+        for bbox, text, confidence in results:
+            if confidence > 0.5 and len(text.strip()) > 1:  # 신뢰도 50% 이상
+                lines.append(text.strip())
+
+        if lines:
+            cleaned_text = "\n".join(lines)
+
+            # 표 형태 감지 및 마크다운 테이블로 변핒 시도
+            if "|" in cleaned_text or "\t" in cleaned_text:
+                cleaned_text = format_as_markdown_table(cleaned_text)
+
+            logger.info(f"EasyOCR 성공: {len(lines)}개 텍스트 추출")
+            return cleaned_text
+
+    except Exception as e:
+        logger.warning(f"EasyOCR 실패, Tesseract로 폴백: {e}")
+
+    # 2차 시도: Tesseract OCR (폴백)
     try:
         import pytesseract
 
+        logger.info("Tesseract OCR 실행 중... (폴백)")
         # 한국어 + 영어 OCR 처리
         text = pytesseract.image_to_string(image, lang="kor+eng")
 
@@ -1654,44 +1689,11 @@ def perform_ocr_on_image(image) -> str:
             if "|" in cleaned_text or "\t" in cleaned_text:
                 cleaned_text = format_as_markdown_table(cleaned_text)
 
+            logger.info(f"Tesseract 폴백 성공: {len(lines)}개 텍스트 추출")
             return cleaned_text
 
     except Exception as e:
-        logger.warning(f"Tesseract OCR 실패: {e}")
-
-    # 2차 시도: EasyOCR (Tesseract 실패 시 대안)
-    try:
-        import easyocr
-        import numpy as np
-
-        # PIL Image를 numpy array로 변환
-        img_array = np.array(image)
-
-        # EasyOCR 리더 초기화 (한국어 + 영어)
-        logger.info("Tesseract 실패, EasyOCR로 fallback 시도 중...")
-        reader = easyocr.Reader(["ko", "en"], gpu=False)
-
-        # OCR 수행
-        results = reader.readtext(img_array)
-
-        # 결과 정리
-        lines = []
-        for bbox, text, confidence in results:
-            if confidence > 0.5 and len(text.strip()) > 1:  # 신뢰도 50% 이상
-                lines.append(text.strip())
-
-        if lines:
-            cleaned_text = "\n".join(lines)
-
-            # 표 형태 감지 및 마크다운 테이블로 변환 시도
-            if "|" in cleaned_text or "\t" in cleaned_text:
-                cleaned_text = format_as_markdown_table(cleaned_text)
-
-            logger.info(f"EasyOCR fallback 성공: {len(lines)}개 텍스트 추출")
-            return cleaned_text
-
-    except Exception as e:
-        logger.warning(f"EasyOCR fallback 실패: {e}")
+        logger.warning(f"Tesseract OCR 폴백 실패: {e}")
 
     logger.error("모든 OCR 방법 실패")
     return ""

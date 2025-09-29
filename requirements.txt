@@ -9,8 +9,9 @@ SQLAlchemy>=2.0.0
 PyMySQL>=1.1.0
 
 # 이미지 OCR 처리
-easyocr>=1.7.0
+pytesseract>=0.3.10
 Pillow>=10.0.0
+easyocr>=1.7.0  # Fallback OCR
 
 # PDF/문서 처리 (기존 프로젝트에서 사용)
 markitdown

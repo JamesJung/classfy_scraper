@@ -270,39 +270,35 @@ class AttachmentProcessor:
                 filename = pdf_file.stem
                 
                 logger.info(f"PDF 파일 처리 중: {pdf_file.name}")
-                
-                # 임시 출력 파일 경로
-                temp_output = attachments_dir / f"{filename}_temp.md"
-                
+
+                # 최종 출력 파일 경로 (PDF 파일과 같은 위치)
+                final_output = pdf_file.parent / f"{filename}.md"
+
                 # 기존 변환 함수 사용 (우선순위: docling -> markitdown)
                 success = False
-                
+
                 # 1차 시도: docling
                 try:
-                    success = convert_pdf_to_md_docling(str(pdf_file), str(temp_output))
+                    success = convert_pdf_to_md_docling(str(pdf_file), str(final_output))
                 except Exception as e:
                     logger.warning(f"PDF docling 변환 실패 ({pdf_file.name}): {e}")
-                
+
                 # 2차 시도: markitdown
                 if not success:
                     try:
-                        success = convert_pdf_to_md_markitdown(str(pdf_file), str(temp_output))
+                        success = convert_pdf_to_md_markitdown(str(pdf_file), str(final_output))
                     except Exception as e:
                         logger.warning(f"PDF markitdown 변환 실패 ({pdf_file.name}): {e}")
-                
+
                 # 변환된 내용 읽기
-                if success and temp_output.exists():
+                if success and final_output.exists():
                     try:
-                        with open(temp_output, 'r', encoding='utf-8') as f:
+                        with open(final_output, 'r', encoding='utf-8') as f:
                             content = f.read()
                         results[filename] = content
-                        logger.info(f"PDF 변환 성공: {pdf_file.name}")
+                        logger.info(f"PDF 변환 성공: {pdf_file.name} -> {final_output.name}")
                     except Exception as e:
                         logger.error(f"PDF 변환 파일 읽기 실패 ({pdf_file.name}): {e}")
-                    finally:
-                        # 임시 파일 삭제
-                        if temp_output.exists():
-                            temp_output.unlink()
                 else:
                     logger.error(f"PDF 변환 실패: {pdf_file.name}")
                     
@@ -324,41 +320,40 @@ class AttachmentProcessor:
                 
                 logger.info(f"HWP 파일 처리 중: {hwp_file.name}")
                 
-                # 임시 출력 파일 경로
-                temp_output = attachments_dir / f"{filename}_temp.md"
-                
+                # 최종 출력 파일 경로 (HWP 파일과 같은 위치)
+                final_output = hwp_file.parent / f"{filename}.md"
+
                 # 기존 변환 함수 사용
                 success = False
-                
+
                 try:
-                    success = convert_hwp_to_markdown(hwp_file, temp_output)
+                    success = convert_hwp_to_markdown(hwp_file, final_output)
                 except Exception as e:
                     logger.warning(f"HWP 마크다운 변환 실패 ({hwp_file.name}): {e}")
-                
+
                 # 마크다운 변환 실패 시 텍스트 추출 시도
                 if not success:
                     try:
                         text_content = process_hwp_with_fallback(hwp_file)
                         if text_content:
                             results[filename] = text_content
-                            logger.info(f"HWP 텍스트 추출 성공: {hwp_file.name}")
+                            # HWP 파일과 같은 위치에 MD 파일 저장
+                            with open(final_output, 'w', encoding='utf-8') as f:
+                                f.write(text_content)
+                            logger.info(f"HWP 텍스트 추출 및 저장 성공: {hwp_file.name} -> {final_output.name}")
                             continue
                     except Exception as e:
                         logger.warning(f"HWP 텍스트 추출 실패 ({hwp_file.name}): {e}")
-                
+
                 # 변환된 내용 읽기
-                if success and temp_output.exists():
+                if success and final_output.exists():
                     try:
-                        with open(temp_output, 'r', encoding='utf-8') as f:
+                        with open(final_output, 'r', encoding='utf-8') as f:
                             content = f.read()
                         results[filename] = content
-                        logger.info(f"HWP 변환 성공: {hwp_file.name}")
+                        logger.info(f"HWP 변환 성공: {hwp_file.name} -> {final_output.name}")
                     except Exception as e:
                         logger.error(f"HWP 변환 파일 읽기 실패 ({hwp_file.name}): {e}")
-                    finally:
-                        # 임시 파일 삭제
-                        if temp_output.exists():
-                            temp_output.unlink()
                 else:
                     logger.error(f"HWP 변환 실패: {hwp_file.name}")
                     

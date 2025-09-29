@@ -60,40 +60,79 @@ def run_scraper(site_code, from_date):
         }
     
     target_year = from_date.year
+    from_date_str = from_date.strftime("%Y-%m-%d")
     today_str = datetime.now().strftime("%Y-%m-%d")
-    output_dir = BASE_OUTPUT_DIR / today_str / site_code
-    output_dir.mkdir(parents=True, exist_ok=True)
+    # 스크래퍼가 내부적으로 site_code를 추가하므로, 여기서는 날짜 디렉토리까지만 생성
+    base_dir_for_date = BASE_OUTPUT_DIR / today_str
+    base_dir_for_date.mkdir(parents=True, exist_ok=True)
+    
+    # 실제 output_dir는 스크래퍼가 생성할 것이므로 여기서는 base_dir만 전달
+    expected_output_dir = base_dir_for_date / site_code  # 예상 출력 디렉토리 (로깅용)
     
     try:
+        # 스크래퍼에 전달할 arguments (named arguments 형식)
         cmd = [
             "node",
-            str(scraper_path)
+            str(scraper_path),
+            "--output", str(base_dir_for_date),     # 날짜 디렉토리까지만 전달
+            "--date", from_date_str,          # 시작 날짜
+            "--site", site_code,              # 사이트 코드
+            "--force"                         # 기존 폴더 덮어쓰기
         ]
         
-        print(f"\n[{site_code}] 스크래퍼 실행: {target_year}년 데이터...")
-        print(f"  출력 디렉토리: {output_dir}")
+        print(f"\n[{site_code}] 스크래퍼 실행")
+        print(f"  스크래퍼 파일: {scraper_path}")
+        print(f"  시작일: {from_date_str}")
+        print(f"  종료일: {today_str}")
+        print(f"  기본 출력 디렉토리: {base_dir_for_date}")
+        print(f"  예상 최종 디렉토리: {expected_output_dir}")
+        print(f"  작업 디렉토리: {NODE_DIR}")
         print(f"  명령: {' '.join(cmd)}")
+        print(f"  Arguments: --output {base_dir_for_date} --date {from_date_str} --site {site_code} --force")
+        
+        # 환경변수 설정 (필요시)
+        env = os.environ.copy()
+        env['NODE_ENV'] = 'production'
         
         result = subprocess.run(
             cmd,
             cwd=str(NODE_DIR),
             capture_output=True,
             text=True,
-            timeout=300
+            timeout=300,
+            env=env
         )
         
+        # stdout, stderr 출력 (디버깅용)
+        if result.stdout:
+            print(f"  [STDOUT]: {result.stdout[:500]}")
+        if result.stderr:
+            print(f"  [STDERR]: {result.stderr[:500]}")
+        
         if result.returncode == 0:
+            # stdout이 없어도 성공으로 처리할 수 있도록 체크
+            scraped_count = 0
+            if "scraped" in result.stdout.lower():
+                # stdout에서 스크래핑 개수 추출 시도
+                import re
+                match = re.search(r'(\d+)\s*(?:items?|announcements?|공고)', result.stdout)
+                if match:
+                    scraped_count = int(match.group(1))
+            
             return {
                 'site_code': site_code,
                 'status': 'success',
-                'output_dir': str(output_dir),
+                'output_dir': str(expected_output_dir),
+                'scraped_count': scraped_count,
                 'stdout': result.stdout[-500:] if len(result.stdout) > 500 else result.stdout
             }
         else:
             return {
                 'site_code': site_code,
                 'status': 'failed',
-                'error': result.stderr[-500:] if len(result.stderr) > 500 else result.stderr
+                'returncode': result.returncode,
+                'error': result.stderr if result.stderr else result.stdout,
+                'stdout': result.stdout[-500:] if len(result.stdout) > 500 else result.stdout
             }
     
     except subprocess.TimeoutExpired:

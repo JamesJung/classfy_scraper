@@ -264,18 +264,65 @@ class AttachmentProcessor:
         """ZIP 파일을 처리하여 내부 문서들의 내용을 추출합니다."""
         import zipfile
         import tempfile
+        import codecs
 
         try:
             combined_content = []
 
-            with zipfile.ZipFile(zip_file, 'r') as zf:
+            # ZIP 파일 열기 (metadata_encoding 옵션으로 CP949 인코딩 처리)
+            try:
+                # Python 3.11+ 에서는 metadata_encoding 파라미터 지원
+                zf = zipfile.ZipFile(zip_file, 'r', metadata_encoding='cp949')
+            except TypeError:
+                # Python 3.11 미만에서는 기본 방식 사용
+                zf = zipfile.ZipFile(zip_file, 'r')
+                
+            with zf:
                 # 임시 디렉토리 생성
                 with tempfile.TemporaryDirectory() as temp_dir:
                     temp_path = Path(temp_dir)
 
-                    # ZIP 파일 압축 해제
-                    zf.extractall(temp_path)
-                    logger.info(f"ZIP 파일 압축 해제: {zip_file.name} -> {temp_path}")
+                    # 파일 목록을 먼저 가져와서 인코딩 확인
+                    for zip_info in zf.infolist():
+                        # 파일명 인코딩 처리 (여러 인코딩 시도)
+                        original_filename = zip_info.filename
+                        filename = original_filename
+                        
+                        # 파일명이 깨진 것으로 보이면 인코딩 변환 시도
+                        if any(ord(c) > 127 for c in original_filename):
+                            # 일반적인 한글 파일명이 아닌 경우 (깨진 문자)
+                            try:
+                                # CP437로 인코딩된 바이트를 CP949로 디코딩 (Windows ZIP 파일)
+                                filename = original_filename.encode('cp437').decode('cp949')
+                            except:
+                                try:
+                                    # 또는 Latin-1으로 인코딩된 바이트를 CP949로 디코딩
+                                    filename = original_filename.encode('latin-1').decode('cp949')
+                                except:
+                                    try:
+                                        # UTF-8로 재시도
+                                        filename = original_filename.encode('utf-8').decode('utf-8')
+                                    except:
+                                        # 모든 시도 실패 시 원본 사용
+                                        filename = original_filename
+                        
+                        # 파일 추출
+                        try:
+                            # 파일 내용 추출
+                            file_data = zf.read(zip_info.filename)
+                            
+                            # 대상 파일 경로 생성
+                            target_file = temp_path / filename
+                            target_file.parent.mkdir(parents=True, exist_ok=True)
+                            
+                            # 파일 저장
+                            with open(target_file, 'wb') as f:
+                                f.write(file_data)
+                        except Exception as e:
+                            logger.warning(f"ZIP 파일 내 파일 추출 실패: {filename} - {e}")
+                            continue
+
+                    logger.info(f"ZIP 파일 압축 해제 완료: {zip_file.name}")
 
                     # 지원되는 파일 형식 정의
                     supported_extensions = {
@@ -293,7 +340,17 @@ class AttachmentProcessor:
                             if file_ext not in supported_extensions:
                                 continue
 
-                            logger.info(f"ZIP 내부 파일 처리: {file}")
+                            # 파일명을 다시 정규화
+                            display_filename = file
+                            try:
+                                # 파일명이 깨진 경우 복구 시도
+                                if '\\' in str(file) or '┐' in str(file):
+                                    # 깨진 문자가 있으면 원본 파일명 사용
+                                    display_filename = file_path.name
+                            except:
+                                pass
+
+                            logger.info(f"ZIP 내부 파일 처리: {display_filename}")
 
                             # 파일 형식에 따라 처리
                             content = None
@@ -307,8 +364,9 @@ class AttachmentProcessor:
                                 content = self._process_single_image(file_path)
 
                             if content and content.strip():
-                                combined_content.append(f"[{file}]\n{content}")
-                                logger.info(f"ZIP 내부 파일 처리 성공: {file} ({len(content)} 문자)")
+                                # 파일명 표시 시 정규화된 파일명 사용
+                                combined_content.append(f"[{display_filename}]\n{content}")
+                                logger.info(f"ZIP 내부 파일 처리 성공: {display_filename} ({len(content)} 문자)")
 
             if combined_content:
                 result = "\n\n".join(combined_content)

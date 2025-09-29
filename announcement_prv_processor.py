@@ -1108,25 +1108,36 @@ class AnnouncementPrvProcessor:
         """content.md에서 공고일을 문자열로 추출합니다 (날짜 필터링용과 별개)."""
         if not content_md:
             return ""
-        
+
         # 작성일 패턴 찾기 (마크다운 형식)
+        # 콜론(:) 뒤의 날짜만 정확히 캡처
         date_patterns = [
-            r'\*\*작성일\*\*[:\s]*(.+?)(?:\n|$)',
-            r'작성일[:\s]*(.+?)(?:\n|$)',
-            r'\*\*등록일\*\*[:\s]*(.+?)(?:\n|$)',
-            r'등록일[:\s]*(.+?)(?:\n|$)',
-            r'\*\*공고일\*\*[:\s]*(.+?)(?:\n|$)',
-            r'공고일[:\s]*(.+?)(?:\n|$)'
+            r'\*\*작성일\*\*:\s*([^\n]+)',  # **작성일**: 날짜
+            r'\*\*작성일\*\*:\*\*\s*([^\n]+)',  # **작성일:**: 날짜
+            r'작성일:\s*([^\n]+)',  # 작성일: 날짜
+            r'\*\*등록일\*\*:\s*([^\n]+)',  # **등록일**: 날짜
+            r'\*\*등록일\*\*:\*\*\s*([^\n]+)',  # **등록일:**: 날짜
+            r'등록일:\s*([^\n]+)',  # 등록일: 날짜
+            r'\*\*공고일\*\*:\s*([^\n]+)',  # **공고일**: 날짜
+            r'\*\*공고일\*\*:\*\*\s*([^\n]+)',  # **공고일:**: 날짜
+            r'공고일:\s*([^\n]+)',  # 공고일: 날짜
         ]
-        
+
         for pattern in date_patterns:
             matches = re.findall(pattern, content_md, re.IGNORECASE)
             if matches:
                 date_str = matches[0].strip()
                 if date_str:
-                    logger.debug(f"공고일 추출 성공: {date_str}")
-                    return date_str
-        
+                    # 마크다운 볼드(**) 제거
+                    date_str = re.sub(r'\*+', '', date_str).strip()
+                    # 추가적인 정리 (공백 제거 등)
+                    date_str = date_str.strip()
+
+                    # 날짜 형식 검증 (최소한 연도가 포함되어야 함)
+                    if re.search(r'\d{4}', date_str):
+                        logger.debug(f"공고일 추출 성공: {date_str}")
+                        return date_str
+
         logger.debug("content.md에서 공고일을 찾을 수 없음")
         return ""
     

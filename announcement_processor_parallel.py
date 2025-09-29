@@ -674,10 +674,13 @@ class ParallelAnnouncementProcessor:
     def _format_date_to_standard(self, date_str: str) -> Optional[str]:
         """날짜 문자열을 YYYY-MM-DD 형태로 변환합니다."""
         import re
-        
+
         if not date_str or date_str in ["정보 없음", "해당없음", ""]:
             return None
-        
+
+        # 마크다운 볼드(**) 먼저 제거
+        date_str = re.sub(r'\*+', '', date_str).strip()
+
         clean_date = re.sub(r'[^\d\.\-/]', '', date_str.strip())
         
         if re.match(r'^\d{4}-\d{2}-\d{2}$', clean_date):

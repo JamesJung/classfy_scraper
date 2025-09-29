@@ -45,6 +45,130 @@ def get_sites_to_scrape():
     finally:
         conn.close()
 
+def get_latest_date_from_scraped_files(site_code, output_dir):
+    """스크래핑된 파일에서 최신 날짜를 가져옵니다."""
+    from pathlib import Path
+    import re
+    
+    output_path = Path(output_dir)
+    if not output_path.exists():
+        return None
+    
+    # 001_로 시작하는 첫 번째 폴더 찾기
+    first_dir = None
+    for item_dir in sorted(output_path.iterdir()):
+        if item_dir.is_dir() and item_dir.name.startswith('001_'):
+            first_dir = item_dir
+            break
+    
+    if not first_dir:
+        # 001_로 시작하는 폴더가 없으면 첫 번째 디렉토리 사용
+        dirs = [d for d in output_path.iterdir() if d.is_dir()]
+        if dirs:
+            first_dir = sorted(dirs)[0]
+        else:
+            return None
+    
+    # content.md 파일 읽기
+    content_md_path = first_dir / "content.md"
+    if not content_md_path.exists():
+        print(f"  ⚠️ content.md 파일 없음: {first_dir.name}")
+        return None
+    
+    try:
+        with open(content_md_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # 날짜 추출 패턴
+        date_patterns = [
+            r'\*\*작성일\*\*[:\s]*(.+?)(?:\n|$)',
+            r'작성일[:\s]*(.+?)(?:\n|$)',
+            r'\*\*등록일\*\*[:\s]*(.+?)(?:\n|$)',
+            r'등록일[:\s]*(.+?)(?:\n|$)',
+            r'\*\*공고일\*\*[:\s]*(.+?)(?:\n|$)',
+            r'공고일[:\s]*(.+?)(?:\n|$)'
+        ]
+        
+        announcement_date = None
+        for pattern in date_patterns:
+            date_match = re.search(pattern, content, re.IGNORECASE)
+            if date_match:
+                announcement_date = date_match.group(1).strip()
+                break
+        
+        if announcement_date:
+            print(f"  📄 파일에서 추출한 최신 날짜: {announcement_date} (from {first_dir.name})")
+            return announcement_date
+        else:
+            print(f"  ⚠️ 날짜 정보를 찾을 수 없음: {first_dir.name}")
+            return None
+            
+    except Exception as e:
+        print(f"  ❌ 파일 읽기 오류: {e}")
+        return None
+
+def update_latest_announcement_date(site_code, output_dir=None):
+    """스크래핑 완료 후 해당 사이트의 최신 공고 날짜를 업데이트합니다."""
+    
+    # 스크래핑된 파일에서 최신 날짜 가져오기
+    latest_date_str = None
+    if output_dir:
+        latest_date_str = get_latest_date_from_scraped_files(site_code, output_dir)
+    
+    if not latest_date_str:
+        print(f"  ⚠️ 날짜 정보를 찾을 수 없어 DB 업데이트 스킵")
+        return False
+    
+    # 날짜 형식 변환 (YYYY-MM-DD 형식으로)
+    from datetime import datetime
+    import re
+    
+    try:
+        # 다양한 날짜 형식 처리
+        date_obj = None
+        
+        # YYYY-MM-DD 형식
+        if re.match(r'^\d{4}-\d{2}-\d{2}$', latest_date_str):
+            date_obj = datetime.strptime(latest_date_str, '%Y-%m-%d')
+        # YYYY.MM.DD 형식
+        elif re.match(r'^\d{4}\.\d{2}\.\d{2}$', latest_date_str):
+            date_obj = datetime.strptime(latest_date_str, '%Y.%m.%d')
+        # YYYYMMDD 형식
+        elif re.match(r'^\d{8}$', latest_date_str):
+            date_obj = datetime.strptime(latest_date_str, '%Y%m%d')
+        # YYYY년 MM월 DD일 형식
+        elif re.match(r'^\d{4}년\s*\d{1,2}월\s*\d{1,2}일$', latest_date_str):
+            date_obj = datetime.strptime(re.sub(r'[년월일\s]', '-', latest_date_str).rstrip('-'), '%Y-%m-%d')
+        else:
+            print(f"  ⚠️ 알 수 없는 날짜 형식: {latest_date_str}")
+            return False
+        
+        # YYYY-MM-DD 형식으로 변환
+        formatted_date = date_obj.strftime('%Y-%m-%d')
+        
+        # DB 업데이트
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE homepage_site_announcement_date
+                    SET latest_announcement_date = %s,
+                        updated_at = NOW()
+                    WHERE site_code = %s
+                """, (formatted_date, site_code))
+                
+                conn.commit()
+                print(f"  📅 DB 업데이트 성공: {site_code} → {formatted_date}")
+                return True
+        finally:
+            conn.close()
+                
+    except Exception as e:
+        print(f"  ❌ DB 업데이트 오류: {site_code} - {e}")
+        return False
+    finally:
+        conn.close()
+
 def check_scraper_exists(site_code):
     scraper_path = SCRAPER_DIR / f"{site_code}_scraper.js"
     return scraper_path.exists(), scraper_path
@@ -180,6 +304,8 @@ def main():
         
         if status == 'success':
             print(f"  ✓ 성공: {result['output_dir']}")
+            # 스크래핑 성공 시 DB 업데이트
+            update_latest_announcement_date(site_code, result['output_dir'])
         elif status == 'skipped':
             print(f"  ⊘ 스킵: {result['reason']}")
         elif status == 'failed':

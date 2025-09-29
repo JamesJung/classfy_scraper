@@ -139,6 +139,8 @@ class AttachmentProcessor:
                 return self._process_single_image(file_path)
             elif file_extension in ['.pptx', '.docx', '.xlsx']:
                 return self._process_single_office(file_path)
+            elif file_extension == '.zip':
+                return self._process_single_zip(file_path)
             else:
                 logger.warning(f"지원하지 않는 파일 형식: {file_extension}")
                 return None
@@ -244,18 +246,80 @@ class AttachmentProcessor:
         """단일 Office 파일(pptx, docx, xlsx)을 처리합니다."""
         try:
             from markitdown import MarkItDown
-            
+
             md = MarkItDown()
             result = md.convert(str(office_file))
-            
+
             if result and result.text_content and result.text_content.strip():
                 return result.text_content
             else:
                 logger.warning(f"Office 파일에서 내용 추출 실패: {office_file.name}")
                 return None
-                
+
         except Exception as e:
             logger.error(f"Office 파일 처리 실패 ({office_file}): {e}")
+            return None
+
+    def _process_single_zip(self, zip_file: Path) -> Optional[str]:
+        """ZIP 파일을 처리하여 내부 문서들의 내용을 추출합니다."""
+        import zipfile
+        import tempfile
+
+        try:
+            combined_content = []
+
+            with zipfile.ZipFile(zip_file, 'r') as zf:
+                # 임시 디렉토리 생성
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    temp_path = Path(temp_dir)
+
+                    # ZIP 파일 압축 해제
+                    zf.extractall(temp_path)
+                    logger.info(f"ZIP 파일 압축 해제: {zip_file.name} -> {temp_path}")
+
+                    # 지원되는 파일 형식 정의
+                    supported_extensions = {
+                        '.pdf', '.hwp', '.hwpx', '.docx', '.pptx',
+                        '.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'
+                    }
+
+                    # 압축 해제된 파일들 처리
+                    for root, dirs, files in os.walk(temp_path):
+                        for file in files:
+                            file_path = Path(root) / file
+                            file_ext = file_path.suffix.lower()
+
+                            # 지원되는 파일 형식만 처리
+                            if file_ext not in supported_extensions:
+                                continue
+
+                            logger.info(f"ZIP 내부 파일 처리: {file}")
+
+                            # 파일 형식에 따라 처리
+                            content = None
+                            if file_ext == '.pdf':
+                                content = self._process_single_pdf(file_path)
+                            elif file_ext in ['.hwp', '.hwpx']:
+                                content = self._process_single_hwp(file_path)
+                            elif file_ext in ['.docx', '.pptx']:
+                                content = self._process_single_office(file_path)
+                            elif file_ext in ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp']:
+                                content = self._process_single_image(file_path)
+
+                            if content and content.strip():
+                                combined_content.append(f"[{file}]\n{content}")
+                                logger.info(f"ZIP 내부 파일 처리 성공: {file} ({len(content)} 문자)")
+
+            if combined_content:
+                result = "\n\n".join(combined_content)
+                logger.info(f"ZIP 파일 처리 완료: {zip_file.name} ({len(result)} 문자)")
+                return result
+            else:
+                logger.warning(f"ZIP 파일에서 내용 추출 실패: {zip_file.name}")
+                return None
+
+        except Exception as e:
+            logger.error(f"ZIP 파일 처리 실패 ({zip_file}): {e}")
             return None
     
     def _process_pdf_files(self, attachments_dir: Path) -> Dict[str, str]:

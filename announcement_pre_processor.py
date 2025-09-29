@@ -961,6 +961,7 @@ class AnnouncementPreProcessor:
             ".pptx",
             ".docx",
             ".md",
+            ".zip",  # ZIP 파일 지원 추가
         }
 
         target_keywords = ["양식", "서류", "신청서", "동의서"]

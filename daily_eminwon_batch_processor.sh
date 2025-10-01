@@ -38,7 +38,7 @@ echo "Working directory: $(pwd)" >> "$LOG_FILE"
 
 # 어제 날짜 데이터 처리 (보통 새벽에 전날 데이터를 처리)
 echo "[시작] 배치 처리 시작..." >> "$LOG_FILE"
-/usr/bin/python3 eminwon_batch_processor.py --date ${YESTERDAY} --workers 5 >> "$LOG_FILE" 2>&1
+/usr/bin/python3 eminwon_batch_scraper_to_pre_processor.py --date ${YESTERDAY} --workers 5 >> "$LOG_FILE" 2>&1
 
 # 종료 코드 확인
 EXIT_CODE=$?

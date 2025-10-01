@@ -45,6 +45,64 @@ class AnnouncementScraper {
     }
 
     /**
+     * 기존 폴더의 제목들을 로드하여 중복 체크
+     */
+    async loadExistingTitles() {
+        try {
+            if (!await fs.pathExists(this.outputDir)) {
+                return;
+            }
+
+            const items = await fs.readdir(this.outputDir);
+            for (const item of items) {
+                // 001_형식의 폴더명에서 제목 부분 추출
+                const match = item.match(/^\d{3}_(.+)$/);
+                if (match) {
+                    const title = match[1];
+                    // 폴더명은 sanitize된 상태이므로 원래 제목과 다를 수 있음
+                    // 하지만 어느 정도 중복 감지에 도움이 됨
+                    this.processedTitles.add(title);
+                }
+            }
+            
+            console.log(`기존 폴더에서 ${this.processedTitles.size}개의 제목 로드`);
+        } catch (error) {
+            console.log('기존 제목 로드 중 오류:', error.message);
+        }
+    }
+
+    /**
+     * 기존 폴더에서 가장 큰 카운터 번호 찾기
+     */
+    async getLastCounterNumber() {
+        try {
+            // outputDir이 존재하지 않으면 0 반환
+            if (!await fs.pathExists(this.outputDir)) {
+                return 0;
+            }
+
+            const items = await fs.readdir(this.outputDir);
+            let maxNumber = 0;
+
+            for (const item of items) {
+                // 001_형식의 폴더명에서 숫자 추출
+                const match = item.match(/^(\d{3})_/);
+                if (match) {
+                    const num = parseInt(match[1], 10);
+                    if (num > maxNumber) {
+                        maxNumber = num;
+                    }
+                }
+            }
+
+            return maxNumber;
+        } catch (error) {
+            console.log('기존 카운터 번호 확인 중 오류:', error.message);
+            return 0;
+        }
+    }
+
+    /**
      * 브라우저 초기화
      */
     async initBrowser() {
@@ -125,6 +183,14 @@ class AnnouncementScraper {
         try {
             await this.initBrowser();
             await fs.ensureDir(this.outputDir);
+            
+            // 기존 폴더에서 마지막 카운터 번호를 가져와서 그 다음부터 시작
+            const lastCounter = await this.getLastCounterNumber();
+            this.counter = lastCounter + 1;
+            console.log(`시작 카운터 번호: ${this.counter} (기존 최대 번호: ${lastCounter})`);
+            
+            // 기존 폴더의 제목들을 processedTitles에 추가
+            await this.loadExistingTitles();
 
             let currentPage = 1;
             let shouldContinue = true;
@@ -225,7 +291,7 @@ class AnnouncementScraper {
 
 
                 // 동적 컨텐츠 로딩 대기
-                await this.page.waitForTimeout(4000);
+                await this.delay(4000);
 
 
                 // 리스트 요소들 추출
@@ -313,8 +379,9 @@ class AnnouncementScraper {
                 console.log(`리스트 날짜 ${listDate.format('YYYY-MM-DD')}가 대상 연도(${this.targetYear}) 이전입니다.`);
                 return true; // 스크래핑 중단
             }
-            // 2. 중복 게시물 체크
-            if (this.processedTitles.has(announcement.title)) {
+            // 2. 중복 게시물 체크 (sanitize된 제목으로 비교)
+            const sanitizedTitle = sanitize(announcement.title).substring(0, 100);
+            if (this.processedTitles.has(sanitizedTitle)) {
                 console.log(`중복 게시물 스킵: ${announcement.title}`);
                 return false;
             }
@@ -344,7 +411,9 @@ class AnnouncementScraper {
             // 5. 폴더 생성 및 파일 저장
             await this.saveAnnouncement(announcement, detailContent);
 
-            this.processedTitles.add(announcement.title);
+            // sanitize된 제목을 저장하여 정확한 중복 체크
+            const sanitizedTitleForCheck = sanitize(announcement.title).substring(0, 100);
+            this.processedTitles.add(sanitizedTitleForCheck);
             console.log(`처리 완료: ${announcement.title}`);
 
             return false; // 계속 진행
@@ -384,7 +453,7 @@ class AnnouncementScraper {
                     waitUntil: 'networkidle',
                     timeout: 30000
                 });
-                await this.page.waitForTimeout(2000);
+                await this.delay(2000);
 
                 const evalOptions = { ...this.options, announcement }
 
@@ -1528,7 +1597,7 @@ class AnnouncementScraper {
             }, attachment.onclick);
 
             // 다운로드 대기
-            await this.page.waitForTimeout(3000);
+            await this.delay(3000);
 
             console.log(`폼 방식 다운로드 완료: ${fileName}`);
 
@@ -1709,11 +1778,18 @@ class AnnouncementScraper {
     /**
      * 날짜 추출
      */
-    extractDate(dateText) {
+        extractDate(dateText) {
         if (!dateText) return null;
 
         // 텍스트 정리
         let cleanText = dateText.trim();
+        
+        // "2025년 9월 30일(화) 16:51:34" 형식 처리
+        const koreanDateMatch = cleanText.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+        if (koreanDateMatch) {
+            const [, year, month, day] = koreanDateMatch;
+            cleanText = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
 
         // "등록일\n2025-09-10" 같은 형식에서 날짜만 추출
         const dateMatch = cleanText.match(/(\d{4}[-.\\/]\d{1,2}[-.\\/]\d{1,2})/);
@@ -1732,6 +1808,7 @@ class AnnouncementScraper {
             const day = yymmddMatch[3].padStart(2, '0');
             cleanText = `${year}-${month}-${day}`;
         }
+        
         const formats = [
             'YYYY-MM-DD',
             'YYYY.MM.DD',

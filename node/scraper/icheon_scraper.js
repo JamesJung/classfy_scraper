@@ -26,6 +26,7 @@ const config = require('./config');
 class AnnouncementScraper {
     constructor(options = {}) {
         this.targetYear = options.targetYear || new Date().getFullYear();
+        this.targetDate = options.targetDate || null;  // 날짜 기반 필터링 추가
         this.baseOutputDir = options.outputDir || 'scraped_data';
         this.siteCode = options.siteCode || 'default';
         this.outputDir = path.join(this.baseOutputDir, this.siteCode); // 사이트별 폴더 생성
@@ -45,6 +46,65 @@ class AnnouncementScraper {
     /**
      * 브라우저 초기화
      */
+    /**
+     * 기존 폴더의 제목들을 로드하여 중복 체크
+     */
+    async loadExistingTitles() {
+        try {
+            if (!await fs.pathExists(this.outputDir)) {
+                return;
+            }
+
+            const items = await fs.readdir(this.outputDir);
+            for (const item of items) {
+                // 001_형식의 폴더명에서 제목 부분 추출
+                const match = item.match(/^\d{3}_(.+)$/);
+                if (match) {
+                    const title = match[1];
+                    // 폴더명은 sanitize된 상태이므로 원래 제목과 다를 수 있음
+                    // 하지만 어느 정도 중복 감지에 도움이 됨
+                    this.processedTitles.add(title);
+                }
+            }
+            
+            console.log(`기존 폴더에서 ${this.processedTitles.size}개의 제목 로드`);
+        } catch (error) {
+            console.log('기존 제목 로드 중 오류:', error.message);
+        }
+    }
+
+    /**
+     * 기존 폴더에서 가장 큰 카운터 번호 찾기
+     */
+    async getLastCounterNumber() {
+        try {
+            // outputDir이 존재하지 않으면 0 반환
+            if (!await fs.pathExists(this.outputDir)) {
+                return 0;
+            }
+
+            const items = await fs.readdir(this.outputDir);
+            let maxNumber = 0;
+
+            for (const item of items) {
+                // 001_형식의 폴더명에서 숫자 추출
+                const match = item.match(/^(\d{3})_/);
+                if (match) {
+                    const num = parseInt(match[1], 10);
+                    if (num > maxNumber) {
+                        maxNumber = num;
+                    }
+                }
+            }
+
+            return maxNumber;
+        } catch (error) {
+            console.log('기존 카운터 번호 확인 중 오류:', error.message);
+            return 0;
+        }
+    }
+
+
     async initBrowser() {
         console.log('브라우저 초기화 중...');
 
@@ -123,6 +183,14 @@ class AnnouncementScraper {
         try {
             await this.initBrowser();
             await fs.ensureDir(this.outputDir);
+            
+            // 기존 폴더에서 마지막 카운터 번호를 가져와서 그 다음부터 시작
+            const lastCounter = await this.getLastCounterNumber();
+            this.counter = lastCounter + 1;
+            console.log(`시작 카운터 번호: ${this.counter} (기존 최대 번호: ${lastCounter})`);
+            
+            // 기존 폴더의 제목들을 processedTitles에 추가
+            await this.loadExistingTitles();
 
             let currentPage = 1;
             let shouldContinue = true;
@@ -130,7 +198,13 @@ class AnnouncementScraper {
             const maxConsecutiveErrors = 5;
 
             console.log(`\n=== 스크래핑 시작 ===`);
-            console.log(`대상 연도: ${this.targetYear}`);
+            if (this.targetDate) {
+                // YYYY-MM-DD 또는 YYYYMMDD 형식 모두 처리
+                const targetMoment = moment(this.targetDate.replace(/-/g, ''), 'YYYYMMDD');
+                console.log(`대상 날짜: ${targetMoment.format('YYYY-MM-DD')} (${this.targetDate} 이후 공고만 수집)`);
+            } else {
+                console.log(`대상 연도: ${this.targetYear}`);
+            }
             console.log(`사이트 코드: ${this.siteCode}`);
             console.log(`기본 URL: ${this.baseUrl}`);
             console.log(`출력 디렉토리: ${this.outputDir}`);
@@ -292,13 +366,26 @@ class AnnouncementScraper {
 
             // 1. 리스트에서 날짜 확인
             const listDate = this.extractDate(announcement.dateText);
-            if (listDate && listDate.year() < this.targetYear) {
-                console.log(`리스트 날짜 ${listDate.format('YYYY-MM-DD')}가 대상 연도(${this.targetYear}) 이전입니다.`);
-                return true; // 스크래핑 중단
+            
+            // targetDate가 설정된 경우 해당 날짜 이전 체크
+            if (this.targetDate) {
+                // YYYY-MM-DD 또는 YYYYMMDD 형식 모두 처리
+                const targetMoment = moment(this.targetDate.replace(/-/g, ''), 'YYYYMMDD');
+                if (listDate && listDate.isBefore(targetMoment)) {
+                    console.log(`리스트 날짜 ${listDate.format('YYYY-MM-DD')}가 대상 날짜(${targetMoment.format('YYYY-MM-DD')}) 이전입니다.`);
+                    return true; // 스크래핑 중단
+                }
+            } else {
+                // targetDate가 없는 경우 기존 연도 기반 체크
+                if (listDate && listDate.year() < this.targetYear) {
+                    console.log(`리스트 날짜 ${listDate.format('YYYY-MM-DD')}가 대상 연도(${this.targetYear}) 이전입니다.`);
+                    return true; // 스크래핑 중단
+                }
             }
 
             // 2. 중복 게시물 체크
-            if (this.processedTitles.has(announcement.title)) {
+            const sanitizedTitle = sanitize(announcement.title).substring(0, 100);
+            if (this.processedTitles.has(sanitizedTitle)) {
                 console.log(`중복 게시물 스킵: ${announcement.title}`);
                 return false;
             }
@@ -311,15 +398,26 @@ class AnnouncementScraper {
             }
 
             // 4. 상세 페이지에서 날짜 재확인
-            if (detailContent.date && detailContent.date.year() < this.targetYear) {
-                console.log(`상세 페이지 날짜 ${detailContent.date.format('YYYY-MM-DD')}가 대상 연도(${this.targetYear}) 이전입니다.`);
-                return true; // 스크래핑 중단
+            if (this.targetDate) {
+                // YYYY-MM-DD 또는 YYYYMMDD 형식 모두 처리
+                const targetMoment = moment(this.targetDate.replace(/-/g, ''), 'YYYYMMDD');
+                if (detailContent.date && detailContent.date.isBefore(targetMoment)) {
+                    console.log(`상세 페이지 날짜 ${detailContent.date.format('YYYY-MM-DD')}가 대상 날짜(${targetMoment.format('YYYY-MM-DD')}) 이전입니다.`);
+                    return true; // 스크래핑 중단
+                }
+            } else {
+                if (detailContent.date && detailContent.date.year() < this.targetYear) {
+                    console.log(`상세 페이지 날짜 ${detailContent.date.format('YYYY-MM-DD')}가 대상 연도(${this.targetYear}) 이전입니다.`);
+                    return true; // 스크래핑 중단
+                }
             }
 
             // 5. 폴더 생성 및 파일 저장
             await this.saveAnnouncement(announcement, detailContent);
 
-            this.processedTitles.add(announcement.title);
+            // sanitize된 제목을 저장하여 정확한 중복 체크
+            const sanitizedTitleForCheck = sanitize(announcement.title).substring(0, 100);
+            this.processedTitles.add(sanitizedTitleForCheck);
             console.log(`처리 완료: ${announcement.title}`);
 
             return false; // 계속 진행
@@ -1094,11 +1192,18 @@ class AnnouncementScraper {
     /**
      * 날짜 추출
      */
-    extractDate(dateText) {
+        extractDate(dateText) {
         if (!dateText) return null;
 
         // 텍스트 정리
         let cleanText = dateText.trim();
+        
+        // "2025년 9월 30일(화) 16:51:34" 형식 처리
+        const koreanDateMatch = cleanText.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+        if (koreanDateMatch) {
+            const [, year, month, day] = koreanDateMatch;
+            cleanText = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
 
         // "등록일\n2025-09-10" 같은 형식에서 날짜만 추출
         const dateMatch = cleanText.match(/(\d{4}[-.\\/]\d{1,2}[-.\\/]\d{1,2})/);
@@ -1107,6 +1212,17 @@ class AnnouncementScraper {
         }
 
         // 다양한 날짜 형식 시도
+
+        // YY.MM.DD 형식 체크 (예: 24.12.31)
+        const yymmddMatch = cleanText.match(/^(\d{2})\.(\d{1,2})\.(\d{1,2})$/);
+        if (yymmddMatch) {
+            // 2자리 연도를 4자리로 변환 (00-99 → 2000-2099)
+            const year = '20' + yymmddMatch[1];
+            const month = yymmddMatch[2].padStart(2, '0');
+            const day = yymmddMatch[3].padStart(2, '0');
+            cleanText = `${year}-${month}-${day}`;
+        }
+        
         const formats = [
             'YYYY-MM-DD',
             'YYYY.MM.DD',
@@ -1183,6 +1299,11 @@ function setupCLI() {
             description: '대상 연도',
             default: new Date().getFullYear()
         })
+        .option('date', {
+            alias: 'd',
+            type: 'string',
+            description: '대상 날짜 (YYYYMMDD 또는 YYYY-MM-DD 형식)'
+        })
         .option('output', {
             alias: 'o',
             type: 'string',
@@ -1237,6 +1358,7 @@ async function main() {
 
     const scraper = new AnnouncementScraper({
         targetYear: argv.year,
+        targetDate: argv.date,
         outputDir: argv.output,
         siteCode: argv.site,
         baseUrl: argv.url,

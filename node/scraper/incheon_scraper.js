@@ -25,6 +25,10 @@ class IncheonScraper extends AnnouncementScraper {
             siteCode: 'incheon',
             ...options
         });
+        
+        // 제목 비교를 위한 변수
+        this.lastProcessedTitle = null;
+        this.processedTitles = new Set();
     }
 
     /**
@@ -33,6 +37,30 @@ class IncheonScraper extends AnnouncementScraper {
     buildListUrl(pageNum) {
         // Incheon uses POST request, so we return base URL
         return this.baseUrl;
+    }
+    
+    /**
+     * 공고 처리 - 제목 중복 체크 추가
+     */
+    async processAnnouncement(announcement) {
+        // 제목 중복 체크
+        if (this.processedTitles.has(announcement.title)) {
+            console.log(`이미 처리된 공고 (제목 중복): ${announcement.title}`);
+            return false;
+        }
+        
+        // 이전 제목과 같으면 스킵
+        if (this.lastProcessedTitle === announcement.title) {
+            console.log(`이전과 동일한 제목 발견, 스크래핑 종료: ${announcement.title}`);
+            return true; // 스크래핑 종료 신호
+        }
+        
+        // 처리된 제목 기록
+        this.processedTitles.add(announcement.title);
+        this.lastProcessedTitle = announcement.title;
+        
+        // 부모 클래스의 processAnnouncement 호출
+        return super.processAnnouncement(announcement);
     }
 
     /**
@@ -530,25 +558,44 @@ class IncheonScraper extends AnnouncementScraper {
     /**
      * 날짜 추출 - Incheon 특화
      */
-    extractDate(dateText) {
+        extractDate(dateText) {
         if (!dateText) return null;
 
         // 텍스트 정리
         let cleanText = dateText.trim();
+        
+        // "2025년 9월 30일(화) 16:51:34" 형식 처리
+        const koreanDateMatch = cleanText.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+        if (koreanDateMatch) {
+            const [, year, month, day] = koreanDateMatch;
+            cleanText = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
 
-        // "2025-09-19" 또는 "2025.09.19" 같은 형식 추출
+        // "등록일\n2025-09-10" 같은 형식에서 날짜만 추출
         const dateMatch = cleanText.match(/(\d{4}[-.\\/]\d{1,2}[-.\\/]\d{1,2})/);
         if (dateMatch) {
             cleanText = dateMatch[1];
         }
 
         // 다양한 날짜 형식 시도
+
+        // YY.MM.DD 형식 체크 (예: 24.12.31)
+        const yymmddMatch = cleanText.match(/^(\d{2})\.(\d{1,2})\.(\d{1,2})$/);
+        if (yymmddMatch) {
+            // 2자리 연도를 4자리로 변환 (00-99 → 2000-2099)
+            const year = '20' + yymmddMatch[1];
+            const month = yymmddMatch[2].padStart(2, '0');
+            const day = yymmddMatch[3].padStart(2, '0');
+            cleanText = `${year}-${month}-${day}`;
+        }
+        
         const formats = [
             'YYYY-MM-DD',
             'YYYY.MM.DD',
             'YYYY/MM/DD',
-            'YY-MM-DD',
-            'YY.MM.DD'
+            'MM-DD-YYYY',
+            'MM.DD.YYYY',
+            'MM/DD/YYYY'
         ];
 
         for (const format of formats) {
@@ -556,6 +603,12 @@ class IncheonScraper extends AnnouncementScraper {
             if (date.isValid()) {
                 return date;
             }
+        }
+
+        // 자연어 형식 시도 (조심스럽게)
+        const naturalDate = moment(cleanText);
+        if (naturalDate.isValid() && cleanText.match(/\d{4}/)) {
+            return naturalDate;
         }
 
         return null;

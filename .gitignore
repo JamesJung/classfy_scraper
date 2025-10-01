@@ -18,6 +18,7 @@ backup/
 output/
 test_output/
 scraped_incremental/
+scraped_incremental_v2/
 
 # ===== Node.js scraper data =====
 node/scraped_data/

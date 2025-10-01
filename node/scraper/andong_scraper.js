@@ -47,6 +47,65 @@ class AnnouncementScraper {
     /**
      * 브라우저 초기화
      */
+    /**
+     * 기존 폴더의 제목들을 로드하여 중복 체크
+     */
+    async loadExistingTitles() {
+        try {
+            if (!await fs.pathExists(this.outputDir)) {
+                return;
+            }
+
+            const items = await fs.readdir(this.outputDir);
+            for (const item of items) {
+                // 001_형식의 폴더명에서 제목 부분 추출
+                const match = item.match(/^\d{3}_(.+)$/);
+                if (match) {
+                    const title = match[1];
+                    // 폴더명은 sanitize된 상태이므로 원래 제목과 다를 수 있음
+                    // 하지만 어느 정도 중복 감지에 도움이 됨
+                    this.processedTitles.add(title);
+                }
+            }
+            
+            console.log(`기존 폴더에서 ${this.processedTitles.size}개의 제목 로드`);
+        } catch (error) {
+            console.log('기존 제목 로드 중 오류:', error.message);
+        }
+    }
+
+    /**
+     * 기존 폴더에서 가장 큰 카운터 번호 찾기
+     */
+    async getLastCounterNumber() {
+        try {
+            // outputDir이 존재하지 않으면 0 반환
+            if (!await fs.pathExists(this.outputDir)) {
+                return 0;
+            }
+
+            const items = await fs.readdir(this.outputDir);
+            let maxNumber = 0;
+
+            for (const item of items) {
+                // 001_형식의 폴더명에서 숫자 추출
+                const match = item.match(/^(\d{3})_/);
+                if (match) {
+                    const num = parseInt(match[1], 10);
+                    if (num > maxNumber) {
+                        maxNumber = num;
+                    }
+                }
+            }
+
+            return maxNumber;
+        } catch (error) {
+            console.log('기존 카운터 번호 확인 중 오류:', error.message);
+            return 0;
+        }
+    }
+
+
     async initBrowser() {
         console.log('브라우저 초기화 중...');
 
@@ -125,6 +184,14 @@ class AnnouncementScraper {
         try {
             await this.initBrowser();
             await fs.ensureDir(this.outputDir);
+            
+            // 기존 폴더에서 마지막 카운터 번호를 가져와서 그 다음부터 시작
+            const lastCounter = await this.getLastCounterNumber();
+            this.counter = lastCounter + 1;
+            console.log(`시작 카운터 번호: ${this.counter} (기존 최대 번호: ${lastCounter})`);
+            
+            // 기존 폴더의 제목들을 processedTitles에 추가
+            await this.loadExistingTitles();
 
             let currentPage = 1;
             let shouldContinue = true;
@@ -246,7 +313,7 @@ class AnnouncementScraper {
 
 
                         if (titleElement && dateElement) {
-                            const title = titleElement.textContent.replace("새글", "").trim();
+                            const title = titleElement.textContent.replace("NEW", "").trim();
                             const dateText = dateElement.textContent.trim();
 
                             // 다양한 방식으로 링크 정보 추출
@@ -314,7 +381,8 @@ class AnnouncementScraper {
                 return true; // 스크래핑 중단
             }
             // 2. 중복 게시물 체크
-            if (this.processedTitles.has(announcement.title)) {
+            const sanitizedTitle = sanitize(announcement.title).substring(0, 100);
+            if (this.processedTitles.has(sanitizedTitle)) {
                 console.log(`중복 게시물 스킵: ${announcement.title}`);
                 return false;
             }
@@ -344,7 +412,9 @@ class AnnouncementScraper {
             // 5. 폴더 생성 및 파일 저장
             await this.saveAnnouncement(announcement, detailContent);
 
-            this.processedTitles.add(announcement.title);
+            // sanitize된 제목을 저장하여 정확한 중복 체크
+            const sanitizedTitleForCheck = sanitize(announcement.title).substring(0, 100);
+            this.processedTitles.add(sanitizedTitleForCheck);
             console.log(`처리 완료: ${announcement.title}`);
 
             return false; // 계속 진행
@@ -408,7 +478,7 @@ class AnnouncementScraper {
                     // 본문 추출 시도
                     let mainContent = null;
                     const contentSelectors = [
-                        '#contents', 'tbody.p-table--th-left', '.bod_view', '.contents_wrap', '.program--contents',
+                        '#contents', 'tbody.p-table--th-left', '#sub_body', '.contents_wrap', '.program--contents',
                         '.board_view', '#board_basic_view',
                     ];
 
@@ -448,16 +518,26 @@ class AnnouncementScraper {
                     }
                     console.log("dateText ", dateText)
 
-
                     // 첨부파일 링크 추출
                     const attachments = [];
-                    const fileItems = document.querySelectorAll('a[href *= "goDownLoad"]');
+                    const fileItems = document.querySelectorAll('a[href *= "goDownload"]');
 
                     fileItems.forEach(link => {
 
-                        const href = link.href;
+                        let href = link.href;
                         const text = link.textContent.trim();
-                        console.log(text, href, link.className)
+
+                        // javascript:goDownload(...) 형태를 실제 다운로드 URL로 변환
+                        // if (href.startsWith('javascript:')) {
+                        //     const regex = /goDownload\('([^']+)',\s*'([^']+)',\s*'([^']+)'\)/;
+                        //     const matches = href.match(regex);
+
+                        //     if (matches) {
+                        //         const [, fileNm, sysFileNm, filePath] = matches;
+                        //         // eminwon 서버의 파일 다운로드 URL 패턴
+                        //         // href = `https://eminwon.andong.go.kr/emwp/jsp/ofr/FileDown.jsp?user_file_nm=${fileNm}&sys_file_nm=${sysFileNm}&file_path=${encodeURIComponent(filePath)}`;
+                        //     }
+                        // }
 
                         attachments.push({
                             name: text,
@@ -507,6 +587,556 @@ class AnnouncementScraper {
         }
     }
 
+
+    /**
+     * 단일 첨부파일 다운로드 (개선된 디버깅 및 에러 처리)
+     */
+    async downloadSingleAttachment(attachment, attachDir, index) {
+        const startTime = Date.now();
+        console.log(`\n📥 === 첨부파일 다운로드 시작 (${index}) ===`);
+        console.log(`파일명: ${attachment.name}`);
+        console.log(`URL: ${attachment.url}`);
+
+        try {
+            let downloadUrl = attachment.url;
+            let fileName = attachment.name || `attachment_${index}`;
+
+
+            // // Use a regular expression to parse the goDownLoad() function arguments
+            // const regex = /goDownLoad\('([^']+)',\s*'([^']+)',\s*'([^']+)'\)/;
+            // const matches = href.match(regex);
+
+            // if (matches && matches.length === 4) {
+            //     const fileName = matches[1];
+            //     const systemFileName = matches[2];
+            //     const filePath = matches[3];
+
+            //     // Construct the final download URL
+            //     const fullUrl = `https://eminwon.shinan.go.kr/emwp/jsp/ofr/FileDownNew.jsp?user_file_nm=${decodeURIComponent(fileName)}&sys_file_nm=${decodeURIComponent(systemFileName)}&file_path=${decodeURIComponent(filePath)}`;
+
+            //     if (fileName && fullUrl) {
+            //     }
+            // }
+
+
+            // goDownLoad(fileNm, sysFileNm, filePath) 패턴 처리 - POST 방식
+            const regex = /goDownload\('([^']+)',\s*'([^']+)',\s*'([^']+)'\)/;
+            const matches = downloadUrl.match(regex);
+
+            if (matches) {
+                const [, fileNm, sysFileNm, filePath] = matches;
+                fileName = fileNm; // 원본 파일명 사용
+
+                console.log('🎯 goDownLoad 패턴 감지:', {
+                    fileNm: decodeURIComponent(fileNm),
+                    sysFileNm: decodeURIComponent(sysFileNm),
+                    filePath: filePath
+                });
+
+                // POST 방식으로 다운로드 (여러 방법 시도)
+                let downloadResult = null;
+                let lastError = null;
+
+                // 방법들을 순차적으로 시도
+                const downloadMethods = [
+                    {
+                        name: 'EgovPost',
+                        method: async () => {
+                            const result = await this.downloadViaEgovPost(fileNm, sysFileNm, filePath, attachDir, fileName);
+                            return result;
+                        }
+                    },
+                ];
+
+                for (const { name, method } of downloadMethods) {
+                    try {
+                        console.log(`🔄 ${name} 방식 시도 중...`);
+                        downloadResult = await method();
+
+                        if (downloadResult && downloadResult.success) {
+                            const elapsed = Date.now() - startTime;
+                            // Return with fileName and downloadUrl for URL tracking
+                            return {
+                                ...downloadResult,
+                                fileName: fileName,
+                                downloadUrl: downloadUrl
+                            };
+                        }
+                    } catch (error) {
+                        lastError = error;
+                        console.warn(`⚠️ ${name} 방식 실패: ${error.message}`);
+
+                        // 다음 방법을 시도하기 전에 잠시 대기
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                }
+
+                // 모든 방법이 실패한 경우
+                throw lastError || new Error('모든 다운로드 방법 실패');
+
+            } else {
+                console.log('❌ goDownLoad 패턴이 감지되지 않음');
+                console.log('지원하지 않는 첨부파일 형식입니다.');
+                return { success: false, reason: 'unsupported_pattern' };
+            }
+
+        } catch (error) {
+            const elapsed = Date.now() - startTime;
+            // console.error(`❌ 첨부파일 다운로드 최종 실패 (${attachment.name}):`);
+            // console.error(`   오류: ${error.message}`);
+            // console.error(`   처리 시간: ${elapsed}ms`);
+
+            return {
+                success: false,
+                error: error.message,
+                processingTime: elapsed,
+                fileName: attachment.name
+            };
+        } finally {
+            console.log(`📥 === 첨부파일 다운로드 종료 (${index}) ===\n`);
+        }
+    }
+
+
+    /**
+     * 대구광역시 fn_egov_downFile 함수 직접 실행 방식 (개선된 다운로드 처리)
+     */
+    async downloadViaEgovPost(fileNm, sysFileNm, filePath, attachDir, fileName) {
+        try {
+
+            // 파일명 디코딩 및 정리
+            const cleanFileName = sanitize(decodeURIComponent(fileNm), { replacement: '_' });
+            const expectedFilePath = path.join(attachDir, cleanFileName);
+
+            // 1단계: CDP를 통한 다운로드 설정
+            await this.setupDownloadBehavior(attachDir);
+
+            // 2단계: 다운로드 이벤트 리스너 설정을 Promise로 감싸기
+            let downloadResolve, downloadReject;
+            let downloadTimeout;
+            
+            const downloadPromise = new Promise((resolve, reject) => {
+                downloadResolve = resolve;
+                downloadReject = reject;
+                downloadTimeout = setTimeout(() => {
+                    reject(new Error('다운로드 타임아웃 (60초)'));
+                }, 60000);
+            });
+
+            const downloadHandler = async (download) => {
+                try {
+                    clearTimeout(downloadTimeout);
+
+                    const suggestedFileName = download.suggestedFilename();
+                    const finalFileName = suggestedFileName || cleanFileName;
+                    const savePath = path.join(attachDir, sanitize(finalFileName, { replacement: '_' }));
+
+                    await download.saveAs(savePath);
+
+                    // 파일이 실제로 저장되었는지 확인
+                    if (await fs.pathExists(savePath)) {
+                        const stats = await fs.stat(savePath);
+                        console.log(`✅ 파일 저장 성공: ${savePath} (${stats.size} bytes)`);
+
+                        // 이벤트 리스너 제거
+                        this.page.off('download', downloadHandler);
+                        downloadResolve({ success: true, savedPath: savePath, size: stats.size });
+                    } else {
+                        throw new Error('파일이 저장되지 않았습니다');
+                    }
+                } catch (error) {
+                    clearTimeout(downloadTimeout);
+                    this.page.off('download', downloadHandler);
+                    downloadReject(error);
+                }
+            };
+
+            // 다운로드 이벤트 리스너 등록
+            this.page.on('download', downloadHandler);
+            console.log('다운로드 이벤트 리스너 설정 완료');
+
+            // 3단계: 네트워크 인터셉트를 설정하고 폼 제출 (한 번만 다운로드)
+            const networkInterceptPromise = this.setupNetworkInterceptForDownload(fileNm, sysFileNm, filePath, attachDir);
+            
+            // 4단계: 폼 제출 실행
+
+            // URL 디코딩을 한 번만 수행 (과도한 인코딩 방지)
+            const decodedFileNm = decodeURIComponent(fileNm);
+            const decodedSysFileNm = decodeURIComponent(sysFileNm);
+
+            console.log('디코딩된 파라미터:', {
+                originalFileNm: fileNm,
+                decodedFileNm: decodedFileNm,
+                originalSysFileNm: sysFileNm,
+                decodedSysFileNm: decodedSysFileNm,
+                filePath: filePath
+            });
+
+            const execResult = await this.page.evaluate((params) => {
+                const { decodedFileNm, decodedSysFileNm, filePath } = params;
+
+                console.log('fn_egov_downFile 실행 (디코딩된 파라미터):', {
+                    decodedFileNm, decodedSysFileNm, filePath
+                });
+
+                try {
+                    // 대구광역시의 실제 fn_egov_downFile 함수 호출
+                    if (typeof fn_egov_downFile === 'function') {
+                        fn_egov_downFile(decodedFileNm, decodedSysFileNm, filePath);
+                        return { success: true, method: 'direct_function_call' };
+                    } else {
+                        // 함수가 없으면 수동 폼 제출
+                        const form = document.getElementById('fileForm') || document.createElement('form');
+                        form.id = 'fileForm';
+                        form.method = 'post';
+                        form.action = 'https://eminwon.andong.go.kr/emwp/jsp/ofr/FileDownNew.jsp';
+                        form.target = '_self';
+                        form.style.display = 'none';
+
+                        // 기존 input 제거 후 새로 추가
+                        form.innerHTML = '';
+
+                        const inputs = [
+                            { name: 'user_file_nm', value: decodedFileNm },
+                            { name: 'sys_file_nm', value: decodedSysFileNm },
+                            { name: 'file_path', value: filePath }
+                        ];
+
+                        inputs.forEach(input => {
+                            const hiddenInput = document.createElement('input');
+                            hiddenInput.type = 'hidden';
+                            hiddenInput.name = input.name;
+                            hiddenInput.value = input.value;
+                            form.appendChild(hiddenInput);
+                        });
+
+                        if (!document.body.contains(form)) {
+                            document.body.appendChild(form);
+                        }
+
+                        console.log('폼 제출 실행 (디코딩된 값으로)...');
+                        form.submit();
+                        return { success: true, method: 'manual_form_submit' };
+                    }
+                } catch (error) {
+                    console.error('함수 실행 오류:', error);
+                    return { success: false, error: error.message };
+                }
+            }, { decodedFileNm, decodedSysFileNm, filePath });
+
+            console.log('fn_egov_downFile 실행 결과:', execResult);
+
+            // 5단계: 네트워크 인터셉트 또는 CDP 다운로드 완료 대기
+            try {
+                // 네트워크 인터셉트가 먼저 성공하면 그것을 사용
+                const result = await Promise.race([
+                    networkInterceptPromise,
+                    downloadPromise
+                ]);
+                
+                if (result && result.success) {
+                    // 성공한 다운로드 이벤트 리스너 제거
+                    this.page.off('download', downloadHandler);
+                    console.log(`✅ 파일 다운로드 성공: ${result.savedPath || result.fileName}`);
+                    return result;
+                }
+            } catch (error) {
+                console.log(`❌ 다운로드 실패: ${error.message}`);
+                // 다운로드 이벤트 리스너 제거
+                this.page.off('download', downloadHandler);
+                throw error;
+            }
+
+        } catch (error) {
+            console.error('대구광역시 fn_egov_downFile 실행 중 오류:', error.message);
+            throw error;
+        }
+    }
+
+    /**
+     * 네트워크 인터셉트 설정 (Promise 반환)
+     */
+    async setupNetworkInterceptForDownload(fileNm, sysFileNm, filePath, attachDir) {
+        console.log('네트워크 인터셉트 설정 중...');
+        const cleanFileName = sanitize(decodeURIComponent(fileNm), { replacement: '_' });
+        const savePath = path.join(attachDir, cleanFileName);
+
+        // 네트워크 요청 인터셉트 Promise 반환
+        return new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                this.page.unroute('**/*');
+                reject(new Error('네트워크 인터셉트 타임아웃'));
+            }, 30000);
+
+            const requestHandler = async (route) => {
+                const request = route.request();
+                
+                if (request.url().includes('FileDown.jsp') || request.url().includes('FileDownNew.jsp')) {
+                    console.log('FileDown 요청 인터셉트:', request.url());
+                    
+                    try {
+                        const response = await route.fetch();
+                        const buffer = await response.body();
+                        console.log(`응답 수신: ${response.status()} - ${buffer.length} bytes`);
+
+                        const contentType = response.headers()['content-type'] || '';
+                        const contentDisposition = response.headers()['content-disposition'] || '';
+
+                        if (buffer.length > 200 && !contentType.includes('text/html')) {
+                            // 파일 저장
+                            await fs.writeFile(savePath, buffer);
+
+                            if (await fs.pathExists(savePath)) {
+                                const stats = await fs.stat(savePath);
+                                console.log(`✅ 네트워크 인터셉트로 파일 저장 성공: ${savePath} (${stats.size} bytes)`);
+                                
+                                clearTimeout(timeout);
+                                this.page.unroute('**/*', requestHandler);
+                                
+                                // 빈 응답으로 응답 (추가 다운로드 방지)
+                                try {
+                                    await route.fulfill({
+                                        status: 200,
+                                        contentType: 'text/plain',
+                                        body: ''
+                                    });
+                                } catch (e) {
+                                    // 이미 처리된 경우 무시
+                                    console.log('Route already handled, ignoring');
+                                }
+                                
+                                resolve({
+                                    success: true,
+                                    savedPath: savePath,
+                                    size: stats.size,
+                                    downloadMethod: 'NetworkIntercept',
+                                    fileName: cleanFileName
+                                });
+                                return;
+                            }
+                        }
+                        // 파일이 아니면 계속 진행
+                        await route.continue();
+                    } catch (error) {
+                        console.error('네트워크 인터셉트 처리 중 오류:', error);
+                        await route.continue();
+                    }
+                } else {
+                    await route.continue();
+                }
+            };
+
+            // 라우트 설정
+            this.page.route('**/*', requestHandler);
+        });
+    }
+
+    /**
+     * 네트워크 인터셉트를 통한 파일 다운로드 (강력한 fallback)
+     */
+    async downloadViaNetworkIntercept(fileNm, sysFileNm, filePath, attachDir, fileName) {
+        try {
+            console.log('네트워크 인터셉트 방식 다운로드 시작...');
+
+            const cleanFileName = sanitize(decodeURIComponent(fileNm), { replacement: '_' });
+            const savePath = path.join(attachDir, cleanFileName);
+
+            // 실제 다운로드 URL 구성
+            const actualDownloadUrl = 'https://eminwon.andong.go.kr/emwp/jsp/ofr/FileDown.jsp';
+            const downloadParams = {
+                user_file_nm: decodeURIComponent(fileNm),
+                sys_file_nm: decodeURIComponent(sysFileNm),
+                file_path: filePath
+            };
+            const fullDownloadUrl = `${actualDownloadUrl}?user_file_nm=${encodeURIComponent(downloadParams.user_file_nm)}&sys_file_nm=${encodeURIComponent(downloadParams.sys_file_nm)}&file_path=${encodeURIComponent(downloadParams.file_path)}`;
+
+            console.log('네트워크 인터셉트 - 실제 다운로드 URL:', fullDownloadUrl);
+
+            // 네트워크 요청 인터셉트 설정
+            const interceptPromise = new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => {
+                    reject(new Error('네트워크 인터셉트 타임아웃'));
+                }, 30000);
+
+                const requestHandler = async (route) => {
+                    const request = route.request();
+
+                    if (request.url().includes('FileDown.jsp') || request.url().includes('FileDownNew.jsp')) {
+                        console.log('FileDown 요청 인터셉트:', request.url());
+                        console.log('POST 데이터:', request.postData());
+
+                        try {
+                            // 원래 요청을 그대로 실행하고 응답 받기
+                            const response = await route.fetch();
+                            const buffer = await response.body();
+
+                            console.log(`응답 수신: ${response.status()} - ${buffer.length} bytes`);
+
+                            // 응답이 파일인지 확인 (HTML 에러 페이지가 아닌지)
+                            const contentType = response.headers()['content-type'] || '';
+                            const contentDisposition = response.headers()['content-disposition'] || '';
+
+                            // 파일명 추출
+                            let suggestedFileName = cleanFileName;
+                            if (contentDisposition) {
+                                const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+                                if (filenameMatch) {
+                                    suggestedFileName = filenameMatch[1].replace(/['"]/g, '').trim();
+                                    if (suggestedFileName.includes('%')) {
+                                        try {
+                                            suggestedFileName = decodeURIComponent(suggestedFileName);
+                                        } catch (e) {
+                                            console.log('파일명 디코딩 실패:', e.message);
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (buffer.length > 200 && !contentType.includes('text/html')) {
+                                // 파일 저장
+                                await fs.writeFile(savePath, buffer);
+
+                                // 저장 확인
+                                if (await fs.pathExists(savePath)) {
+                                    const stats = await fs.stat(savePath);
+                                    console.log(`✅ 네트워크 인터셉트로 파일 저장 성공: ${savePath} (${stats.size} bytes)`);
+                                    console.log(`📎 실제 다운로드 URL: ${fullDownloadUrl}`);
+
+                                    clearTimeout(timeout);
+
+                                    // route.fulfill()로 응답 완료 처리 (추가 다운로드 방지)
+                                    await route.fulfill({
+                                        status: 200,
+                                        contentType: contentType || 'application/octet-stream',
+                                        body: buffer,
+                                        headers: {
+                                            'content-disposition': contentDisposition || `attachment; filename="${suggestedFileName}"`
+                                        }
+                                    });
+
+                                    resolve({
+                                        success: true,
+                                        savedPath: savePath,
+                                        size: stats.size,
+                                        actualDownloadUrl: fullDownloadUrl,
+                                        downloadMethod: 'NetworkIntercept',
+                                        fileName: suggestedFileName,
+                                        contentType: contentType
+                                    });
+                                    return;
+                                }
+                            } else {
+                                console.log('응답이 파일이 아닌 것으로 판단:', {
+                                    contentType,
+                                    size: buffer.length,
+                                    preview: buffer.toString('utf-8', 0, 100)
+                                });
+                            }
+
+                            // 정상 응답이 아니면 계속 진행
+                            await route.continue();
+
+                        } catch (error) {
+                            console.error('네트워크 인터셉트 처리 중 오류:', error);
+                            await route.continue();
+                        }
+                    } else {
+                        // 다른 요청은 그대로 통과
+                        await route.continue();
+                    }
+                };
+
+                // 라우트 설정
+                this.page.route('**/*', requestHandler);
+
+                // 5초 후 라우트 해제 (무한 대기 방지)
+                setTimeout(() => {
+                    this.page.unroute('**/*', requestHandler);
+                }, 35000);
+            });
+
+            // fn_egov_downFile 함수 재실행 (디코딩된 파라미터 사용)
+            const decodedFileNm = decodeURIComponent(fileNm);
+            const decodedSysFileNm = decodeURIComponent(sysFileNm);
+
+            await this.page.evaluate((params) => {
+                const { decodedFileNm, decodedSysFileNm, filePath } = params;
+                console.log('네트워크 인터셉트용 fn_egov_downFile 재실행 (디코딩된 파라미터)');
+
+                if (typeof fn_egov_downFile === 'function') {
+                    fn_egov_downFile(decodedFileNm, decodedSysFileNm, filePath);
+                } else {
+                    // 수동 폼 제출
+                    const form = document.createElement('form');
+                    form.method = 'post';
+                    form.action = 'https://eminwon.andong.go.kr/emwp/jsp/ofr/FileDown.jsp';
+                    form.style.display = 'none';
+
+                    const inputs = [
+                        { name: 'user_file_nm', value: decodedFileNm },
+                        { name: 'sys_file_nm', value: decodedSysFileNm },
+                        { name: 'file_path', value: filePath }
+                    ];
+
+                    inputs.forEach(input => {
+                        const hiddenInput = document.createElement('input');
+                        hiddenInput.type = 'hidden';
+                        hiddenInput.name = input.name;
+                        hiddenInput.value = input.value;
+                        form.appendChild(hiddenInput);
+                    });
+
+                    document.body.appendChild(form);
+                    form.submit();
+                    form.remove();
+                }
+            }, { decodedFileNm, decodedSysFileNm, filePath });
+
+            // 네트워크 인터셉트 결과 대기
+            const result = await interceptPromise;
+            console.log(`📁 네트워크 인터셉트 다운로드 완료:`, {
+                fileName: result.fileName,
+                actualUrl: result.actualDownloadUrl,
+                method: result.downloadMethod
+            });
+            return result;
+
+        } catch (error) {
+            console.error('네트워크 인터셉트 다운로드 실패:', error.message);
+            throw error;
+        }
+    }
+
+    /**
+     * CDP를 통한 다운로드 동작 설정
+     */
+    async setupDownloadBehavior(downloadPath) {
+        try {
+            console.log(`CDP 다운로드 설정 - 경로: ${downloadPath}`);
+
+            // CDP 세션 생성
+            const client = await this.page.context().newCDPSession(this.page);
+
+            // 다운로드 동작 설정
+            await client.send('Page.setDownloadBehavior', {
+                behavior: 'allow',
+                downloadPath: downloadPath
+            });
+
+            // 브라우저 다운로드 허용 설정
+            await client.send('Browser.setDownloadBehavior', {
+                behavior: 'allow',
+                downloadPath: downloadPath
+            });
+
+            console.log('✅ CDP 다운로드 설정 완료');
+            return client;
+        } catch (error) {
+            console.warn(`⚠️ CDP 설정 실패 (계속 진행): ${error.message}`);
+            return null;
+        }
+    }
+
     /**
      * 공고 저장
      */
@@ -525,22 +1155,17 @@ class AnnouncementScraper {
 
             await fs.ensureDir(folderPath);
 
-            // 첨부파일 다운로드 및 URL 정보 수집
-            let downloadUrlInfo = {};
+            // 첨부파일 다운로드
+            let attachmentFiles = [];
+            let downloadUrlInfo = [];
             if (detailContent.attachments && detailContent.attachments.length > 0) {
-                downloadUrlInfo = await this.downloadAttachments(detailContent.attachments, folderPath);
-
-                // 첨부파일에 다운로드 정보 추가
-                detailContent.attachments.forEach(attachment => {
-                    const fileName = attachment.name;
-                    if (downloadUrlInfo[fileName]) {
-                        attachment.downloadUrl = downloadUrlInfo[fileName].actualDownloadUrl;
-                    }
-                });
+                const downloadResult = await this.downloadAttachments(detailContent.attachments, folderPath);
+                attachmentFiles = downloadResult.files || [];
+                downloadUrlInfo = downloadResult.urlInfo || [];
             }
 
-            // content.md 생성 (다운로드 URL 정보 포함)
-            const contentMd = this.generateMarkdownContent(announcement, detailContent);
+            // content.md 생성 - 원본 attachments 정보 사용
+            const contentMd = this.generateMarkdownContent(announcement, detailContent, detailContent.attachments);
             await fs.writeFile(path.join(folderPath, 'content.md'), contentMd, 'utf8');
 
             this.counter++;
@@ -554,32 +1179,38 @@ class AnnouncementScraper {
      * 첨부파일 다운로드
      */
     async downloadAttachments(attachments, folderPath) {
-        const downloadUrlInfo = {};
         try {
             const attachDir = path.join(folderPath, 'attachments');
             await fs.ensureDir(attachDir);
+            const downloadedFiles = [];
+            const urlInfo = [];
 
             console.log(`${attachments.length}개 첨부파일 다운로드 중...`);
 
             for (let i = 0; i < attachments.length; i++) {
                 const attachment = attachments[i];
                 const result = await this.downloadSingleAttachment(attachment, attachDir, i + 1);
-                if (result && result.actualDownloadUrl) {
-                    downloadUrlInfo[attachment.name] = result;
+                if (result) {
+                    if (typeof result === 'object' && result.fileName && result.downloadUrl) {
+                        downloadedFiles.push(result.fileName);
+                        urlInfo.push(result);
+                    } else {
+                        downloadedFiles.push(result);
+                    }
                 }
                 await this.delay(500); // 0.5초 대기
             }
 
+            return { files: downloadedFiles, urlInfo: urlInfo };
         } catch (error) {
             console.error('첨부파일 다운로드 실패:', error);
+            return { files: [], urlInfo: [] };
         }
-        return downloadUrlInfo;
     }
 
-
-    // /**
-    //  * 단일 첨부파일 다운로드
-    //  */
+    /**
+     * 단일 첨부파일 다운로드
+     */
     // async downloadSingleAttachment(attachment, attachDir, index) {
     //     try {
     //         let downloadUrl = attachment.url;
@@ -881,303 +1512,6 @@ class AnnouncementScraper {
     }
 
     /**
-     * 단일 첨부파일 다운로드 (개선된 디버깅 및 에러 처리)
-     */
-    async downloadSingleAttachment(attachment, attachDir, index) {
-        const startTime = Date.now();
-        console.log(`\n📥 === 첨부파일 다운로드 시작 (${index}) ===`);
-        console.log(`파일명: ${attachment.name}`);
-        console.log(`URL: ${attachment.url}`);
-
-        try {
-            let downloadUrl = attachment.url;
-            let fileName = attachment.name || `attachment_${index}`;
-
-
-            // // Use a regular expression to parse the goDownLoad() function arguments
-            // const regex = /goDownLoad\('([^']+)',\s*'([^']+)',\s*'([^']+)'\)/;
-            // const matches = href.match(regex);
-
-            // if (matches && matches.length === 4) {
-            //     const fileName = matches[1];
-            //     const systemFileName = matches[2];
-            //     const filePath = matches[3];
-
-            //     // Construct the final download URL
-            //     const fullUrl = `https://eminwon.shinan.go.kr/emwp/jsp/ofr/FileDownNew.jsp?user_file_nm=${decodeURIComponent(fileName)}&sys_file_nm=${decodeURIComponent(systemFileName)}&file_path=${decodeURIComponent(filePath)}`;
-
-            //     if (fileName && fullUrl) {
-            //     }
-            // }
-
-
-            // goDownLoad(fileNm, sysFileNm, filePath) 패턴 처리 - POST 방식
-            const regex = /goDownLoad\('([^']+)',\s*'([^']+)',\s*'([^']+)'\)/;
-            const matches = downloadUrl.match(regex);
-
-            if (matches) {
-                const [, fileNm, sysFileNm, filePath] = matches;
-                fileName = fileNm; // 원본 파일명 사용
-
-                console.log('🎯 goDownLoad 패턴 감지:', {
-                    fileNm: decodeURIComponent(fileNm),
-                    sysFileNm: decodeURIComponent(sysFileNm),
-                    filePath: filePath
-                });
-
-                // POST 방식으로 다운로드 (여러 방법 시도)
-                let downloadResult = null;
-                let lastError = null;
-
-                // 방법들을 순차적으로 시도
-                const downloadMethods = [
-                    {
-                        name: 'EgovPost',
-                        method: async () => {
-                            const result = await this.downloadViaEgovPost(fileNm, sysFileNm, filePath, attachDir, fileName);
-                            return result;
-                        }
-                    },
-                ];
-
-                for (const { name, method } of downloadMethods) {
-                    try {
-                        console.log(`🔄 ${name} 방식 시도 중...`);
-                        downloadResult = await method();
-
-                        if (downloadResult && downloadResult.success) {
-                            const elapsed = Date.now() - startTime;
-                            console.log(`✅ ${name} 방식으로 다운로드 성공!`);
-                            console.log(`📊 처리 시간: ${elapsed}ms`);
-                            return {
-                                ...downloadResult,
-                                actualDownloadUrl: downloadResult.url || 'https://eminwon.ddm.go.kr/emwp/jsp/ofr/FileDownNew.jsp',
-                                fileName: fileName
-                            };
-                        }
-                    } catch (error) {
-                        lastError = error;
-                        console.warn(`⚠️ ${name} 방식 실패: ${error.message}`);
-
-                        // 다음 방법을 시도하기 전에 잠시 대기
-                        await new Promise(resolve => setTimeout(resolve, 1000));
-                    }
-                }
-
-                // 모든 방법이 실패한 경우에도 URL 정보는 반환
-                const downloadUrl = `https://eminwon.ddm.go.kr/emwp/jsp/ofr/FileDownNew.jsp?user_file_nm=${encodeURIComponent(fileNm)}&sys_file_nm=${encodeURIComponent(sysFileNm)}&file_path=${encodeURIComponent(filePath)}`;
-                return {
-                    success: false,
-                    actualDownloadUrl: downloadUrl,
-                    fileName: fileName,
-                    error: lastError ? lastError.message : '다운로드 실패'
-                };
-
-            } else {
-                console.log('❌ goDownLoad 패턴이 감지되지 않음');
-                console.log('지원하지 않는 첨부파일 형식입니다.');
-                return { success: false, reason: 'unsupported_pattern' };
-            }
-
-        } catch (error) {
-            const elapsed = Date.now() - startTime;
-            console.error(`❌ 첨부파일 다운로드 최종 실패 (${attachment.name}):`);
-            console.error(`   오류: ${error.message}`);
-            console.error(`   처리 시간: ${elapsed}ms`);
-
-            return {
-                success: false,
-                error: error.message,
-                processingTime: elapsed,
-                fileName: attachment.name
-            };
-        } finally {
-            console.log(`📥 === 첨부파일 다운로드 종료 (${index}) ===\n`);
-        }
-    }
-
-
-    /**
-     * 대구광역시 fn_egov_downFile 함수 직접 실행 방식 (개선된 다운로드 처리)
-     */
-    async downloadViaEgovPost(fileNm, sysFileNm, filePath, attachDir, fileName) {
-        try {
-            console.log('대구광역시 fn_egov_downFile 함수 개선된 다운로드 시작...');
-
-            // 파일명 디코딩 및 정리
-            const cleanFileName = sanitize(decodeURIComponent(fileNm), { replacement: '_' });
-            const expectedFilePath = path.join(attachDir, cleanFileName);
-            console.log(`다운로드할 파일: ${cleanFileName}`);
-            console.log(`저장 경로: ${expectedFilePath}`);
-
-            // 1단계: CDP를 통한 다운로드 설정
-            await this.setupDownloadBehavior(attachDir);
-
-            // 2단계: 다운로드 이벤트 리스너 설정 (함수 실행 전에)
-            const downloadPromise = new Promise((resolve, reject) => {
-                const timeout = setTimeout(() => {
-                    reject(new Error('다운로드 타임아웃 (60초)'));
-                }, 60000); // 60초 타임아웃
-
-                const downloadHandler = async (download) => {
-                    try {
-                        clearTimeout(timeout);
-
-                        const suggestedFileName = download.suggestedFilename();
-                        const finalFileName = suggestedFileName || cleanFileName;
-                        const savePath = path.join(attachDir, sanitize(finalFileName, { replacement: '_' }));
-
-                        console.log('다운로드 이벤트 감지:', {
-                            suggestedFileName,
-                            finalFileName,
-                            savePath
-                        });
-
-                        await download.saveAs(savePath);
-
-                        // 파일이 실제로 저장되었는지 확인
-                        if (await fs.pathExists(savePath)) {
-                            const stats = await fs.stat(savePath);
-                            console.log(`✅ 파일 저장 성공: ${savePath} (${stats.size} bytes)`);
-
-                            // 이벤트 리스너 제거
-                            this.page.off('download', downloadHandler);
-                            resolve({ success: true, savedPath: savePath, size: stats.size });
-                        } else {
-                            throw new Error('파일이 저장되지 않았습니다');
-                        }
-                    } catch (error) {
-                        clearTimeout(timeout);
-                        this.page.off('download', downloadHandler);
-                        reject(error);
-                    }
-                };
-
-                // 다운로드 이벤트 리스너 등록
-                this.page.on('download', downloadHandler);
-
-                console.log('다운로드 이벤트 리스너 설정 완료');
-            });
-
-            // 3단계: fn_egov_downFile 함수 실행 (디코딩된 파라미터 사용)
-            console.log('fn_egov_downFile 함수 실행 준비...');
-
-            // URL 디코딩을 한 번만 수행 (과도한 인코딩 방지)
-            const decodedFileNm = decodeURIComponent(fileNm);
-            const decodedSysFileNm = decodeURIComponent(sysFileNm);
-
-            console.log('디코딩된 파라미터:', {
-                originalFileNm: fileNm,
-                decodedFileNm: decodedFileNm,
-                originalSysFileNm: sysFileNm,
-                decodedSysFileNm: decodedSysFileNm,
-                filePath: filePath
-            });
-
-            const execResult = await this.page.evaluate((params) => {
-                const { decodedFileNm, decodedSysFileNm, filePath } = params;
-
-                console.log('fn_egov_downFile 실행 (디코딩된 파라미터):', {
-                    decodedFileNm, decodedSysFileNm, filePath
-                });
-
-                try {
-                    // 대구광역시의 실제 fn_egov_downFile 함수 호출
-                    if (typeof fn_egov_downFile === 'function') {
-                        fn_egov_downFile(decodedFileNm, decodedSysFileNm, filePath);
-                        return { success: true, method: 'direct_function_call' };
-                    } else {
-                        // 함수가 없으면 수동 폼 제출
-                        const form = document.getElementById('fileForm') || document.createElement('form');
-                        form.id = 'fileForm';
-                        form.method = 'post';
-                        form.action = 'https://eminwon.ddm.go.kr/emwp/jsp/ofr/FileDownNew.jsp';
-                        form.target = '_self';
-                        form.style.display = 'none';
-
-                        // 기존 input 제거 후 새로 추가
-                        form.innerHTML = '';
-
-                        const inputs = [
-                            { name: 'user_file_nm', value: decodedFileNm },
-                            { name: 'sys_file_nm', value: decodedSysFileNm },
-                            { name: 'file_path', value: filePath }
-                        ];
-
-                        inputs.forEach(input => {
-                            const hiddenInput = document.createElement('input');
-                            hiddenInput.type = 'hidden';
-                            hiddenInput.name = input.name;
-                            hiddenInput.value = input.value;
-                            form.appendChild(hiddenInput);
-                        });
-
-                        if (!document.body.contains(form)) {
-                            document.body.appendChild(form);
-                        }
-
-                        console.log('폼 제출 실행 (디코딩된 값으로)...');
-                        form.submit();
-                        return { success: true, method: 'manual_form_submit' };
-                    }
-                } catch (error) {
-                    console.error('함수 실행 오류:', error);
-                    return { success: false, error: error.message };
-                }
-            }, { decodedFileNm, decodedSysFileNm, filePath });
-
-            console.log('fn_egov_downFile 실행 결과:', execResult);
-
-            // 4단계: 다운로드 완료 대기
-            try {
-                const downloadResult = await downloadPromise;
-                console.log(`✅ 대구광역시 파일 다운로드 성공: ${downloadResult.savedPath}`);
-                return downloadResult;
-            } catch (downloadError) {
-                console.log(`❌ 다운로드 이벤트 캐치 실패: ${downloadError.message}`);
-
-                // Fallback: 네트워크 인터셉트 방식 시도
-                return await this.downloadViaNetworkIntercept(fileNm, sysFileNm, filePath, attachDir, fileName);
-            }
-
-        } catch (error) {
-            console.error('대구광역시 fn_egov_downFile 실행 중 오류:', error.message);
-            throw error;
-        }
-    }
-
-    /**
-     * CDP를 통한 다운로드 동작 설정
-     */
-    async setupDownloadBehavior(downloadPath) {
-        try {
-            console.log(`CDP 다운로드 설정 - 경로: ${downloadPath}`);
-
-            // CDP 세션 생성
-            const client = await this.page.context().newCDPSession(this.page);
-
-            // 다운로드 동작 설정
-            await client.send('Page.setDownloadBehavior', {
-                behavior: 'allow',
-                downloadPath: downloadPath
-            });
-
-            // 브라우저 다운로드 허용 설정
-            await client.send('Browser.setDownloadBehavior', {
-                behavior: 'allow',
-                downloadPath: downloadPath
-            });
-
-            console.log('✅ CDP 다운로드 설정 완료');
-            return client;
-        } catch (error) {
-            console.warn(`⚠️ CDP 설정 실패 (계속 진행): ${error.message}`);
-            return null;
-        }
-    }
-
-
-    /**
      * 한글이 깨져있는지 확인
      */
     hasCorruptedKorean(filename) {
@@ -1226,7 +1560,7 @@ class AnnouncementScraper {
     /**
      * 마크다운 컨텐츠 생성
      */
-    generateMarkdownContent(announcement, detailContent) {
+    generateMarkdownContent(announcement, detailContent, attachmentFiles) {
         const lines = [];
 
         lines.push(`# ${announcement.title}`);
@@ -1247,18 +1581,23 @@ class AnnouncementScraper {
             lines.push(detailContent.content);
         }
 
-        if (detailContent.attachments && detailContent.attachments.length > 0) {
+        if (attachmentFiles && attachmentFiles.length > 0) {
             lines.push('');
             lines.push('**첨부파일**:');
             lines.push('');
-            detailContent.attachments.forEach((att, i) => {
-                let attachInfo = "";
-                if (att.downloadUrl) {
-                    attachInfo = `${i + 1}. ${att.name}:${att.downloadUrl}`;
+            attachmentFiles.forEach((file, i) => {
+                if (typeof file === 'object' && file.fileName && file.downloadUrl) {
+                    lines.push(`${i + 1}. ${file.fileName}:${file.downloadUrl}`);
+                } else if (typeof file === 'object' && file.name && file.url) {
+                    lines.push(`${i + 1}. ${file.name}:${file.url}`);
+                } else if (typeof file === 'string') {
+                    lines.push(`${i + 1}. ${file}`);
                 } else {
-                    attachInfo = `${i + 1}. ${att.name}`;
+                    // 객체지만 예상한 프로퍼티가 없는 경우
+                    const fileName = file.name || file.fileName || 'unknown';
+                    const fileUrl = file.url || file.downloadUrl || '';
+                    lines.push(`${i + 1}. ${fileName}:${fileUrl}`);
                 }
-                lines.push(attachInfo);
             });
         }
 
@@ -1381,11 +1720,18 @@ class AnnouncementScraper {
     /**
      * 날짜 추출
      */
-    extractDate(dateText) {
+        extractDate(dateText) {
         if (!dateText) return null;
 
         // 텍스트 정리
         let cleanText = dateText.trim();
+        
+        // "2025년 9월 30일(화) 16:51:34" 형식 처리
+        const koreanDateMatch = cleanText.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+        if (koreanDateMatch) {
+            const [, year, month, day] = koreanDateMatch;
+            cleanText = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
 
         // "등록일\n2025-09-10" 같은 형식에서 날짜만 추출
         const dateMatch = cleanText.match(/(\d{4}[-.\\/]\d{1,2}[-.\\/]\d{1,2})/);
@@ -1404,6 +1750,7 @@ class AnnouncementScraper {
             const day = yymmddMatch[3].padStart(2, '0');
             cleanText = `${year}-${month}-${day}`;
         }
+        
         const formats = [
             'YYYY-MM-DD',
             'YYYY.MM.DD',
@@ -1465,7 +1812,7 @@ class AnnouncementScraper {
     buildListUrl(pageNum) {
         // 기본적으로 page 파라미터를 추가
         const url = new URL(this.baseUrl);
-        url.searchParams.set('pageIndex', pageNum);
+        url.searchParams.set('page', pageNum);
         return url.toString();
     }
 
@@ -1496,25 +1843,25 @@ function setupCLI() {
             alias: 's',
             type: 'string',
             description: '사이트 코드',
-            default: 'ddm',
+            default: 'andong',
             required: true
         })
         .option('url', {
             alias: 'u',
             type: 'string',
             description: '기본 URL',
-            default: 'https://www.ddm.go.kr/www/selectEminwonWebList.do?key=3291&searchNotAncmtSeCode=01,02,04,05,06,07',
+            default: 'https://www.andong.go.kr/portal/saeol/gosi/list.do?seCode=04&mId=0401020300',
             required: true
         })
         .option('list-selector', {
             type: 'string',
             description: '리스트 선택자',
-            default: 'table.p-table tbody tr'
+            default: 'table.bod_list tbody tr'
         })
         .option('title-selector', {
             type: 'string',
             description: '제목 선택자',
-            default: 'td:nth-child(2) a'
+            default: 'td:nth-child(3) a'
         })
         .option('date-selector', {
             type: 'string',

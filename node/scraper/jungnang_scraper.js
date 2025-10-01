@@ -48,6 +48,65 @@ class AnnouncementScraper {
     /**
      * 브라우저 초기화
      */
+    /**
+     * 기존 폴더의 제목들을 로드하여 중복 체크
+     */
+    async loadExistingTitles() {
+        try {
+            if (!await fs.pathExists(this.outputDir)) {
+                return;
+            }
+
+            const items = await fs.readdir(this.outputDir);
+            for (const item of items) {
+                // 001_형식의 폴더명에서 제목 부분 추출
+                const match = item.match(/^\d{3}_(.+)$/);
+                if (match) {
+                    const title = match[1];
+                    // 폴더명은 sanitize된 상태이므로 원래 제목과 다를 수 있음
+                    // 하지만 어느 정도 중복 감지에 도움이 됨
+                    this.processedTitles.add(title);
+                }
+            }
+            
+            console.log(`기존 폴더에서 ${this.processedTitles.size}개의 제목 로드`);
+        } catch (error) {
+            console.log('기존 제목 로드 중 오류:', error.message);
+        }
+    }
+
+    /**
+     * 기존 폴더에서 가장 큰 카운터 번호 찾기
+     */
+    async getLastCounterNumber() {
+        try {
+            // outputDir이 존재하지 않으면 0 반환
+            if (!await fs.pathExists(this.outputDir)) {
+                return 0;
+            }
+
+            const items = await fs.readdir(this.outputDir);
+            let maxNumber = 0;
+
+            for (const item of items) {
+                // 001_형식의 폴더명에서 숫자 추출
+                const match = item.match(/^(\d{3})_/);
+                if (match) {
+                    const num = parseInt(match[1], 10);
+                    if (num > maxNumber) {
+                        maxNumber = num;
+                    }
+                }
+            }
+
+            return maxNumber;
+        } catch (error) {
+            console.log('기존 카운터 번호 확인 중 오류:', error.message);
+            return 0;
+        }
+    }
+
+
     async initBrowser() {
         console.log('브라우저 초기화 중...');
 
@@ -159,6 +218,14 @@ class AnnouncementScraper {
         try {
             await this.initBrowser();
             await fs.ensureDir(this.outputDir);
+            
+            // 기존 폴더에서 마지막 카운터 번호를 가져와서 그 다음부터 시작
+            const lastCounter = await this.getLastCounterNumber();
+            this.counter = lastCounter + 1;
+            console.log(`시작 카운터 번호: ${this.counter} (기존 최대 번호: ${lastCounter})`);
+            
+            // 기존 폴더의 제목들을 processedTitles에 추가
+            await this.loadExistingTitles();
             await this.loadExistingTitles();
 
             let currentPage = this.goPage || 1;
@@ -370,7 +437,9 @@ class AnnouncementScraper {
                             const existingTitle = match[1];
                             if (existingTitle === sanitizedTitle || existingTitle === announcement.title) {
                                 console.log(`❌ 중복 게시물 스킵 (파일시스템): ${announcement.title}`);
-                                this.processedTitles.add(announcement.title);
+                                // sanitize된 제목을 저장하여 정확한 중복 체크
+            const sanitizedTitleForCheck = sanitize(announcement.title).substring(0, 100);
+            this.processedTitles.add(sanitizedTitleForCheck);
                                 this.processedTitles.add(sanitizedTitle);
                                 return false;
                             }
@@ -405,7 +474,9 @@ class AnnouncementScraper {
             // 5. 폴더 생성 및 파일 저장
             await this.saveAnnouncement(announcement, detailContent);
 
-            this.processedTitles.add(announcement.title);
+            // sanitize된 제목을 저장하여 정확한 중복 체크
+            const sanitizedTitleForCheck = sanitize(announcement.title).substring(0, 100);
+            this.processedTitles.add(sanitizedTitleForCheck);
             console.log(`처리 완료: ${announcement.title}`);
 
             return false; // 계속 진행
@@ -1079,11 +1150,18 @@ class AnnouncementScraper {
     /**
      * 날짜 추출
      */
-    extractDate(dateText) {
+        extractDate(dateText) {
         if (!dateText) return null;
 
         // 텍스트 정리
         let cleanText = dateText.trim();
+        
+        // "2025년 9월 30일(화) 16:51:34" 형식 처리
+        const koreanDateMatch = cleanText.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+        if (koreanDateMatch) {
+            const [, year, month, day] = koreanDateMatch;
+            cleanText = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
 
         // "등록일\n2025-09-10" 같은 형식에서 날짜만 추출
         const dateMatch = cleanText.match(/(\d{4}[-.\\/]\d{1,2}[-.\\/]\d{1,2})/);
@@ -1102,6 +1180,7 @@ class AnnouncementScraper {
             const day = yymmddMatch[3].padStart(2, '0');
             cleanText = `${year}-${month}-${day}`;
         }
+        
         const formats = [
             'YYYY-MM-DD',
             'YYYY.MM.DD',

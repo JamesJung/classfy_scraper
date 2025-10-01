@@ -739,7 +739,7 @@
             "description": "URL에서 공고 ID를 추출하는 파라미터 목록"
         }
     },
-    "namehae": {
+    "namhae": {
         "announcementIdPattern": {
             "urlParams": [
                 "not_ancmt_mgt_no"

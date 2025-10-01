@@ -1126,7 +1126,7 @@ function setupCLI() {
             alias: 's',
             type: 'string',
             description: '사이트 코드',
-            default: 'namehae',
+            default: 'namhae',
             required: true
         })
         .option('url', {

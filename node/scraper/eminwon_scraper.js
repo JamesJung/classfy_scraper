@@ -117,6 +117,65 @@ class EminwonScraper {
     /**
      * 브라우저 초기화
      */
+    /**
+     * 기존 폴더의 제목들을 로드하여 중복 체크
+     */
+    async loadExistingTitles() {
+        try {
+            if (!await fs.pathExists(this.outputDir)) {
+                return;
+            }
+
+            const items = await fs.readdir(this.outputDir);
+            for (const item of items) {
+                // 001_형식의 폴더명에서 제목 부분 추출
+                const match = item.match(/^\d{3}_(.+)$/);
+                if (match) {
+                    const title = match[1];
+                    // 폴더명은 sanitize된 상태이므로 원래 제목과 다를 수 있음
+                    // 하지만 어느 정도 중복 감지에 도움이 됨
+                    this.processedTitles.add(title);
+                }
+            }
+            
+            console.log(`기존 폴더에서 ${this.processedTitles.size}개의 제목 로드`);
+        } catch (error) {
+            console.log('기존 제목 로드 중 오류:', error.message);
+        }
+    }
+
+    /**
+     * 기존 폴더에서 가장 큰 카운터 번호 찾기
+     */
+    async getLastCounterNumber() {
+        try {
+            // outputDir이 존재하지 않으면 0 반환
+            if (!await fs.pathExists(this.outputDir)) {
+                return 0;
+            }
+
+            const items = await fs.readdir(this.outputDir);
+            let maxNumber = 0;
+
+            for (const item of items) {
+                // 001_형식의 폴더명에서 숫자 추출
+                const match = item.match(/^(\d{3})_/);
+                if (match) {
+                    const num = parseInt(match[1], 10);
+                    if (num > maxNumber) {
+                        maxNumber = num;
+                    }
+                }
+            }
+
+            return maxNumber;
+        } catch (error) {
+            console.log('기존 카운터 번호 확인 중 오류:', error.message);
+            return 0;
+        }
+    }
+
+
     async initBrowser() {
         console.log('브라우저 초기화 중...');
 
@@ -214,6 +273,14 @@ class EminwonScraper {
         try {
             await this.initBrowser();
             await fs.ensureDir(this.outputDir);
+            
+            // 기존 폴더에서 마지막 카운터 번호를 가져와서 그 다음부터 시작
+            const lastCounter = await this.getLastCounterNumber();
+            this.counter = lastCounter + 1;
+            console.log(`시작 카운터 번호: ${this.counter} (기존 최대 번호: ${lastCounter})`);
+            
+            // 기존 폴더의 제목들을 processedTitles에 추가
+            await this.loadExistingTitles();
 
             // 기존 처리된 제목들 로드
             await this.loadExistingTitles();
@@ -1154,7 +1221,9 @@ class EminwonScraper {
             await this.saveAnnouncement(announcement, detailContent);
 
             // 원본 제목과 sanitize된 제목 모두 추가
-            this.processedTitles.add(announcement.title);
+            // sanitize된 제목을 저장하여 정확한 중복 체크
+            const sanitizedTitleForCheck = sanitize(announcement.title).substring(0, 100);
+            this.processedTitles.add(sanitizedTitleForCheck);
             this.processedTitles.add(sanitize(announcement.title).substring(0, 100));
             console.log(`처리 완료: ${announcement.title}`);
 

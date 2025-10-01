@@ -164,38 +164,61 @@ class DaeguScraper extends AnnouncementScraper {
                     await this.initBrowser();
                 }
 
-                // fn_goLinkView 함수 호출하여 상세 페이지로 이동
-                await this.page.evaluate(({ sno, gosiGbn }) => {
-                    // fn_goLinkView 함수가 있으면 호출
-                    if (typeof fn_goLinkView === 'function') {
-                        fn_goLinkView(sno, gosiGbn);
-                    } else {
-                        // 함수가 없으면 폼 제출 방식 시도
-                        const form = document.getElementById('sidoGosiAPIVO');
-                        if (form) {
-                            // hidden input 설정
-                            const snoInput = form.querySelector('input[name="sno"]') || document.createElement('input');
-                            snoInput.type = 'hidden';
-                            snoInput.name = 'sno';
-                            snoInput.value = sno;
-                            if (!form.contains(snoInput)) form.appendChild(snoInput);
+                // 직접 URL로 이동 시도
+                const detailUrl = `https://www.daegu.go.kr/index.do?menu_id=00940170&menu_link=/front/daeguSidoGosi/daeguSidoGosiView.do&sno=${announcement.sno}&gosi_gbn=${announcement.gosiGbn}`;
+                console.log(`상세 페이지 URL: ${detailUrl}`);
+                
+                try {
+                    // 직접 URL 이동
+                    await this.page.goto(detailUrl, { waitUntil: 'networkidle' });
+                } catch (navError) {
+                    console.log('직접 URL 이동 실패, JavaScript 방식 시도...');
+                    
+                    // 기존 방식으로 폴백
+                    await this.page.evaluate(({ sno, gosiGbn }) => {
+                        // fn_goLinkView 함수가 있으면 호출
+                        if (typeof fn_goLinkView === 'function') {
+                            fn_goLinkView(sno, gosiGbn);
+                        } else {
+                            // 함수가 없으면 폼 제출 방식 시도
+                            const form = document.getElementById('sidoGosiAPIVO');
+                            if (form) {
+                                // hidden input 설정
+                                const snoInput = form.querySelector('input[name="sno"]') || document.createElement('input');
+                                snoInput.type = 'hidden';
+                                snoInput.name = 'sno';
+                                snoInput.value = sno;
+                                if (!form.contains(snoInput)) form.appendChild(snoInput);
 
-                            const gosiGbnInput = form.querySelector('input[name="gosi_gbn"]') || document.createElement('input');
-                            gosiGbnInput.type = 'hidden';
-                            gosiGbnInput.name = 'gosi_gbn';
-                            gosiGbnInput.value = gosiGbn;
-                            if (!form.contains(gosiGbnInput)) form.appendChild(gosiGbnInput);
+                                const gosiGbnInput = form.querySelector('input[name="gosi_gbn"]') || document.createElement('input');
+                                gosiGbnInput.type = 'hidden';
+                                gosiGbnInput.name = 'gosi_gbn';
+                                gosiGbnInput.value = gosiGbn;
+                                if (!form.contains(gosiGbnInput)) form.appendChild(gosiGbnInput);
 
-                            // action 설정
-                            form.action = '?menu_id=00940170&menu_link=/front/daeguSidoGosi/daeguSidoGosiView.do';
-                            form.submit();
+                                // action 설정
+                                form.action = '?menu_id=00940170&menu_link=/front/daeguSidoGosi/daeguSidoGosiView.do';
+                                form.submit();
+                            }
                         }
-                    }
-                }, { sno: announcement.sno, gosiGbn: announcement.gosiGbn });
+                    }, { sno: announcement.sno, gosiGbn: announcement.gosiGbn });
+                }
 
                 // 페이지 로드 대기
                 await this.page.waitForLoadState('networkidle');
                 await this.page.waitForTimeout(2000);
+
+                // 현재 URL 확인 - 오류 페이지인지 체크
+                const currentUrl = this.page.url();
+                console.log(`현재 URL: ${currentUrl}`);
+                
+                if (currentUrl.startsWith('chrome-error://') || currentUrl.includes('error')) {
+                    console.log('페이지 로드 실패 - 오류 페이지 감지');
+                    // 리스트로 돌아가기
+                    await this.page.goBack();
+                    await this.page.waitForTimeout(1000);
+                    return null;
+                }
 
                 // 페이지 내용 추출 - Daegu 특화
                 const content = await this.page.evaluate(() => {
@@ -222,6 +245,16 @@ class DaeguScraper extends AnnouncementScraper {
                     // 못 찾으면 전체 body 사용
                     if (!mainContent) {
                         mainContent = document.body;
+                    }
+
+                    // mainContent가 여전히 null이면 빈 객체 반환
+                    if (!mainContent) {
+                        return {
+                            content: '',
+                            dateText: '',
+                            attachments: [],
+                            url: window.location.href
+                        };
                     }
 
                     // 불필요한 요소 제거
@@ -407,25 +440,44 @@ class DaeguScraper extends AnnouncementScraper {
     /**
      * 날짜 추출 - Daegu 특화
      */
-    extractDate(dateText) {
+        extractDate(dateText) {
         if (!dateText) return null;
 
         // 텍스트 정리
         let cleanText = dateText.trim();
+        
+        // "2025년 9월 30일(화) 16:51:34" 형식 처리
+        const koreanDateMatch = cleanText.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+        if (koreanDateMatch) {
+            const [, year, month, day] = koreanDateMatch;
+            cleanText = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
 
-        // "2025-09-19" 같은 형식 추출
+        // "등록일\n2025-09-10" 같은 형식에서 날짜만 추출
         const dateMatch = cleanText.match(/(\d{4}[-.\\/]\d{1,2}[-.\\/]\d{1,2})/);
         if (dateMatch) {
             cleanText = dateMatch[1];
         }
 
         // 다양한 날짜 형식 시도
+
+        // YY.MM.DD 형식 체크 (예: 24.12.31)
+        const yymmddMatch = cleanText.match(/^(\d{2})\.(\d{1,2})\.(\d{1,2})$/);
+        if (yymmddMatch) {
+            // 2자리 연도를 4자리로 변환 (00-99 → 2000-2099)
+            const year = '20' + yymmddMatch[1];
+            const month = yymmddMatch[2].padStart(2, '0');
+            const day = yymmddMatch[3].padStart(2, '0');
+            cleanText = `${year}-${month}-${day}`;
+        }
+        
         const formats = [
             'YYYY-MM-DD',
             'YYYY.MM.DD',
             'YYYY/MM/DD',
-            'YY-MM-DD',
-            'YY.MM.DD'
+            'MM-DD-YYYY',
+            'MM.DD.YYYY',
+            'MM/DD/YYYY'
         ];
 
         for (const format of formats) {
@@ -433,6 +485,12 @@ class DaeguScraper extends AnnouncementScraper {
             if (date.isValid()) {
                 return date;
             }
+        }
+
+        // 자연어 형식 시도 (조심스럽게)
+        const naturalDate = moment(cleanText);
+        if (naturalDate.isValid() && cleanText.match(/\d{4}/)) {
+            return naturalDate;
         }
 
         return null;

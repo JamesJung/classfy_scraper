@@ -25,6 +25,10 @@ class GwangjuScraper extends AnnouncementScraper {
             siteCode: 'gwangju',
             ...options
         });
+        
+        // 제목 비교를 위한 변수
+        this.lastProcessedTitle = null;
+        this.processedTitles = new Set();
     }
 
     /**
@@ -32,6 +36,15 @@ class GwangjuScraper extends AnnouncementScraper {
      */
     buildListUrl(pageNum) {
         return `${this.baseUrl}&currPageNo=${pageNum}`;
+    }
+    
+    /**
+     * 공고 처리 - 제목 중복 체크 제거 (부모 클래스에서 처리)
+     */
+    async processAnnouncement(announcement) {
+        // 부모 클래스의 processAnnouncement가 중복 체크를 포함하므로
+        // 여기서는 추가 중복 체크를 하지 않음
+        return super.processAnnouncement(announcement);
     }
 
     /**
@@ -286,25 +299,44 @@ class GwangjuScraper extends AnnouncementScraper {
     /**
      * 날짜 추출 - Gwangju 특화
      */
-    extractDate(dateText) {
+        extractDate(dateText) {
         if (!dateText) return null;
 
         // 텍스트 정리
         let cleanText = dateText.trim();
+        
+        // "2025년 9월 30일(화) 16:51:34" 형식 처리
+        const koreanDateMatch = cleanText.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+        if (koreanDateMatch) {
+            const [, year, month, day] = koreanDateMatch;
+            cleanText = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
 
-        // "2025-09-19" 또는 "2025.09.19" 같은 형식 추출
+        // "등록일\n2025-09-10" 같은 형식에서 날짜만 추출
         const dateMatch = cleanText.match(/(\d{4}[-.\\/]\d{1,2}[-.\\/]\d{1,2})/);
         if (dateMatch) {
             cleanText = dateMatch[1];
         }
 
         // 다양한 날짜 형식 시도
+
+        // YY.MM.DD 형식 체크 (예: 24.12.31)
+        const yymmddMatch = cleanText.match(/^(\d{2})\.(\d{1,2})\.(\d{1,2})$/);
+        if (yymmddMatch) {
+            // 2자리 연도를 4자리로 변환 (00-99 → 2000-2099)
+            const year = '20' + yymmddMatch[1];
+            const month = yymmddMatch[2].padStart(2, '0');
+            const day = yymmddMatch[3].padStart(2, '0');
+            cleanText = `${year}-${month}-${day}`;
+        }
+        
         const formats = [
             'YYYY-MM-DD',
             'YYYY.MM.DD',
             'YYYY/MM/DD',
-            'YY-MM-DD',
-            'YY.MM.DD'
+            'MM-DD-YYYY',
+            'MM.DD.YYYY',
+            'MM/DD/YYYY'
         ];
 
         for (const format of formats) {
@@ -312,6 +344,12 @@ class GwangjuScraper extends AnnouncementScraper {
             if (date.isValid()) {
                 return date;
             }
+        }
+
+        // 자연어 형식 시도 (조심스럽게)
+        const naturalDate = moment(cleanText);
+        if (naturalDate.isValid() && cleanText.match(/\d{4}/)) {
+            return naturalDate;
         }
 
         return null;

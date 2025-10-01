@@ -183,7 +183,7 @@ class UnifiedBatchProcessor:
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=300  # 5분 타임아웃
+                timeout=1200  # 20분 타임아웃 (기존 5분에서 증가)
             )
             
             if process.returncode == 0:
@@ -204,7 +204,7 @@ class UnifiedBatchProcessor:
                 self.logger.error(f"[{region_name}] ❌ 처리 실패: {result['error'][:200]}")
             
         except subprocess.TimeoutExpired:
-            result['error'] = 'Timeout (5분 초과)'
+            result['error'] = 'Timeout (20분 초과)'
             self.stats['failed'] += 1
             self.stats['errors'].append({
                 'region': region_name,
@@ -392,8 +392,8 @@ def main():
     parser.add_argument(
         '--workers',
         type=int,
-        default=5,
-        help='병렬 처리 워커 수 (기본값: 5)'
+        default=3,
+        help='병렬 처리 워커 수 (기본값: 3)'
     )
     
     parser.add_argument(

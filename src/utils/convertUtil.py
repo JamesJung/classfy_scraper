@@ -314,10 +314,15 @@ def read_html_file(file_path: Path) -> str:
         # 1차 시도: MarkItDown 사용 (메인 방법)
         logger.debug(f"MarkItDown으로 HTML 변환 시도: {file_path}")
 
-        from markitdown import MarkItDown
-
-        markitdown = MarkItDown()
-        result = markitdown.convert(str(file_path))
+        try:
+            from markitdown import MarkItDown
+            markitdown = MarkItDown()
+            result = markitdown.convert(str(file_path))
+        except (ImportError, AttributeError) as e:
+            # NumPy 버전 충돌 등으로 markitdown import 실패 시
+            logger.warning(f"MarkItDown import 실패 (NumPy 호환성 문제 가능): {e}")
+            logger.info("BeautifulSoup로 대체하여 HTML 처리")
+            result = None
 
         if result and result.text_content and len(result.text_content.strip()) > 50:
             content = result.text_content.strip()
@@ -954,7 +959,12 @@ def convert_pdf_to_md_markitdown_fallback(
         bool: 변환 성공 여부
     """
     try:
-        from markitdown import MarkItDown
+        try:
+            from markitdown import MarkItDown
+        except (ImportError, AttributeError) as e:
+            logger.warning(f"MarkItDown import 실패 (NumPy 호환성 문제 가능): {e}")
+            logger.info("MarkItDown 없이 다른 방법으로 PDF 처리")
+            return False
 
         # PDF 파일 존재 및 크기 확인
         if not os.path.exists(pdf_path):
@@ -1219,7 +1229,11 @@ def convert_html_to_md_markitdown(html_path: str, output_path: str = None) -> bo
         bool: 변환 성공 여부
     """
     try:
-        from markitdown import MarkItDown
+        try:
+            from markitdown import MarkItDown
+        except (ImportError, AttributeError) as e:
+            logger.warning(f"MarkItDown import 실패 (NumPy 호환성 문제 가능): {e}")
+            return False
 
         ## markitdown START ##
         md = MarkItDown(enable_plugins=False)
@@ -2120,9 +2134,12 @@ def convert_hwp_to_markdown(hwp_file_path: Path, output_path: Path) -> bool:
 
         # 2차 시도: MarkItDown 변환
         try:
-            from markitdown import MarkItDown
-
-            markitdown = MarkItDown()
+            try:
+                from markitdown import MarkItDown
+                markitdown = MarkItDown()
+            except (ImportError, AttributeError) as e:
+                logger.warning(f"MarkItDown import 실패 (NumPy 호환성 문제 가능): {e}")
+                raise ImportError("MarkItDown 사용 불가")
             result = markitdown.convert(str(hwp_file_path))
 
             if result and result.text_content:

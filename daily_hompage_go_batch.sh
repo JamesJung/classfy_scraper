@@ -77,7 +77,7 @@ fi
 
 # DB 테이블 확인 및 생성
 echo -e "\n${YELLOW}데이터베이스 확인...${NC}"
-mysql_check=$(mysql -h localhost -u scraper -p$DB_PASSWORD opendata -e "SHOW TABLES LIKE 'homepage_gosi_url_registry'" 2>/dev/null | grep homepage_gosi_url_registry)
+mysql_check=$(mysql -h localhost -u scraper -p$DB_PASSWORD opendata -e "SHOW TABLES LIKE 'mkdigistry'" 2>/dev/null | grep homepage_gosi_url_registry)
 if [ -z "$mysql_check" ]; then
     echo "DB 테이블 생성 중..."
     mysql -h localhost -u scraper -p$DB_PASSWORD opendata < "$PROJECT_ROOT/create_homepage_gosi_tables.sql" >> "$LOG_FILE" 2>&1

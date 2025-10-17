@@ -354,9 +354,9 @@ class AnnouncementClassifier:
 
     def analyze_announcement(self, folder_path: Path, site_code: str) -> dict:
         """사이트별 구조에 맞는 공고 폴더 분석 및 분류"""
-        
-        # API 사이트 (bizInfo, kStartUp, sme) 2단계 키워드 분류
-        if site_code.lower() in ["bizinfo", "kstartup", "sme"]:
+
+        # API 사이트 (bizInfo, kStartUp, smes24) 2단계 키워드 분류
+        if site_code.lower() in ["bizinfo", "kstartup", "smes24"]:
             return self._analyze_api_sites_dual_classification(folder_path, site_code)
         else:
             # 일반 사이트 키워드 분류 (gtp 등)

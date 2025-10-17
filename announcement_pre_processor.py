@@ -194,8 +194,8 @@ class AnnouncementPreProcessor:
         # 모든 하위 디렉토리에서 content.md, JSON 파일 또는 attachments 폴더가 있는 디렉토리 찾기
         logger.info(f"디렉토리 검색 시작: {site_dir}")
 
-        # bizInfo, sme, kStartUp은 플랫 구조 (직접 하위 디렉토리만 검색)
-        if site_code in ["bizInfo", "sme", "kStartUp"]:
+        # bizInfo, smes24, kStartUp은 플랫 구조 (직접 하위 디렉토리만 검색)
+        if site_code in ["bizInfo", "smes24", "kStartUp"]:
             # 직접 하위 디렉토리만 검색 (더 빠름)
             # 모든 API 사이트는 content.md가 반드시 있어야 함
             for root_path in site_dir.iterdir():
@@ -444,8 +444,8 @@ class AnnouncementPreProcessor:
             origin_url = "정보 없음"
             announcement_date = "정보 없음"
 
-            if site_code in ["kStartUp", "bizInfo", "sme"]:
-                # kStartUp, bizInfo, sme는 content.md를 읽고, JSON에서 날짜 정보만 보완
+            if site_code in ["kStartUp", "bizInfo", "smes24"]:
+                # kStartUp, bizInfo, smes24는 content.md를 읽고, JSON에서 날짜 정보만 보완
                 content_md_path = directory_path / "content.md"
                 if content_md_path.exists():
                     try:
@@ -524,7 +524,7 @@ class AnnouncementPreProcessor:
                 )
 
             # 일반 사이트의 경우만 content.md에서 정보 추출 (API 사이트는 이미 추출함)
-            if site_code not in ["kStartUp", "bizInfo", "sme"]:
+            if site_code not in ["kStartUp", "bizInfo", "smes24"]:
                 title = self._extract_title_from_content(content_md) or "정보 없음"
                 origin_url = self._extract_origin_url_from_content(content_md) or "정보 없음"
                 announcement_date = self._extract_announcement_date_from_content(content_md) or "정보 없음"
@@ -1234,7 +1234,7 @@ class AnnouncementPreProcessor:
 def determine_site_type(directory_name: str, site_code: str) -> str:
     """디렉토리명과 사이트 코드에서 site_type을 결정합니다."""
     # 특수 API 사이트 체크
-    if site_code in ["kStartUp", "bizInfo", "sme"]:
+    if site_code in ["kStartUp", "bizInfo", "smes24"]:
         return "api_scrap"
     elif "scraped" in directory_name.lower():
         return "Homepage"

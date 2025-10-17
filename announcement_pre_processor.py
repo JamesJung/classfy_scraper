@@ -818,10 +818,11 @@ class AnnouncementPreProcessor:
                 content = f.read()
 
             # **첨부파일**: 섹션 찾기
+            # 수정: 모든 첨부파일 라인을 추출하도록 패턴 개선
             attachments_section = re.search(
-                r"\*\*첨부파일\*\*:\s*\n+(.*?)(?=\n\*\*|$)",
+                r"\*\*첨부파일\*\*:\s*\n+((?:.*\n?)*?)(?=\n\*\*|\Z)",
                 content,
-                re.DOTALL | re.MULTILINE,
+                re.MULTILINE,
             )
 
             if attachments_section:

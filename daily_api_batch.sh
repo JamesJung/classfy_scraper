@@ -252,7 +252,7 @@ fi
 if [ ! -z "$SLACK_WEBHOOK_URL" ]; then
     STATUS_TEXT=$([[ $EXIT_CODE -eq 0 ]] && echo "성공" || echo "일부 실패")
     curl -X POST -H 'Content-type: application/json' \
-        --data "{\"text\":\"API 디렉토리 배치 완료\\n처리시간: ${BATCH_MINUTES}분 ${BATCH_SECONDS}초\\n성공: $TOTAL_SUCCESS / 실패: $TOTAL_FAILED\\n상태: $STATUS_TEXT\"}" \
+        --data "{\"text\":\"API 디렉토리 배치 완료 \\n처리시간: ${BATCH_MINUTES}분 ${BATCH_SECONDS}초\\n성공: $TOTAL_SUCCESS / 실패: $TOTAL_FAILED\\n상태: $STATUS_TEXT\"}" \
         "$SLACK_WEBHOOK_URL" 2>/dev/null
 fi
 

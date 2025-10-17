@@ -834,8 +834,8 @@ class AnnouncementPreProcessor:
                     if not line:
                         continue
 
-                    # 번호. 파일명:URL 패턴
-                    match = re.match(r"^\d+\.\s*(.+?):(https?://[^\s]+)", line)
+                    # 번호. 파일명:URL 패턴 (콜론 앞뒤 공백 허용)
+                    match = re.match(r"^\d+\.\s*(.+?)\s*:\s*(https?://\S+)", line)
                     if match:
                         filename = match.group(1).strip()
                         url = match.group(2).strip()

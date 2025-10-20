@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 스크립트 실행 경로
-SCRIPT_DIR="/Users/jin/classfy_scraper"
+SCRIPT_DIR="/home/zium/classfy_scraper"
 LOG_DIR="$SCRIPT_DIR/logs"
 PYTHON_PATH="/usr/bin/python3"  # Python 경로 확인 필요
 

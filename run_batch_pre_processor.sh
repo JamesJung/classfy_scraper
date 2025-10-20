@@ -3,7 +3,7 @@
 # 배치 프리프로세서 실행 스크립트
 # Eminwon과 Homepage 데이터를 모두 처리
 
-SCRIPT_DIR="/Users/jin/classfy_scraper"
+SCRIPT_DIR="/home/zium/classfy_scraper"
 LOG_DIR="$SCRIPT_DIR/logs"
 PYTHON_PATH="/usr/bin/python3"
 

@@ -716,20 +716,34 @@ def run_scraper(site_code, from_date):
         env = os.environ.copy()
         env["NODE_ENV"] = "production"
 
-        result = subprocess.run(
+        # 실시간 출력을 위해 subprocess.Popen 사용
+        process = subprocess.Popen(
             cmd,
             cwd=str(NODE_DIR),
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,  # stderr를 stdout으로 합침
             text=True,
-            timeout=1200,
+            bufsize=1,  # 라인 버퍼링
             env=env,
         )
-
-        # stdout, stderr 출력 (디버깅용)
-        if result.stdout:
-            print(f"  [STDOUT]: {result.stdout[:500]}")
-        if result.stderr:
-            print(f"  [STDERR]: {result.stderr[:500]}")
+        
+        # 실시간 로그 출력
+        stdout_lines = []
+        for line in iter(process.stdout.readline, ''):
+            if line:
+                line = line.rstrip()
+                print(f"  [{site_code}] {line}")  # 실시간 출력
+                stdout_lines.append(line)
+        
+        process.stdout.close()
+        return_code = process.wait(timeout=1200)  # 최대 20분 대기
+        
+        # subprocess.run과 유사한 결과 객체 생성
+        result = type('Result', (), {
+            'returncode': return_code,
+            'stdout': '\n'.join(stdout_lines),
+            'stderr': ''  # stderr는 stdout으로 합쳤음
+        })()
 
         if result.returncode == 0:
             # stdout이 없어도 성공으로 처리할 수 있도록 체크

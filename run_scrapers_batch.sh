@@ -19,8 +19,8 @@ echo "========================================" >> "$LOG_FILE"
 echo "스크래퍼 배치 실행 시작: $(date)" >> "$LOG_FILE"
 echo "========================================" >> "$LOG_FILE"
 
-# Python 스크립트 실행
-$PYTHON_PATH run_incremental_scrapers_v2.py >> "$LOG_FILE" 2>&1
+# Python 스크립트 실행 (실시간 로그 출력 및 파일 저장)
+$PYTHON_PATH run_incremental_scrapers_v2.py 2>&1 | tee -a "$LOG_FILE"
 
 # 실행 결과 확인
 if [ $? -eq 0 ]; then

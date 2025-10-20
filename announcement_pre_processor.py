@@ -40,7 +40,13 @@ config = ConfigManager().get_config()
 class AnnouncementPreProcessor:
     """공고 사전 처리 메인 클래스"""
 
-    def __init__(self, site_type: str, attach_force: bool = False, site_code: str = None, lazy_init: bool = False):
+    def __init__(
+        self,
+        site_type: str,
+        attach_force: bool = False,
+        site_code: str = None,
+        lazy_init: bool = False,
+    ):
         # lazy_init 옵션이 True면 AttachmentProcessor를 나중에 초기화
         self._lazy_init = lazy_init
         self._attachment_processor = None
@@ -48,6 +54,7 @@ class AnnouncementPreProcessor:
         if not lazy_init:
             # AttachmentProcessor를 지연 import
             from src.utils.attachmentProcessor import AttachmentProcessor
+
             self._attachment_processor = AttachmentProcessor()
 
         self.db_manager = AnnouncementPrvDatabaseManager()
@@ -69,6 +76,7 @@ class AnnouncementPreProcessor:
             try:
                 # 지연 import
                 from src.utils.attachmentProcessor import AttachmentProcessor
+
                 self._attachment_processor = AttachmentProcessor()
             except Exception as e:
                 logger.error(f"AttachmentProcessor 초기화 실패: {e}")
@@ -454,8 +462,13 @@ class AnnouncementPreProcessor:
                         logger.info(f"content.md 읽기 완료: {len(content_md)} 문자")
 
                         # content.md에서 기본 정보 추출
-                        title = self._extract_title_from_content(content_md) or "정보 없음"
-                        origin_url = self._extract_origin_url_from_content(content_md) or "정보 없음"
+                        title = (
+                            self._extract_title_from_content(content_md) or "정보 없음"
+                        )
+                        origin_url = (
+                            self._extract_origin_url_from_content(content_md)
+                            or "정보 없음"
+                        )
 
                         # JSON 파일에서 announcement_date 보완
                         json_files = list(directory_path.glob("*.json"))
@@ -463,18 +476,37 @@ class AnnouncementPreProcessor:
                             try:
                                 with open(json_files[0], "r", encoding="utf-8") as f:
                                     json_data = json.load(f)
-                                announcement_date_raw = json_data.get("announcementDate", "")
+                                announcement_date_raw = json_data.get(
+                                    "announcementDate", ""
+                                )
                                 if announcement_date_raw:
-                                    announcement_date = self._convert_to_yyyymmdd(announcement_date_raw)
+                                    announcement_date = self._convert_to_yyyymmdd(
+                                        announcement_date_raw
+                                    )
                                 else:
                                     # JSON에 없으면 content.md에서 추출
-                                    announcement_date = self._extract_announcement_date_from_content(content_md) or "정보 없음"
+                                    announcement_date = (
+                                        self._extract_announcement_date_from_content(
+                                            content_md
+                                        )
+                                        or "정보 없음"
+                                    )
                             except Exception as e:
-                                logger.warning(f"{site_code} JSON 날짜 추출 실패, content.md 사용: {e}")
-                                announcement_date = self._extract_announcement_date_from_content(content_md) or "정보 없음"
+                                logger.warning(
+                                    f"{site_code} JSON 날짜 추출 실패, content.md 사용: {e}"
+                                )
+                                announcement_date = (
+                                    self._extract_announcement_date_from_content(
+                                        content_md
+                                    )
+                                    or "정보 없음"
+                                )
                         else:
                             # JSON 파일이 없으면 content.md에서 추출
-                            announcement_date = self._extract_announcement_date_from_content(content_md) or "정보 없음"
+                            announcement_date = (
+                                self._extract_announcement_date_from_content(content_md)
+                                or "정보 없음"
+                            )
 
                     except Exception as e:
                         logger.error(f"content.md 읽기 실패: {e}")
@@ -526,8 +558,13 @@ class AnnouncementPreProcessor:
             # 일반 사이트의 경우만 content.md에서 정보 추출 (API 사이트는 이미 추출함)
             if site_code not in ["kStartUp", "bizInfo", "smes24"]:
                 title = self._extract_title_from_content(content_md) or "정보 없음"
-                origin_url = self._extract_origin_url_from_content(content_md) or "정보 없음"
-                announcement_date = self._extract_announcement_date_from_content(content_md) or "정보 없음"
+                origin_url = (
+                    self._extract_origin_url_from_content(content_md) or "정보 없음"
+                )
+                announcement_date = (
+                    self._extract_announcement_date_from_content(content_md)
+                    or "정보 없음"
+                )
 
             # 3.5. origin_url 중복 체크
             is_duplicate_url = False
@@ -539,7 +576,7 @@ class AnnouncementPreProcessor:
             attachment_filenames = []
             attachment_files_info = []
             attachment_error = None
-            
+
             try:
                 combined_content, attachment_filenames, attachment_files_info = (
                     self._process_attachments_separately(directory_path)
@@ -555,7 +592,7 @@ class AnnouncementPreProcessor:
                 combined_content = ""
                 attachment_filenames = []
                 attachment_files_info = []
-                
+
             # content.md와 combined_content 모두 없는 경우에만 에러 처리
             if not content_md.strip() and not combined_content.strip():
                 logger.warning("처리할 내용이 없음")
@@ -791,12 +828,12 @@ class AnnouncementPreProcessor:
                 date_str = matches[0].strip()
                 if date_str:
                     # 마크다운 볼드(**) 제거
-                    date_str = re.sub(r'\*+', '', date_str).strip()
+                    date_str = re.sub(r"\*+", "", date_str).strip()
                     # 추가적인 정리 (공백 제거 등)
                     date_str = date_str.strip()
 
                     # 날짜 형식 검증 (최소한 연도가 포함되어야 함)
-                    if re.search(r'\d{4}', date_str):
+                    if re.search(r"\d{4}", date_str):
                         logger.debug(f"공고일 추출 성공: {date_str}")
                         return date_str
 
@@ -905,34 +942,38 @@ class AnnouncementPreProcessor:
         }
 
         target_keywords = ["양식", "서류", "신청서", "동의서"]
-        
+
         # 파일들을 우선순위에 따라 분류
         priority_files = []  # 지원/공고 키워드가 있는 파일들
-        normal_files = []    # 일반 파일들
-        
+        normal_files = []  # 일반 파일들
+
         # 모든 파일을 먼저 검사하여 분류
         for file_path in attachments_dir.iterdir():
             if file_path.is_file():
                 file_extension = file_path.suffix.lower()
                 filename = file_path.stem
                 lowercase_filename = filename.lower()
-                
+
                 # 지원하는 확장자만 처리
                 if file_extension and file_extension in supported_extensions:
                     # 양식, 서류 등 제외 키워드 체크
-                    if any(keyword in lowercase_filename for keyword in target_keywords):
+                    if any(
+                        keyword in lowercase_filename for keyword in target_keywords
+                    ):
                         continue
-                    
+
                     # 지원/공고 키워드가 있는지 확인
                     if "지원" in lowercase_filename or "공고" in lowercase_filename:
                         priority_files.append(file_path)
-                        logger.info(f"우선순위 파일 발견 (지원/공고 키워드): {file_path.name}")
+                        logger.info(
+                            f"우선순위 파일 발견 (지원/공고 키워드): {file_path.name}"
+                        )
                     else:
                         normal_files.append(file_path)
-        
+
         # 우선순위 파일들을 먼저 처리, 그 다음 일반 파일들 처리
         all_files_ordered = priority_files + normal_files
-        
+
         for file_path in all_files_ordered:
             # 이미 위에서 필터링 했으므로 바로 처리
             file_extension = file_path.suffix.lower()
@@ -961,13 +1002,9 @@ class AnnouncementPreProcessor:
 
             file_info = {
                 "filename": file_path.name,  # 확장자 포함된 전체 파일명
-                "file_size": (
-                    file_path.stat().st_size if file_path.exists() else 0
-                ),
+                "file_size": (file_path.stat().st_size if file_path.exists() else 0),
                 "conversion_success": False,
-                "conversion_method": self._guess_conversion_method(
-                    file_extension
-                ),
+                "conversion_method": self._guess_conversion_method(file_extension),
                 "download_url": download_url,  # 다운로드 URL 추가
             }
 
@@ -1011,9 +1048,7 @@ class AnnouncementPreProcessor:
                         )
                         file_info["conversion_success"] = True
                     else:
-                        logger.warning(
-                            f"첨부파일 .md 내용이 비어있음: {filename}.md"
-                        )
+                        logger.warning(f"첨부파일 .md 내용이 비어있음: {filename}.md")
                 except Exception as e:
                     logger.error(f"첨부파일 .md 읽기 실패: {e}")
             else:
@@ -1028,12 +1063,12 @@ class AnnouncementPreProcessor:
                 try:
                     # attachment_processor가 None인 경우 처리
                     if self.attachment_processor is None:
-                        logger.warning(f"AttachmentProcessor를 사용할 수 없어 파일 건너뜀: {file_path.name}")
+                        logger.warning(
+                            f"AttachmentProcessor를 사용할 수 없어 파일 건너뜀: {file_path.name}"
+                        )
                         continue
-                        
-                    content = self.attachment_processor.process_single_file(
-                        file_path
-                    )
+
+                    content = self.attachment_processor.process_single_file(file_path)
 
                     if content and content.strip():
                         combined_content += f"\n\n=== {self._normalize_korean_text(file_path.name)} ===\n{content}"
@@ -1046,19 +1081,19 @@ class AnnouncementPreProcessor:
                         try:
                             with open(md_file_path, "w", encoding="utf-8") as f:
                                 f.write(content)
-                            logger.debug(
-                                f"변환된 내용을 .md로 저장: {md_file_path}"
-                            )
+                            logger.debug(f"변환된 내용을 .md로 저장: {md_file_path}")
                         except Exception as save_e:
                             logger.warning(f".md 파일 저장 실패: {save_e}")
                     else:
-                        logger.warning(
-                            f"첨부파일에서 내용 추출 실패: {file_path.name}"
-                        )
+                        logger.warning(f"첨부파일에서 내용 추출 실패: {file_path.name}")
 
                 except Exception as e:
                     error_msg = str(e)
-                    if "Invalid code point" in error_msg or "PDFSyntaxError" in error_msg or "No /Root object" in error_msg:
+                    if (
+                        "Invalid code point" in error_msg
+                        or "PDFSyntaxError" in error_msg
+                        or "No /Root object" in error_msg
+                    ):
                         logger.warning(f"손상된 PDF 파일 건너뛰기: {file_path.name}")
                     elif "UnicodeDecodeError" in error_msg:
                         logger.warning(f"인코딩 문제로 파일 건너뛰기: {file_path.name}")
@@ -1067,7 +1102,9 @@ class AnnouncementPreProcessor:
 
                     # 변환 실패한 파일 정보 기록
                     file_info["conversion_success"] = False
-                    file_info["error_message"] = error_msg[:200]  # 오류 메시지 일부만 저장
+                    file_info["error_message"] = error_msg[
+                        :200
+                    ]  # 오류 메시지 일부만 저장
 
         logger.info(
             f"첨부파일 처리 완료: {len(attachment_filenames)}개 파일, {len(combined_content)} 문자"
@@ -1197,6 +1234,9 @@ class AnnouncementPreProcessor:
                     else None
                 )
 
+                if self.site_type == "Homepage":
+                    site_code += "prv_" + site_code
+
                 params = {
                     "folder_name": folder_name,
                     "site_type": self.site_type,
@@ -1302,7 +1342,7 @@ def main():
             site_type=site_type,
             attach_force=args.attach_force,
             site_code=args.site_code,
-            lazy_init=False
+            lazy_init=False,
         )
 
         # 사이트 디렉토리 처리 실행

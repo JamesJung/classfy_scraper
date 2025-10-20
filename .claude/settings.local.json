@@ -71,7 +71,9 @@
       "WebFetch(domain:www.cng.go.kr)",
       "WebFetch(domain:www.djjunggu.go.kr)",
       "WebFetch(domain:www.geumsan.go.kr)",
-      "WebFetch(domain:www.gokseong.go.kr)"
+      "WebFetch(domain:www.gokseong.go.kr)",
+      "Bash(npm ls:*)",
+      "Bash(npm update:*)"
     ],
     "deny": [],
     "ask": []

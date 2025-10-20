@@ -194,34 +194,25 @@ class AnnouncementPreProcessor:
         # 모든 하위 디렉토리에서 content.md, JSON 파일 또는 attachments 폴더가 있는 디렉토리 찾기
         logger.info(f"디렉토리 검색 시작: {site_dir}")
 
-        # bizInfo, sme, kStartUp은 플랫 구조 (직접 하위 디렉토리만 검색)
-        if site_code in ["bizInfo", "sme", "kStartUp"]:
+        # bizInfo, smes24, kStartUp은 플랫 구조 (직접 하위 디렉토리만 검색)
+        if site_code in ["bizInfo", "smes24", "kStartUp"]:
             # 직접 하위 디렉토리만 검색 (더 빠름)
-            # bizInfo와 sme는 모든 디렉토리에 JSON 파일이 있다고 가정
+            # 모든 API 사이트는 content.md가 반드시 있어야 함
             for root_path in site_dir.iterdir():
                 if root_path.is_dir():
-                    # bizInfo와 sme는 JSON 체크 생략 (모두 JSON 있음)
-                    if site_code in ["bizInfo", "sme"]:
-                        # 모든 디렉토리를 대상으로 함
+                    has_content_md = (root_path / "content.md").exists()
+
+                    if has_content_md:
+                        # content.md가 있는 디렉토리만 처리
                         target_directories.append(root_path)
                         logger.debug(
                             f"대상 디렉토리 발견: {root_path.relative_to(site_dir)}"
                         )
                     else:
-                        # kStartUp은 content.md가 반드시 있어야 함
-                        has_content_md = (root_path / "content.md").exists()
-
-                        if has_content_md:
-                            # kStartUp은 content.md가 있는 디렉토리만 처리
-                            target_directories.append(root_path)
-                            logger.debug(
-                                f"대상 디렉토리 발견: {root_path.relative_to(site_dir)}"
-                            )
-                        else:
-                            # content.md가 없는 디렉토리는 건너뛰기
-                            logger.debug(
-                                f"kStartUp 디렉토리 건너뛰기 (content.md 없음): {root_path.relative_to(site_dir)}"
-                            )
+                        # content.md가 없는 디렉토리는 건너뛰기
+                        logger.debug(
+                            f"{site_code} 디렉토리 건너뛰기 (content.md 없음): {root_path.relative_to(site_dir)}"
+                        )
         else:
             # 다른 사이트는 재귀적으로 검색 (중첩 구조 가능)
             for root_path in site_dir.rglob("*"):
@@ -443,81 +434,18 @@ class AnnouncementPreProcessor:
                     logger.info(f"이미 처리된 폴더 건너뜀: {folder_name}")
                     return True  # 성공으로 처리 (이미 처리됨)
 
-            # 1. 제외 키워드 체크 (bizInfo, sme는 나중에 JSON에서 title 추출 후 체크)
+            # 1. 제외 키워드 체크
             excluded_keywords = []
-            if site_code not in ["bizInfo", "sme"]:
-                excluded_keywords = self._check_exclusion_keywords(folder_name)
+            excluded_keywords = self._check_exclusion_keywords(folder_name)
 
-            # 2. 특수 사이트 처리 (bizInfo, sme는 JSON 파일 읽기)
+            # 2. 특수 사이트 처리 (모두 content.md 읽기)
             content_md = ""
             title = "정보 없음"
             origin_url = "정보 없음"
             announcement_date = "정보 없음"
 
-            if site_code in ["bizInfo", "sme"]:
-                # JSON 파일 찾기 및 읽기
-                json_files = list(directory_path.glob("*.json"))
-                if json_files:
-                    json_file_path = json_files[0]  # 첫 번째 JSON 파일 사용
-                    try:
-                        with open(json_file_path, "r", encoding="utf-8") as f:
-                            json_data = json.load(f)
-
-                        # JSON 데이터를 content_md로 저장
-                        content_md = json.dumps(json_data, ensure_ascii=False, indent=2)
-
-                        # JSON 필드 매핑
-                        title = json_data.get("supportBusinessTitle", "정보 없음")
-
-                        # origin_url 처리
-                        if site_code == "bizInfo":
-                            # bizInfo의 경우 완성형 URL로 만들기
-                            announcement_url = json_data.get("announcementUrlAddress", "")
-                            if announcement_url and not announcement_url.startswith("http"):
-                                origin_url = f"https://www.bizinfo.go.kr{announcement_url}"
-                            else:
-                                origin_url = announcement_url or "정보 없음"
-                        else:
-                            # sme의 경우 그대로 사용
-                            origin_url = json_data.get("announcementUrlAddress", "정보 없음")
-
-                        # announcement_date 처리 (YYYYMMDD 포맷으로 변환)
-                        announcement_date_raw = json_data.get("announcementDate", "")
-                        if not announcement_date_raw:
-                            announcement_date_raw = json_data.get("applicationStartDate", "")
-
-                        if announcement_date_raw:
-                            # 다양한 날짜 포맷 처리
-                            announcement_date = self._convert_to_yyyymmdd(announcement_date_raw)
-
-                        # title 기반으로 제외 키워드 체크
-                        if title != "정보 없음":
-                            excluded_keywords = self._check_exclusion_keywords(title)
-
-                        logger.info(f"JSON 파일 읽기 완료: {json_file_path.name}, title: {title}")
-                    except Exception as e:
-                        logger.error(f"JSON 파일 읽기 실패: {e}")
-                        return self._save_processing_result(
-                            folder_name,
-                            site_code,
-                            content_md,
-                            "",
-                            status="error",
-                            error_message=f"JSON 파일 읽기 실패: {e}",
-                        )
-                else:
-                    logger.warning(f"JSON 파일이 없음: {directory_path}")
-                    return self._save_processing_result(
-                        folder_name,
-                        site_code,
-                        content_md,
-                        "",
-                        status="error",
-                        error_message="JSON 파일이 없음",
-                    )
-
-            elif site_code == "kStartUp":
-                # kStartUp은 content.md를 읽고, JSON에서 날짜 정보만 보완
+            if site_code in ["kStartUp", "bizInfo", "smes24"]:
+                # kStartUp, bizInfo, smes24는 content.md를 읽고, JSON에서 날짜 정보만 보완
                 content_md_path = directory_path / "content.md"
                 if content_md_path.exists():
                     try:
@@ -542,7 +470,7 @@ class AnnouncementPreProcessor:
                                     # JSON에 없으면 content.md에서 추출
                                     announcement_date = self._extract_announcement_date_from_content(content_md) or "정보 없음"
                             except Exception as e:
-                                logger.warning(f"kStartUp JSON 날짜 추출 실패, content.md 사용: {e}")
+                                logger.warning(f"{site_code} JSON 날짜 추출 실패, content.md 사용: {e}")
                                 announcement_date = self._extract_announcement_date_from_content(content_md) or "정보 없음"
                         else:
                             # JSON 파일이 없으면 content.md에서 추출
@@ -595,8 +523,8 @@ class AnnouncementPreProcessor:
                     error_message="content.md 내용이 없음",
                 )
 
-            # 일반 사이트의 경우만 content.md에서 정보 추출 (특수 사이트는 이미 추출함)
-            if site_code not in ["bizInfo", "sme", "kStartUp"]:
+            # 일반 사이트의 경우만 content.md에서 정보 추출 (API 사이트는 이미 추출함)
+            if site_code not in ["kStartUp", "bizInfo", "smes24"]:
                 title = self._extract_title_from_content(content_md) or "정보 없음"
                 origin_url = self._extract_origin_url_from_content(content_md) or "정보 없음"
                 announcement_date = self._extract_announcement_date_from_content(content_md) or "정보 없음"
@@ -890,10 +818,11 @@ class AnnouncementPreProcessor:
                 content = f.read()
 
             # **첨부파일**: 섹션 찾기
+            # 수정: 모든 첨부파일 라인을 추출하도록 패턴 개선
             attachments_section = re.search(
-                r"\*\*첨부파일\*\*:\s*\n+(.*?)(?=\n\*\*|$)",
+                r"\*\*첨부파일\*\*:\s*\n+((?:.*\n?)*?)(?=\n\*\*|\Z)",
                 content,
-                re.DOTALL | re.MULTILINE,
+                re.MULTILINE,
             )
 
             if attachments_section:
@@ -906,8 +835,8 @@ class AnnouncementPreProcessor:
                     if not line:
                         continue
 
-                    # 번호. 파일명:URL 패턴
-                    match = re.match(r"^\d+\.\s*(.+?):(https?://[^\s]+)", line)
+                    # 번호. 파일명:URL 패턴 (콜론 앞뒤 공백 허용)
+                    match = re.match(r"^\d+\.\s*(.+?)\s*:\s*(https?://\S+)", line)
                     if match:
                         filename = match.group(1).strip()
                         url = match.group(2).strip()
@@ -1306,9 +1235,7 @@ class AnnouncementPreProcessor:
 def determine_site_type(directory_name: str, site_code: str) -> str:
     """디렉토리명과 사이트 코드에서 site_type을 결정합니다."""
     # 특수 API 사이트 체크
-    if site_code in ["bizInfo", "sme"]:
-        return "api"
-    elif site_code == "kStartUp":
+    if site_code in ["kStartUp", "bizInfo", "smes24"]:
         return "api_scrap"
     elif "scraped" in directory_name.lower():
         return "Homepage"
@@ -1368,17 +1295,14 @@ def main():
         logger.info(f"Site Type: {site_type}")
         logger.info(f"Site Code: {args.site_code}")
 
-        # 프로세서 초기화 (bizInfo, sme는 지연 초기화 사용)
+        # 프로세서 초기화
         logger.info("공고 사전 처리 프로그램 시작")
-        lazy_init = args.site_code in ["bizInfo", "sme"]
-        if lazy_init:
-            logger.info(f"{args.site_code}: AttachmentProcessor 지연 초기화 모드")
 
         processor = AnnouncementPreProcessor(
             site_type=site_type,
             attach_force=args.attach_force,
             site_code=args.site_code,
-            lazy_init=lazy_init
+            lazy_init=False
         )
 
         # 사이트 디렉토리 처리 실행

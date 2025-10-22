@@ -1235,7 +1235,7 @@ class AnnouncementPreProcessor:
                 )
 
                 if self.site_type == "Homepage":
-                    site_code += "prv_" + site_code
+                    site_code = "prv_" + site_code
 
                 params = {
                     "folder_name": folder_name,

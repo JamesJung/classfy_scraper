@@ -21,6 +21,7 @@ from pathlib import Path
 try:
     from src.config.config import ConfigManager
     from src.config.logConfig import setup_logging
+    from src.utils.encodingValidator import EncodingValidator, JSONSanitizer
 except ImportError:
     # 절대 import 시도
     import sys
@@ -166,6 +167,16 @@ class AnnouncementAnalyzer:
     def __init__(self):
         self.ollama_client = OllamaClient()
         self.system_prompt = self._create_system_prompt()
+        # 자동 복구 유틸리티
+        self.encoding_validator = EncodingValidator()
+        self.json_sanitizer = JSONSanitizer()
+        # 통계
+        self.stats = {
+            'total_parsed': 0,
+            'encoding_fixed': 0,
+            'json_fixed': 0,
+            'parse_failed': 0
+        }
 
     def _create_system_prompt(self) -> str:
         """분석용 시스템 프롬프트를 생성합니다."""
@@ -237,6 +248,15 @@ class AnnouncementAnalyzer:
         if not content or not content.strip():
             logger.warning("분석할 내용이 비어있음")
             return self._create_empty_result("내용이 비어있음"), ""
+
+        # 인코딩 검증 및 자동 복구
+        fixed_content, was_fixed, reason = self.encoding_validator.validate_and_fix(content)
+        if was_fixed:
+            self.stats['encoding_fixed'] += 1
+            logger.info(f"🔧 인코딩 자동 복구: {reason}")
+            content = fixed_content
+        elif "⚠️" in reason:
+            logger.warning(f"인코딩 검증 경고: {reason}")
 
         # Ollama 서버 상태 확인
         if not self.ollama_client.is_available():
@@ -339,9 +359,35 @@ class AnnouncementAnalyzer:
 
             logger.debug(f"추출된 JSON 문자열 (길이: {len(json_str)}): {json_str[:500]}...")
 
+            # 자동 복구 시도
+            self.stats['total_parsed'] += 1
+
             # JSON 파싱 시도
-            parsed = json.loads(json_str)
-            logger.debug(f"JSON 파싱 성공, 키 개수: {len(parsed) if isinstance(parsed, dict) else '딕셔너리가 아님'}")
+            try:
+                parsed = json.loads(json_str)
+                logger.debug(f"JSON 파싱 성공, 키 개수: {len(parsed) if isinstance(parsed, dict) else '딕셔너리가 아님'}")
+            except json.JSONDecodeError as json_error:
+                # JSON 자동 수정 시도
+                logger.warning(f"JSON 파싱 실패: {json_error}")
+                logger.info("🔧 JSON 자동 복구 시도...")
+
+                fixed_json, was_fixed, reason = self.json_sanitizer.sanitize(json_str)
+
+                if was_fixed:
+                    self.stats['json_fixed'] += 1
+                    logger.info(f"🔧 JSON 자동 복구: {reason}")
+
+                    try:
+                        parsed = json.loads(fixed_json)
+                        logger.info("✅ JSON 복구 성공!")
+                    except json.JSONDecodeError as second_error:
+                        logger.error(f"JSON 복구 후에도 파싱 실패: {second_error}")
+                        self.stats['parse_failed'] += 1
+                        raise
+                else:
+                    logger.error("JSON 자동 복구 불가")
+                    self.stats['parse_failed'] += 1
+                    raise
 
             # 잘못된 키들을 올바른 키로 매핑 (EXTRACTED_* 형태로 통일)
             key_mapping = {
@@ -429,6 +475,16 @@ class AnnouncementPrvAnalyzer:
     def __init__(self):
         self.ollama_client = OllamaClient()
         self.system_prompt = self._create_prv_system_prompt()
+        # 자동 복구 유틸리티
+        self.encoding_validator = EncodingValidator()
+        self.json_sanitizer = JSONSanitizer()
+        # 통계
+        self.stats = {
+            'total_parsed': 0,
+            'encoding_fixed': 0,
+            'json_fixed': 0,
+            'parse_failed': 0
+        }
 
     def _create_prv_system_prompt(self) -> str:
         """PRV용 분석 시스템 프롬프트를 생성합니다."""
@@ -507,6 +563,15 @@ class AnnouncementPrvAnalyzer:
         if not content or not content.strip():
             logger.warning("PRV 분석할 내용이 비어있음")
             return self._create_prv_empty_result("내용이 비어있음"), ""
+
+        # 인코딩 검증 및 자동 복구
+        fixed_content, was_fixed, reason = self.encoding_validator.validate_and_fix(content)
+        if was_fixed:
+            self.stats['encoding_fixed'] += 1
+            logger.info(f"🔧 PRV 인코딩 자동 복구: {reason}")
+            content = fixed_content
+        elif "⚠️" in reason:
+            logger.warning(f"PRV 인코딩 검증 경고: {reason}")
 
         # Ollama 서버 상태 확인
         if not self.ollama_client.is_available():
@@ -595,9 +660,35 @@ class AnnouncementPrvAnalyzer:
 
             logger.debug(f"PRV 추출된 JSON 문자열 (길이: {len(json_str)}): {json_str[:500]}...")
 
+            # 자동 복구 시도
+            self.stats['total_parsed'] += 1
+
             # JSON 파싱 시도
-            parsed = json.loads(json_str)
-            logger.debug(f"PRV JSON 파싱 성공, 키 개수: {len(parsed) if isinstance(parsed, dict) else '딕셔너리가 아님'}")
+            try:
+                parsed = json.loads(json_str)
+                logger.debug(f"PRV JSON 파싱 성공, 키 개수: {len(parsed) if isinstance(parsed, dict) else '딕셔너리가 아님'}")
+            except json.JSONDecodeError as json_error:
+                # JSON 자동 수정 시도
+                logger.warning(f"PRV JSON 파싱 실패: {json_error}")
+                logger.info("🔧 PRV JSON 자동 복구 시도...")
+
+                fixed_json, was_fixed, reason = self.json_sanitizer.sanitize(json_str)
+
+                if was_fixed:
+                    self.stats['json_fixed'] += 1
+                    logger.info(f"🔧 PRV JSON 자동 복구: {reason}")
+
+                    try:
+                        parsed = json.loads(fixed_json)
+                        logger.info("✅ PRV JSON 복구 성공!")
+                    except json.JSONDecodeError as second_error:
+                        logger.error(f"PRV JSON 복구 후에도 파싱 실패: {second_error}")
+                        self.stats['parse_failed'] += 1
+                        raise
+                else:
+                    logger.error("PRV JSON 자동 복구 불가")
+                    self.stats['parse_failed'] += 1
+                    raise
             
             # 필수 키들 확인 및 보완
             required_keys = ["EXTRACTED_TARGET", "EXTRACTED_TARGET_TYPE", "EXTRACTED_TITLE", 

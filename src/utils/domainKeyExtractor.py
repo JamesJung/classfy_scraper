@@ -193,20 +193,36 @@ class DomainKeyExtractor:
 
         Returns:
             URL 키 또는 None
+
+        Note:
+            빈 문자열 값('')도 허용합니다. 파라미터가 URL에 존재하면 충분합니다.
+            예: ?sido=&sno=123 에서 sido=가 있으므로 sido= 포함
+
+            ⚠️ 중요: key_params는 이미 알파벳 순으로 정렬되어 있어야 합니다.
+            파라미터 순서를 알파벳 순으로 정렬하여 URL 파라미터 순서와 무관하게
+            동일한 키를 생성합니다.
         """
         key_parts = []
 
         for param in key_params:
-            if param in query_params and query_params[param]:
-                value = query_params[param][0]  # 첫 번째 값 사용
-                key_parts.append(f"{param}={value}")
+            if param in query_params:
+                # 파라미터가 존재하면 OK (빈 값도 허용)
+                if query_params[param]:
+                    # 리스트에 값이 있음 (빈 문자열 포함)
+                    value = query_params[param][0]  # 첫 번째 값 사용
+                    key_parts.append(f"{param}={value}")
+                else:
+                    # 리스트가 비어있는 경우 (거의 없음)
+                    key_parts.append(f"{param}=")
             else:
-                # 필수 파라미터 누락
+                # 파라미터 자체가 URL에 없음 → 실패
                 print(f"⚠️  필수 파라미터 누락: {domain} - {param}")
                 return None
 
         if key_parts:
-            return f"{domain}|{'&'.join(key_parts)}"
+            # 알파벳 순으로 정렬하여 파라미터 순서 무관하게 동일한 키 생성
+            sorted_key_parts = sorted(key_parts)
+            return f"{domain}|{'&'.join(sorted_key_parts)}"
 
         return None
 

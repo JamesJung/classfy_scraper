@@ -1206,9 +1206,12 @@ class AnnouncementPreProcessor:
         ⚠️ 주의: domain_key_config에 도메인이 있으면 이 메서드는 사용되지 않습니다.
         domain_key_config가 우선순위 1이고, 이것은 폴백(fallback)입니다.
 
+        ⚠️ 중요: domain_key_config와 일관성을 유지하기 위해 파라미터 순서를 유지합니다!
+        (이전에는 알파벳 순으로 정렬했으나, 이제는 URL에 나타난 순서 그대로 유지)
+
         동작:
         1. URL을 파싱하여 도메인과 쿼리 파라미터 추출
-        2. 쿼리 파라미터를 키 이름 기준 알파벳 순으로 정렬
+        2. 쿼리 파라미터를 **URL 순서 그대로** 유지
         3. "domain|key1=val1&key2=val2" 형식으로 반환
 
         Args:
@@ -1219,10 +1222,10 @@ class AnnouncementPreProcessor:
 
         Examples:
             >>> _fallback_normalize_url("https://example.com?b=2&a=1")
-            'example.com|a=1&b=2'
+            'example.com|b=2&a=1'  # ← 순서 유지 (알파벳 정렬 X)
 
             >>> _fallback_normalize_url("https://example.com?nttId=123&bbsId=456")
-            'example.com|bbsId=456&nttId=123'
+            'example.com|nttId=123&bbsId=456'  # ← 순서 유지
 
             >>> _fallback_normalize_url("https://example.com/path?id=1")
             'example.com|id=1'
@@ -1243,13 +1246,15 @@ class AnnouncementPreProcessor:
                 logger.warning(f"도메인 추출 실패, 원본 URL 반환: {url}")
                 return url
 
-            # 쿼리 파라미터 파싱
+            # 쿼리 파라미터 파싱 (빈 값도 포함)
             params = parse_qsl(parsed.query, keep_blank_values=True)
 
             if params:
-                # 파라미터를 키 알파벳 순으로 정렬
-                sorted_params = "&".join(f"{k}={v}" for k, v in sorted(params))
-                normalized_key = f"{domain}|{sorted_params}"
+                # ✅ 알파벳 순으로 정렬하여 파라미터 순서 무관하게 동일한 키 생성
+                # domain_key_config와 DomainKeyExtractor도 동일하게 알파벳 정렬 사용
+                sorted_params = sorted(params)
+                param_str = "&".join(f"{k}={v}" for k, v in sorted_params)
+                normalized_key = f"{domain}|{param_str}"
             else:
                 # 쿼리 파라미터 없으면 경로 포함
                 if parsed.path and parsed.path != '/':

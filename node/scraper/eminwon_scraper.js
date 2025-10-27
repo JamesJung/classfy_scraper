@@ -1194,6 +1194,15 @@ class EminwonScraper {
 
             if (this.processedTitles.has(announcement.title) || this.processedTitles.has(sanitizedTitle)) {
                 console.log(`🔄 메모리 기반 중복 감지: ${announcement.title}`);
+                // 중복 게시물이어도 날짜 체크는 수행 (targetDate 이전인지 확인)
+                // 많은 중복이 연속으로 나타날 경우 종료 조건 판단을 위함
+                if (this.targetDate && listDate) {
+                    const targetMoment = moment(this.targetDate, 'YYYYMMDD');
+                    if (listDate.isBefore(targetMoment)) {
+                        console.log(`중복 게시물이지만 날짜가 ${listDate.format('YYYY-MM-DD')}로 대상 날짜 이전입니다. 종료 신호.`);
+                        return true; // 스크래핑 중단
+                    }
+                }
                 return false;
             }
 

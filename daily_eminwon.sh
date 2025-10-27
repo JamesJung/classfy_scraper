@@ -6,17 +6,23 @@ LOG_DIR="/home/zium/classfy_scraper/logs"
 DATE=$(date +%Y%m%d)
 LOG_FILE="${LOG_DIR}/daily_${DATE}.log"
 
-# NVM 로드 (Node.js 사용을 위해)
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-
-# 환경 설정
-export PATH="/home/zium/.nvm/versions/node/v18.16.0/bin:$PATH:/usr/local/bin:/usr/bin:/bin"
-export NODE_PATH="/home/zium/.nvm/versions/node/v18.16.0/bin/node"
-cd $ROOT_DIR
+cd $ROOT_DIR || exit 1
 
 # logs 디렉토리가 없으면 생성
 mkdir -p $LOG_DIR
+
+
+# NVM 로드 (Node.js 사용을 위해)
+# export NVM_DIR="$HOME/.nvm"
+# [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+export PATH="/home/zium/.nvm/versions/node/v18.16.0/bin:$PATH"
+
+# 환경 설정
+#    export PATH="/home/zium/.nvm/versions/node/v18.16.0/bin:$PATH:/usr/local/bin:/usr/bin:/bin"
+# export NODE_PATH="/home/zium/.nvm/versions/node/v18.16.0/bin/node"
+cd $ROOT_DIR
+
 
 # .env 파일 로드
 if [ -f .env ]; then

@@ -1206,13 +1206,16 @@ class AnnouncementPreProcessor:
         ⚠️ 주의: domain_key_config에 도메인이 있으면 이 메서드는 사용되지 않습니다.
         domain_key_config가 우선순위 1이고, 이것은 폴백(fallback)입니다.
 
-        ⚠️ 중요: domain_key_config와 일관성을 유지하기 위해 파라미터 순서를 유지합니다!
-        (이전에는 알파벳 순으로 정렬했으나, 이제는 URL에 나타난 순서 그대로 유지)
+        ⚠️ 중요: domain_key_config와 DomainKeyExtractor와 동일하게 알파벳 순으로 정렬합니다!
+        URL 파라미터 순서와 무관하게 동일한 키를 생성하여 중복 감지 정확도를 향상시킵니다.
+
+        ⚠️ 페이지네이션/검색 파라미터 자동 제외: page, pageIndex, searchCnd 등은 url_key에서 제외됩니다.
 
         동작:
         1. URL을 파싱하여 도메인과 쿼리 파라미터 추출
-        2. 쿼리 파라미터를 **URL 순서 그대로** 유지
-        3. "domain|key1=val1&key2=val2" 형식으로 반환
+        2. 페이지네이션/검색 파라미터 제외
+        3. 남은 파라미터를 **알파벳 순으로 정렬**
+        4. "domain|key1=val1&key2=val2" 형식으로 반환 (정렬된 순서)
 
         Args:
             url: 원본 URL (None 가능)
@@ -1222,10 +1225,10 @@ class AnnouncementPreProcessor:
 
         Examples:
             >>> _fallback_normalize_url("https://example.com?b=2&a=1")
-            'example.com|b=2&a=1'  # ← 순서 유지 (알파벳 정렬 X)
+            'example.com|a=1&b=2'  # ← 알파벳 정렬됨
 
-            >>> _fallback_normalize_url("https://example.com?nttId=123&bbsId=456")
-            'example.com|nttId=123&bbsId=456'  # ← 순서 유지
+            >>> _fallback_normalize_url("https://example.com?nttId=123&page=1")
+            'example.com|nttId=123'  # ← page 제외됨
 
             >>> _fallback_normalize_url("https://example.com/path?id=1")
             'example.com|id=1'
@@ -1239,6 +1242,23 @@ class AnnouncementPreProcessor:
         try:
             from urllib.parse import urlparse, parse_qsl
 
+            # 제외할 페이지네이션/검색/정렬 파라미터 목록
+            EXCLUDED_PARAMS = {
+                # 페이지네이션
+                'page', 'pageNo', 'pageNum', 'pageIndex', 'pageSize', 'pageUnit',
+                'offset', 'limit', 'start', 'Start', 'end',
+                'currentPage', 'curPage', 'pageNumber', 'pn',
+                'ofr_pageSize',
+                # 검색 관련
+                'search', 'searchWord', 'searchType', 'searchCategory',
+                'searchCnd', 'searchKrwd', 'searchGosiSe', 'search_type',
+                'keyword', 'query', 'q',
+                # 정렬 관련
+                'sort', 'order', 'orderBy', 'sortField', 'sortOrder',
+                # 뷰 모드
+                'view', 'viewMode', 'display', 'listType',
+            }
+
             parsed = urlparse(url)
             domain = parsed.netloc
 
@@ -1250,11 +1270,28 @@ class AnnouncementPreProcessor:
             params = parse_qsl(parsed.query, keep_blank_values=True)
 
             if params:
-                # ✅ 알파벳 순으로 정렬하여 파라미터 순서 무관하게 동일한 키 생성
-                # domain_key_config와 DomainKeyExtractor도 동일하게 알파벳 정렬 사용
-                sorted_params = sorted(params)
-                param_str = "&".join(f"{k}={v}" for k, v in sorted_params)
-                normalized_key = f"{domain}|{param_str}"
+                # ✅ 페이지네이션/검색 파라미터 제외
+                filtered_params = [(k, v) for k, v in params if k not in EXCLUDED_PARAMS]
+
+                if filtered_params:
+                    # ✅ 알파벳 순으로 정렬하여 파라미터 순서 무관하게 동일한 키 생성
+                    # domain_key_config와 DomainKeyExtractor도 동일하게 알파벳 정렬 사용
+                    sorted_params = sorted(filtered_params)
+                    param_str = "&".join(f"{k}={v}" for k, v in sorted_params)
+                    normalized_key = f"{domain}|{param_str}"
+
+                    # 제외된 파라미터가 있으면 로그 남김
+                    excluded_count = len(params) - len(filtered_params)
+                    if excluded_count > 0:
+                        excluded_keys = [k for k, v in params if k in EXCLUDED_PARAMS]
+                        logger.debug(f"페이지네이션 파라미터 {excluded_count}개 제외: {excluded_keys}")
+                else:
+                    # 모든 파라미터가 페이지네이션이면 경로로 폴백
+                    if parsed.path and parsed.path != '/':
+                        normalized_key = f"{domain}|path={parsed.path}"
+                    else:
+                        normalized_key = f"{domain}|no_params"
+                    logger.warning(f"모든 파라미터가 페이지네이션! 경로 사용: {url}")
             else:
                 # 쿼리 파라미터 없으면 경로 포함
                 if parsed.path and parsed.path != '/':

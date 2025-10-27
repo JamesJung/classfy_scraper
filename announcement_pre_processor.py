@@ -31,6 +31,7 @@ from src.config.config import ConfigManager
 from src.config.logConfig import setup_logging
 
 from src.models.announcementPrvDatabase import AnnouncementPrvDatabaseManager
+from src.utils.domainKeyExtractor import DomainKeyExtractor
 
 logger = setup_logging(__name__)
 
@@ -61,6 +62,9 @@ class AnnouncementPreProcessor:
         self.attach_force = attach_force
         self.site_type = site_type
         self.site_code = site_code  # site_code를 인스턴스 변수로 저장
+
+        # URL 정규화를 위한 DomainKeyExtractor 초기화
+        self.url_key_extractor = DomainKeyExtractor()
 
         # 데이터베이스 테이블 생성 (없는 경우)
         self._ensure_database_tables()
@@ -108,6 +112,7 @@ class AnnouncementPreProcessor:
                             exclusion_reason TEXT,
                             title VARCHAR(500),
                             origin_url VARCHAR(1000),
+                            scraping_url VARCHAR(1000),
                             announcement_date VARCHAR(50),
                             processing_status VARCHAR(50),
                             error_message TEXT,
@@ -115,7 +120,8 @@ class AnnouncementPreProcessor:
                             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                             INDEX idx_site_code (site_code),
                             INDEX idx_processing_status (processing_status),
-                            INDEX idx_origin_url (origin_url)
+                            INDEX idx_origin_url (origin_url),
+                            INDEX idx_scraping_url (scraping_url)
                         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                     """
                         )
@@ -448,9 +454,10 @@ class AnnouncementPreProcessor:
 
             # 2. 특수 사이트 처리 (모두 content.md 읽기)
             content_md = ""
-            title = "정보 없음"
-            origin_url = "정보 없음"
-            announcement_date = "정보 없음"
+            title = None
+            origin_url = None
+            scraping_url = None
+            announcement_date = None
 
             if site_code in ["kStartUp", "bizInfo", "smes24"]:
                 # kStartUp, bizInfo, smes24는 content.md를 읽고, JSON에서 날짜 정보만 보완
@@ -462,19 +469,32 @@ class AnnouncementPreProcessor:
                         logger.info(f"content.md 읽기 완료: {len(content_md)} 문자")
 
                         # content.md에서 기본 정보 추출
-                        title = (
-                            self._extract_title_from_content(content_md) or "정보 없음"
-                        )
-                        origin_url = (
-                            self._extract_origin_url_from_content(content_md)
-                            or "정보 없음"
-                        )
+                        title = self._extract_title_from_content(content_md)
+                        origin_url = self._extract_origin_url_from_content(content_md)
+                        scraping_url = self._extract_scraping_url_from_content(content_md)
 
-                        # JSON 파일에서 announcement_date 보완
-                        json_files = list(directory_path.glob("*.json"))
-                        if json_files:
+                        # JSON 파일에서 announcement_date 보완 (우선순위: announcement.json → data.json → 기타)
+                        priority_json_names = ["announcement.json", "data.json", "info.json"]
+                        json_file_to_use = None
+
+                        # 우선순위 파일 먼저 확인
+                        for json_name in priority_json_names:
+                            json_path = directory_path / json_name
+                            if json_path.exists():
+                                json_file_to_use = json_path
+                                logger.debug(f"우선순위 JSON 파일 발견: {json_name}")
+                                break
+
+                        # 우선순위 파일이 없으면 첫 번째 JSON 사용
+                        if not json_file_to_use:
+                            json_files = list(directory_path.glob("*.json"))
+                            if json_files:
+                                json_file_to_use = json_files[0]
+                                logger.debug(f"일반 JSON 파일 사용: {json_file_to_use.name}")
+
+                        if json_file_to_use:
                             try:
-                                with open(json_files[0], "r", encoding="utf-8") as f:
+                                with open(json_file_to_use, "r", encoding="utf-8") as f:
                                     json_data = json.load(f)
                                 announcement_date_raw = json_data.get(
                                     "announcementDate", ""
@@ -485,28 +505,19 @@ class AnnouncementPreProcessor:
                                     )
                                 else:
                                     # JSON에 없으면 content.md에서 추출
-                                    announcement_date = (
-                                        self._extract_announcement_date_from_content(
-                                            content_md
-                                        )
-                                        or "정보 없음"
+                                    announcement_date = self._extract_announcement_date_from_content(
+                                        content_md
                                     )
                             except Exception as e:
                                 logger.warning(
                                     f"{site_code} JSON 날짜 추출 실패, content.md 사용: {e}"
                                 )
-                                announcement_date = (
-                                    self._extract_announcement_date_from_content(
-                                        content_md
-                                    )
-                                    or "정보 없음"
+                                announcement_date = self._extract_announcement_date_from_content(
+                                    content_md
                                 )
                         else:
                             # JSON 파일이 없으면 content.md에서 추출
-                            announcement_date = (
-                                self._extract_announcement_date_from_content(content_md)
-                                or "정보 없음"
-                            )
+                            announcement_date = self._extract_announcement_date_from_content(content_md)
 
                     except Exception as e:
                         logger.error(f"content.md 읽기 실패: {e}")
@@ -515,6 +526,7 @@ class AnnouncementPreProcessor:
                             site_code,
                             content_md,
                             "",
+                            url_key=None,
                             status="error",
                             error_message=f"content.md 읽기 실패: {e}",
                         )
@@ -536,40 +548,46 @@ class AnnouncementPreProcessor:
                             site_code,
                             content_md,
                             "",
+                            url_key=None,
                             status="error",
                             error_message=f"content.md 읽기 실패: {e}",
                         )
                 else:
                     logger.warning(f"content.md 파일이 없음: {content_md_path}")
 
-            # 3. content.md만으로 기본 검증
-            if not content_md.strip():
-                logger.warning("content.md 내용이 없음")
-                return self._save_processing_result(
-                    folder_name,
-                    site_code,
-                    content_md,
-                    "",
-                    attachment_filenames=[],
-                    status="error",
-                    error_message="content.md 내용이 없음",
-                )
-
+            # 3. content.md에서 정보 추출
             # 일반 사이트의 경우만 content.md에서 정보 추출 (API 사이트는 이미 추출함)
             if site_code not in ["kStartUp", "bizInfo", "smes24"]:
-                title = self._extract_title_from_content(content_md) or "정보 없음"
-                origin_url = (
-                    self._extract_origin_url_from_content(content_md) or "정보 없음"
-                )
-                announcement_date = (
-                    self._extract_announcement_date_from_content(content_md)
-                    or "정보 없음"
-                )
+                title = self._extract_title_from_content(content_md)
+                origin_url = self._extract_origin_url_from_content(content_md)
+                announcement_date = self._extract_announcement_date_from_content(content_md)
 
-            # 3.5. origin_url 중복 체크
-            is_duplicate_url = False
-            if origin_url and origin_url != "정보 없음":
-                is_duplicate_url = self._check_origin_url_exists(origin_url, site_code)
+            # 3.5. origin_url에서 url_key 추출 (URL 정규화)
+            # 우선순위 1: domain_key_config 사용
+            # 우선순위 2: 폴백 정규화 (쿼리 파라미터 정렬)
+            url_key = None
+            if origin_url:
+                try:
+                    # 1순위: domain_key_config에서 도메인 설정 조회
+                    url_key = self.url_key_extractor.extract_url_key(origin_url, site_code)
+                    if url_key:
+                        logger.debug(f"✓ URL 정규화 완료 (domain_key_config 사용): {origin_url[:80]}... → {url_key}")
+                    else:
+                        # 2순위: domain_key_config에 도메인 없음 → 폴백 정규화
+                        logger.warning(
+                            f"⚠️  도메인 설정 없음 (domain_key_config), 폴백 정규화 수행: {origin_url[:80]}..."
+                        )
+                        url_key = self._fallback_normalize_url(origin_url)
+                        logger.info(f"✓ 폴백 정규화 적용: {url_key}")
+                except Exception as e:
+                    logger.error(f"❌ URL 정규화 중 오류: {e}")
+                    # 예외 발생 시에도 폴백 정규화 시도
+                    if origin_url:
+                        url_key = self._fallback_normalize_url(origin_url)
+                        logger.info(f"✓ 예외 후 폴백 정규화: {url_key}")
+                    else:
+                        logger.warning("origin_url이 없어 URL 정규화 불가")
+                        url_key = None
 
             # 4. 첨부파일 처리 (content.md와 분리)
             combined_content = ""
@@ -606,6 +624,7 @@ class AnnouncementPreProcessor:
                     combined_content,
                     attachment_filenames=attachment_filenames,
                     attachment_files_info=attachment_files_info,
+                    url_key=url_key,
                     status="error",
                     error_message=error_msg,
                 )
@@ -628,13 +647,13 @@ class AnnouncementPreProcessor:
                     title=title,
                     announcement_date=announcement_date,
                     origin_url=origin_url,
+                    url_key=url_key,
+                    scraping_url=scraping_url,
                     exclusion_keywords=excluded_keywords,
                     exclusion_reason=exclusion_msg,
                 )
 
-            # 6. 데이터베이스에 저장 (중복 URL 여부에 따라 상태 결정)
-            final_status = "중복" if is_duplicate_url else "성공"
-
+            # 6. 데이터베이스에 저장 (URL 정규화 적용)
             record_id = self._save_processing_result(
                 folder_name,
                 site_code,
@@ -645,12 +664,11 @@ class AnnouncementPreProcessor:
                 title=title,
                 announcement_date=announcement_date,
                 origin_url=origin_url,
-                status=final_status,
+                url_key=url_key,
+                scraping_url=scraping_url,
+                status="성공",
                 force=force,
             )
-
-            if is_duplicate_url:
-                logger.info(f"origin_url 중복으로 '중복' 상태로 저장: {folder_name}")
 
             if record_id:
                 logger.info(f"디렉토리 처리 완료: {folder_name}")
@@ -666,6 +684,7 @@ class AnnouncementPreProcessor:
                 site_code,
                 "",
                 "",
+                url_key=None,
                 status="error",
                 error_message=f"예상치 못한 오류: {e}",
             )
@@ -801,6 +820,30 @@ class AnnouncementPreProcessor:
                     return url
 
         logger.debug("content.md에서 원본 URL을 찾을 수 없음")
+        return ""
+
+    def _extract_scraping_url_from_content(self, content_md: str) -> str:
+        """content.md에서 스크래핑 URL을 추출합니다."""
+        if not content_md:
+            return ""
+
+        # 스크래핑 URL 패턴 찾기
+        scraping_patterns = [
+            r"\*\*스크래핑 URL\*\*[:\s]*(.+?)(?:\n|$)",
+            r"스크래핑 URL[:\s]*(.+?)(?:\n|$)",
+            r"\*\*수집 URL\*\*[:\s]*(.+?)(?:\n|$)",
+            r"수집 URL[:\s]*(.+?)(?:\n|$)",
+        ]
+
+        for pattern in scraping_patterns:
+            matches = re.findall(pattern, content_md, re.IGNORECASE)
+            if matches:
+                url = matches[0].strip()
+                if url and url.startswith("http"):
+                    logger.debug(f"스크래핑 URL 추출 성공: {url[:50]}...")
+                    return url
+
+        logger.debug("content.md에서 스크래핑 URL을 찾을 수 없음")
         return ""
 
     def _extract_announcement_date_from_content(self, content_md: str) -> str:
@@ -1156,6 +1199,393 @@ class AnnouncementPreProcessor:
             logger.error(f"날짜 변환 중 오류: {e}")
             return date_str
 
+    def _fallback_normalize_url(self, url: str | None) -> str | None:
+        """
+        도메인 설정이 없을 때 최소한의 URL 정규화를 수행합니다.
+
+        ⚠️ 주의: domain_key_config에 도메인이 있으면 이 메서드는 사용되지 않습니다.
+        domain_key_config가 우선순위 1이고, 이것은 폴백(fallback)입니다.
+
+        ⚠️ 중요: domain_key_config와 DomainKeyExtractor와 동일하게 알파벳 순으로 정렬합니다!
+        URL 파라미터 순서와 무관하게 동일한 키를 생성하여 중복 감지 정확도를 향상시킵니다.
+
+        ⚠️ 페이지네이션/검색 파라미터 자동 제외: page, pageIndex, searchCnd 등은 url_key에서 제외됩니다.
+
+        동작:
+        1. URL을 파싱하여 도메인과 쿼리 파라미터 추출
+        2. 페이지네이션/검색 파라미터 제외
+        3. 남은 파라미터를 **알파벳 순으로 정렬**
+        4. "domain|key1=val1&key2=val2" 형식으로 반환 (정렬된 순서)
+
+        Args:
+            url: 원본 URL (None 가능)
+
+        Returns:
+            정규화된 URL 키 또는 None
+
+        Examples:
+            >>> _fallback_normalize_url("https://example.com?b=2&a=1")
+            'example.com|a=1&b=2'  # ← 알파벳 정렬됨
+
+            >>> _fallback_normalize_url("https://example.com?nttId=123&page=1")
+            'example.com|nttId=123'  # ← page 제외됨
+
+            >>> _fallback_normalize_url("https://example.com/path?id=1")
+            'example.com|id=1'
+
+            >>> _fallback_normalize_url(None)
+            None
+        """
+        if not url:
+            return None
+
+        try:
+            from urllib.parse import urlparse, parse_qsl
+
+            # 제외할 페이지네이션/검색/정렬 파라미터 목록
+            EXCLUDED_PARAMS = {
+                # 페이지네이션
+                'page', 'pageNo', 'pageNum', 'pageIndex', 'pageSize', 'pageUnit',
+                'offset', 'limit', 'start', 'Start', 'end',
+                'currentPage', 'curPage', 'pageNumber', 'pn',
+                'ofr_pageSize',
+                # 검색 관련
+                'search', 'searchWord', 'searchType', 'searchCategory',
+                'searchCnd', 'searchKrwd', 'searchGosiSe', 'search_type',
+                'keyword', 'query', 'q',
+                # 정렬 관련
+                'sort', 'order', 'orderBy', 'sortField', 'sortOrder',
+                # 뷰 모드
+                'view', 'viewMode', 'display', 'listType',
+            }
+
+            parsed = urlparse(url)
+            domain = parsed.netloc
+
+            if not domain:
+                logger.warning(f"도메인 추출 실패, 원본 URL 반환: {url}")
+                return url
+
+            # 쿼리 파라미터 파싱 (빈 값도 포함)
+            params = parse_qsl(parsed.query, keep_blank_values=True)
+
+            if params:
+                # ✅ 페이지네이션/검색 파라미터 제외
+                filtered_params = [(k, v) for k, v in params if k not in EXCLUDED_PARAMS]
+
+                if filtered_params:
+                    # ✅ 알파벳 순으로 정렬하여 파라미터 순서 무관하게 동일한 키 생성
+                    # domain_key_config와 DomainKeyExtractor도 동일하게 알파벳 정렬 사용
+                    sorted_params = sorted(filtered_params)
+                    param_str = "&".join(f"{k}={v}" for k, v in sorted_params)
+                    normalized_key = f"{domain}|{param_str}"
+
+                    # 제외된 파라미터가 있으면 로그 남김
+                    excluded_count = len(params) - len(filtered_params)
+                    if excluded_count > 0:
+                        excluded_keys = [k for k, v in params if k in EXCLUDED_PARAMS]
+                        logger.debug(f"페이지네이션 파라미터 {excluded_count}개 제외: {excluded_keys}")
+                else:
+                    # 모든 파라미터가 페이지네이션이면 경로로 폴백
+                    if parsed.path and parsed.path != '/':
+                        normalized_key = f"{domain}|path={parsed.path}"
+                    else:
+                        normalized_key = f"{domain}|no_params"
+                    logger.warning(f"모든 파라미터가 페이지네이션! 경로 사용: {url}")
+            else:
+                # 쿼리 파라미터 없으면 경로 포함
+                if parsed.path and parsed.path != '/':
+                    normalized_key = f"{domain}|path={parsed.path}"
+                else:
+                    # 경로도 없으면 도메인만
+                    normalized_key = f"{domain}|no_params"
+
+            logger.info(f"✓ 폴백 정규화 완료: {url[:80]}... → {normalized_key}")
+            return normalized_key
+
+        except Exception as e:
+            logger.error(f"폴백 정규화 중 오류, 원본 반환: {e}")
+            return url
+
+    def _update_api_url_registry(
+        self, session, origin_url: str, preprocessing_id: int, site_code: str, scraping_url: str = None
+    ) -> bool:
+        """
+        api_url_registry 테이블의 preprocessing_id를 업데이트합니다.
+
+        Args:
+            session: SQLAlchemy 세션
+            origin_url: 원본 URL
+            preprocessing_id: announcement_pre_processing 테이블의 ID
+            site_code: 사이트 코드
+            scraping_url: 스크래핑 URL (API 사이트의 경우 우선 매칭)
+
+        Returns:
+            업데이트 성공 여부
+        """
+        try:
+            from sqlalchemy import text
+
+            # API 사이트만 처리
+            if site_code not in ["kStartUp", "bizInfo", "smes24"]:
+                logger.debug(f"API 사이트가 아니므로 api_url_registry 업데이트 건너뜀: {site_code}")
+                return True
+
+            # ⚠️ 테이블 컬럼 구조:
+            # - api_url_registry.announcement_url: 공고 URL (bizInfo, smes24 사용)
+            # - api_url_registry.scrap_url: 스크래핑 URL (kStartUp 사용)
+
+            if site_code == "kStartUp":
+                # kStartUp: scrap_url 컬럼 사용 (announcement_url은 신뢰할 수 없음)
+                if not scraping_url:
+                    logger.debug("kStartUp: scraping_url이 없어 api_url_registry 업데이트 불가")
+                    return False
+
+                update_sql = text("""
+                    UPDATE api_url_registry
+                    SET preprocessing_id = :preprocessing_id,
+                        updated_at = NOW()
+                    WHERE scrap_url = :scraping_url
+                    LIMIT 1
+                """)
+
+                result = session.execute(
+                    update_sql,
+                    {
+                        "preprocessing_id": preprocessing_id,
+                        "scraping_url": scraping_url
+                    }
+                )
+
+                rows_affected = result.rowcount
+                if rows_affected > 0:
+                    logger.info(
+                        f"api_url_registry 업데이트 성공 (kStartUp, scrap_url): "
+                        f"url={scraping_url[:50]}..., preprocessing_id={preprocessing_id}"
+                    )
+                    return True
+                else:
+                    logger.debug(
+                        f"api_url_registry에 매칭되는 레코드 없음 (kStartUp, scrap_url): "
+                        f"scraping_url={scraping_url[:50]}..."
+                    )
+                    return False
+
+            else:
+                # bizInfo, smes24: announcement_url 컬럼 사용
+                # 우선순위: scraping_url → origin_url
+
+                # 1차 시도: scraping_url로 매칭
+                if scraping_url:
+                    update_sql = text("""
+                        UPDATE api_url_registry
+                        SET preprocessing_id = :preprocessing_id,
+                            updated_at = NOW()
+                        WHERE announcement_url = :scraping_url
+                        LIMIT 1
+                    """)
+
+                    result = session.execute(
+                        update_sql,
+                        {
+                            "preprocessing_id": preprocessing_id,
+                            "scraping_url": scraping_url
+                        }
+                    )
+
+                    rows_affected = result.rowcount
+                    if rows_affected > 0:
+                        logger.info(
+                            f"api_url_registry 업데이트 성공 ({site_code}, announcement_url with scraping_url): "
+                            f"url={scraping_url[:50]}..., preprocessing_id={preprocessing_id}"
+                        )
+                        return True
+
+                # 2차 시도: origin_url로 매칭 (scraping_url로 실패한 경우)
+                if origin_url:
+                    update_sql = text("""
+                        UPDATE api_url_registry
+                        SET preprocessing_id = :preprocessing_id,
+                            updated_at = NOW()
+                        WHERE announcement_url = :origin_url
+                        LIMIT 1
+                    """)
+
+                    result = session.execute(
+                        update_sql,
+                        {
+                            "preprocessing_id": preprocessing_id,
+                            "origin_url": origin_url
+                        }
+                    )
+                    # commit은 _save_processing_result에서 한 번만 수행
+
+                    rows_affected = result.rowcount
+                    if rows_affected > 0:
+                        logger.info(
+                            f"api_url_registry 업데이트 성공 ({site_code}, announcement_url with origin_url): "
+                            f"url={origin_url[:50]}..., preprocessing_id={preprocessing_id}"
+                        )
+                        return True
+
+                # 둘 다 실패
+                logger.debug(
+                    f"api_url_registry에 매칭되는 레코드 없음 ({site_code}, announcement_url): "
+                    f"scraping_url={scraping_url[:50] if scraping_url else 'None'}..., "
+                    f"origin_url={origin_url[:50] if origin_url else 'None'}..."
+                )
+                return False
+
+        except Exception as e:
+            # 테이블이 존재하지 않거나 컬럼이 없는 경우 경고만 출력
+            logger.warning(f"api_url_registry 업데이트 실패 (무시하고 계속): {e}")
+            return False
+
+    def _get_priority(self, site_type: str) -> int:
+        """
+        site_type의 우선순위를 반환합니다.
+        높을수록 우선순위 높음.
+
+        Args:
+            site_type: 사이트 타입 (Eminwon, Homepage, Scraper, api_scrap 등)
+
+        Returns:
+            우선순위 값 (0-3)
+        """
+        priority_map = {
+            'Eminwon': 3,
+            'Homepage': 3,
+            'Scraper': 3,
+            'api_scrap': 1,
+            'Unknown': 0,
+        }
+        return priority_map.get(site_type, 0)
+
+    def _log_api_url_processing(
+        self,
+        session,
+        site_code: str,
+        url_key: str,
+        url_key_hash: str,
+        processing_status: str,
+        announcement_id: str = None,
+        announcement_url: str = None,
+        scraping_url: str = None,
+        preprocessing_id: int = None,
+        existing_preprocessing_id: int = None,
+        api_url_registry_id: int = None,
+        existing_site_type: str = None,
+        existing_site_code: str = None,
+        duplicate_reason: dict = None,
+        error_message: str = None,
+        title: str = None,
+        folder_name: str = None,
+    ) -> bool:
+        """
+        API URL 처리 시도를 로그에 기록합니다.
+
+        Args:
+            session: SQLAlchemy 세션
+            site_code: 사이트 코드 (kStartUp, bizInfo, smes24, prv_* 등)
+            url_key: 정규화된 URL 키
+            url_key_hash: URL 키 해시 (MD5)
+            processing_status: 처리 상태
+                - 'new_inserted': 새로 삽입됨
+                - 'duplicate_updated': 중복이지만 업데이트됨 (우선순위 높음)
+                - 'duplicate_skipped': 중복이라 스킵됨 (우선순위 낮음)
+                - 'duplicate_preserved': 기존 데이터 유지됨
+                - 'failed': 처리 실패
+                - 'no_url_key': URL 정규화 실패
+            preprocessing_id: 생성/업데이트된 레코드 ID
+            existing_preprocessing_id: 이미 존재하던 레코드 ID
+            existing_site_type: 기존 레코드의 site_type
+            existing_site_code: 기존 레코드의 site_code
+            duplicate_reason: 중복 사유 (dict)
+            error_message: 오류 메시지
+            title: 공고 제목
+            folder_name: 폴더명
+
+        Returns:
+            로그 기록 성공 여부
+        """
+        try:
+            from sqlalchemy import text
+            import json
+
+            # duplicate_reason을 JSON으로 변환
+            duplicate_reason_json = None
+            if duplicate_reason:
+                duplicate_reason_json = json.dumps(duplicate_reason, ensure_ascii=False)
+
+            sql = text("""
+                INSERT INTO api_url_processing_log (
+                    site_code,
+                    announcement_id,
+                    announcement_url,
+                    scraping_url,
+                    url_key,
+                    url_key_hash,
+                    processing_status,
+                    preprocessing_id,
+                    existing_preprocessing_id,
+                    api_url_registry_id,
+                    existing_site_type,
+                    existing_site_code,
+                    duplicate_reason,
+                    error_message,
+                    title,
+                    folder_name,
+                    created_at
+                ) VALUES (
+                    :site_code,
+                    :announcement_id,
+                    :announcement_url,
+                    :scraping_url,
+                    :url_key,
+                    :url_key_hash,
+                    :processing_status,
+                    :preprocessing_id,
+                    :existing_preprocessing_id,
+                    :api_url_registry_id,
+                    :existing_site_type,
+                    :existing_site_code,
+                    :duplicate_reason,
+                    :error_message,
+                    :title,
+                    :folder_name,
+                    NOW()
+                )
+            """)
+
+            session.execute(sql, {
+                "site_code": site_code,
+                "announcement_id": announcement_id,
+                "announcement_url": announcement_url,
+                "scraping_url": scraping_url,
+                "url_key": url_key,
+                "url_key_hash": url_key_hash,
+                "processing_status": processing_status,
+                "preprocessing_id": preprocessing_id,
+                "existing_preprocessing_id": existing_preprocessing_id,
+                "api_url_registry_id": api_url_registry_id,
+                "existing_site_type": existing_site_type,
+                "existing_site_code": existing_site_code,
+                "duplicate_reason": duplicate_reason_json,
+                "error_message": error_message,
+                "title": title,
+                "folder_name": folder_name,
+            })
+
+            logger.debug(
+                f"API URL 처리 로그 기록: site_code={site_code}, "
+                f"status={processing_status}, url_key_hash={url_key_hash[:16] if url_key_hash else 'None'}..."
+            )
+            return True
+
+        except Exception as e:
+            logger.warning(f"API URL 처리 로그 기록 실패 (무시하고 계속): {e}")
+            return False
+
     def _save_processing_result(
         self,
         folder_name: str,
@@ -1170,6 +1600,8 @@ class AnnouncementPreProcessor:
         force: bool = False,
         title: str = None,
         origin_url: str = None,
+        url_key: str = None,
+        scraping_url: str = None,
         announcement_date: str = None,
         attachment_files_info: List[Dict[str, Any]] = None,
     ) -> Optional[int]:
@@ -1178,34 +1610,129 @@ class AnnouncementPreProcessor:
             from sqlalchemy import text
 
             with self.db_manager.SessionLocal() as session:
+                # UPSERT 실행 전에 기존 레코드 조회 (우선순위 비교를 위해)
+                existing_record_before_upsert = None
+                if force and url_key:
+                    try:
+                        existing_record_before_upsert = session.execute(
+                            text("""
+                                SELECT id, site_type, site_code, folder_name
+                                FROM announcement_pre_processing
+                                WHERE url_key = :url_key
+                                LIMIT 1
+                            """),
+                            {"url_key": url_key}
+                        ).fetchone()
+
+                        if existing_record_before_upsert:
+                            logger.debug(
+                                f"UPSERT 전 기존 레코드 발견: ID={existing_record_before_upsert.id}, "
+                                f"site_type={existing_record_before_upsert.site_type}, "
+                                f"site_code={existing_record_before_upsert.site_code}"
+                            )
+                    except Exception as e:
+                        logger.warning(f"UPSERT 전 기존 레코드 조회 실패 (무시하고 계속): {e}")
+
                 if force:
-                    # UPSERT 로직
+                    # UPSERT 로직 with site_type 우선순위 (지자체 > API)
                     sql = text(
                         """
                         INSERT INTO announcement_pre_processing (
                             folder_name, site_type, site_code, content_md, combined_content,
-                            attachment_filenames, attachment_files_list, exclusion_keyword, exclusion_reason, 
-                            title, origin_url, announcement_date,
+                            attachment_filenames, attachment_files_list, exclusion_keyword, exclusion_reason,
+                            title, origin_url, url_key, scraping_url, announcement_date,
                             processing_status, error_message, created_at, updated_at
                         ) VALUES (
                             :folder_name, :site_type, :site_code, :content_md, :combined_content,
-                            :attachment_filenames, :attachment_files_list, :exclusion_keyword, :exclusion_reason, 
-                            :title, :origin_url, :announcement_date,
+                            :attachment_filenames, :attachment_files_list, :exclusion_keyword, :exclusion_reason,
+                            :title, :origin_url, :url_key, :scraping_url, :announcement_date,
                             :processing_status, :error_message, NOW(), NOW()
                         )
                         ON DUPLICATE KEY UPDATE
-                            site_type = VALUES(site_type),
-                            content_md = VALUES(content_md),
-                            combined_content = VALUES(combined_content),
-                            attachment_filenames = VALUES(attachment_filenames),
-                            attachment_files_list = VALUES(attachment_files_list),
-                            exclusion_keyword = VALUES(exclusion_keyword),
-                            exclusion_reason = VALUES(exclusion_reason),
-                            processing_status = VALUES(processing_status),
-                            title = VALUES(title),
-                            origin_url = VALUES(origin_url),
-                            announcement_date = VALUES(announcement_date),
-                            error_message = VALUES(error_message),
+                            site_type = IF(
+                                VALUES(site_type) IN ('Eminwon', 'Homepage', 'Scraper') OR
+                                site_type NOT IN ('Eminwon', 'Homepage', 'Scraper'),
+                                VALUES(site_type),
+                                site_type
+                            ),
+                            content_md = IF(
+                                VALUES(site_type) IN ('Eminwon', 'Homepage', 'Scraper') OR
+                                site_type NOT IN ('Eminwon', 'Homepage', 'Scraper'),
+                                VALUES(content_md),
+                                content_md
+                            ),
+                            combined_content = IF(
+                                VALUES(site_type) IN ('Eminwon', 'Homepage', 'Scraper') OR
+                                site_type NOT IN ('Eminwon', 'Homepage', 'Scraper'),
+                                VALUES(combined_content),
+                                combined_content
+                            ),
+                            attachment_filenames = IF(
+                                VALUES(site_type) IN ('Eminwon', 'Homepage', 'Scraper') OR
+                                site_type NOT IN ('Eminwon', 'Homepage', 'Scraper'),
+                                VALUES(attachment_filenames),
+                                attachment_filenames
+                            ),
+                            attachment_files_list = IF(
+                                VALUES(site_type) IN ('Eminwon', 'Homepage', 'Scraper') OR
+                                site_type NOT IN ('Eminwon', 'Homepage', 'Scraper'),
+                                VALUES(attachment_files_list),
+                                attachment_files_list
+                            ),
+                            exclusion_keyword = IF(
+                                VALUES(site_type) IN ('Eminwon', 'Homepage', 'Scraper') OR
+                                site_type NOT IN ('Eminwon', 'Homepage', 'Scraper'),
+                                VALUES(exclusion_keyword),
+                                exclusion_keyword
+                            ),
+                            exclusion_reason = IF(
+                                VALUES(site_type) IN ('Eminwon', 'Homepage', 'Scraper') OR
+                                site_type NOT IN ('Eminwon', 'Homepage', 'Scraper'),
+                                VALUES(exclusion_reason),
+                                exclusion_reason
+                            ),
+                            processing_status = IF(
+                                VALUES(site_type) IN ('Eminwon', 'Homepage', 'Scraper') OR
+                                site_type NOT IN ('Eminwon', 'Homepage', 'Scraper'),
+                                VALUES(processing_status),
+                                processing_status
+                            ),
+                            title = IF(
+                                VALUES(site_type) IN ('Eminwon', 'Homepage', 'Scraper') OR
+                                site_type NOT IN ('Eminwon', 'Homepage', 'Scraper'),
+                                VALUES(title),
+                                title
+                            ),
+                            origin_url = IF(
+                                VALUES(site_type) IN ('Eminwon', 'Homepage', 'Scraper') OR
+                                site_type NOT IN ('Eminwon', 'Homepage', 'Scraper'),
+                                VALUES(origin_url),
+                                origin_url
+                            ),
+                            url_key = IF(
+                                VALUES(site_type) IN ('Eminwon', 'Homepage', 'Scraper') OR
+                                site_type NOT IN ('Eminwon', 'Homepage', 'Scraper'),
+                                VALUES(url_key),
+                                url_key
+                            ),
+                            scraping_url = IF(
+                                VALUES(site_type) IN ('Eminwon', 'Homepage', 'Scraper') OR
+                                site_type NOT IN ('Eminwon', 'Homepage', 'Scraper'),
+                                VALUES(scraping_url),
+                                scraping_url
+                            ),
+                            announcement_date = IF(
+                                VALUES(site_type) IN ('Eminwon', 'Homepage', 'Scraper') OR
+                                site_type NOT IN ('Eminwon', 'Homepage', 'Scraper'),
+                                VALUES(announcement_date),
+                                announcement_date
+                            ),
+                            error_message = IF(
+                                VALUES(site_type) IN ('Eminwon', 'Homepage', 'Scraper') OR
+                                site_type NOT IN ('Eminwon', 'Homepage', 'Scraper'),
+                                VALUES(error_message),
+                                error_message
+                            ),
                             updated_at = NOW()
                     """
                     )
@@ -1215,13 +1742,13 @@ class AnnouncementPreProcessor:
                         """
                         INSERT INTO announcement_pre_processing (
                             folder_name, site_type, site_code, content_md, combined_content,
-                            attachment_filenames, attachment_files_list, exclusion_keyword, exclusion_reason, 
-                            title, origin_url, announcement_date,
+                            attachment_filenames, attachment_files_list, exclusion_keyword, exclusion_reason,
+                            title, origin_url, url_key, scraping_url, announcement_date,
                             processing_status, error_message, created_at, updated_at
                         ) VALUES (
                             :folder_name, :site_type, :site_code, :content_md, :combined_content,
-                            :attachment_filenames, :attachment_files_list, :exclusion_keyword, :exclusion_reason, 
-                            :title, :origin_url, :announcement_date,
+                            :attachment_filenames, :attachment_files_list, :exclusion_keyword, :exclusion_reason,
+                            :title, :origin_url, :url_key, :scraping_url, :announcement_date,
                             :processing_status, :error_message, NOW(), NOW()
                         )
                     """
@@ -1234,13 +1761,14 @@ class AnnouncementPreProcessor:
                     else None
                 )
 
-                if self.site_type == "Homepage":
-                    site_code = "prv_" + site_code
+                # Homepage 또는 Eminwon인 경우 DB에 저장할 site_code에 "prv_" 접두사 추가
+                # 단, 원본 site_code는 변경하지 않음 (API 업데이트 등에서 사용)
+                db_site_code = ("prv_" + site_code) if self.site_type in ("Homepage", "Eminwon") else site_code
 
                 params = {
                     "folder_name": folder_name,
                     "site_type": self.site_type,
-                    "site_code": site_code,
+                    "site_code": db_site_code,
                     "content_md": content_md,
                     "combined_content": combined_content,
                     "attachment_filenames": (
@@ -1255,16 +1783,153 @@ class AnnouncementPreProcessor:
                     "exclusion_reason": exclusion_reason,
                     "title": title,
                     "origin_url": origin_url,
+                    "url_key": url_key,
+                    "scraping_url": scraping_url,
                     "announcement_date": announcement_date,
                     "processing_status": status,
                     "error_message": error_message,
                 }
 
                 result = session.execute(sql, params)
-                session.commit()
-
                 record_id = result.lastrowid
+                affected_rows = result.rowcount
+
+                # ================================================
+                # 🆕 API URL 처리 로그 기록
+                # ================================================
+                # url_key가 없으면 'no_url_key' 상태로 기록
+                if not url_key:
+                    self._log_api_url_processing(
+                        session=session,
+                        site_code=db_site_code,  # ← site_code → db_site_code (일관성)
+                        url_key=None,
+                        url_key_hash=None,
+                        processing_status='no_url_key',
+                        preprocessing_id=record_id,
+                        title=title,
+                        folder_name=folder_name,
+                        error_message="URL 정규화 실패 (url_key 없음)"
+                    )
+                else:
+                    # url_key_hash 계산
+                    import hashlib
+                    url_key_hash = hashlib.md5(url_key.encode('utf-8')).hexdigest()
+
+                    # 처리 상태 결정
+                    processing_status = None
+                    existing_preprocessing_id = None
+                    existing_site_type = None
+                    existing_site_code = None
+                    duplicate_reason = None
+
+                    if affected_rows == 1:
+                        # 새로 INSERT됨
+                        processing_status = 'new_inserted'
+                        logger.debug(f"새 레코드 삽입: ID={record_id}, url_key_hash={url_key_hash[:16]}...")
+
+                    elif affected_rows == 2:
+                        # UPDATE됨 (ON DUPLICATE KEY UPDATE 실행)
+                        logger.debug(f"중복 감지 (affected_rows=2): url_key_hash={url_key_hash[:16]}...")
+
+                        # UPSERT 전에 조회한 기존 레코드 정보 사용
+                        if existing_record_before_upsert:
+                            # 업데이트 전의 정확한 값으로 우선순위 비교
+                            existing_site_type = existing_record_before_upsert.site_type
+                            existing_site_code = existing_record_before_upsert.site_code
+                            existing_preprocessing_id = existing_record_before_upsert.id
+
+                            # 우선순위 비교
+                            current_priority = self._get_priority(self.site_type)
+                            existing_priority = self._get_priority(existing_site_type)
+
+                            if current_priority > existing_priority:
+                                # 현재가 더 높은 우선순위 → 업데이트됨
+                                processing_status = 'duplicate_updated'
+                                duplicate_reason = {
+                                    "reason": f"{self.site_type} (priority {current_priority}) > {existing_site_type} (priority {existing_priority})",
+                                    "current_priority": current_priority,
+                                    "existing_priority": existing_priority,
+                                    "updated": True
+                                }
+                                logger.info(
+                                    f"✓ 우선순위 높음: {self.site_type}({current_priority}) > "
+                                    f"{existing_site_type}({existing_priority}) → 업데이트됨"
+                                )
+                            elif current_priority == existing_priority:
+                                # 같은 우선순위 → 업데이트됨 (최신 데이터 우선)
+                                processing_status = 'duplicate_updated'
+                                duplicate_reason = {
+                                    "reason": f"{self.site_type} (priority {current_priority}) == {existing_site_type} (priority {existing_priority}), 최신 데이터 우선",
+                                    "current_priority": current_priority,
+                                    "existing_priority": existing_priority,
+                                    "updated": True
+                                }
+                                logger.info(
+                                    f"✓ 우선순위 동일: {self.site_type}({current_priority}) == "
+                                    f"{existing_site_type}({existing_priority}) → 업데이트됨 (최신 데이터)"
+                                )
+                            else:
+                                # 현재가 더 낮은 우선순위 → 기존 유지
+                                processing_status = 'duplicate_preserved'
+                                duplicate_reason = {
+                                    "reason": f"{self.site_type} (priority {current_priority}) < {existing_site_type} (priority {existing_priority})",
+                                    "current_priority": current_priority,
+                                    "existing_priority": existing_priority,
+                                    "updated": False
+                                }
+                                logger.info(
+                                    f"⚠️  우선순위 낮음: {self.site_type}({current_priority}) < "
+                                    f"{existing_site_type}({existing_priority}) → 기존 데이터 유지"
+                                )
+                        else:
+                            # UPSERT 전 조회 실패 → 업데이트됨으로 간주
+                            processing_status = 'duplicate_updated'
+                            duplicate_reason = {"reason": "UPSERT 전 기존 레코드 조회 실패, 업데이트됨으로 간주"}
+                            logger.warning("UPSERT 전 기존 레코드 조회 실패, 업데이트됨으로 간주")
+
+                    else:
+                        # 예상치 못한 경우
+                        processing_status = 'failed'
+                        duplicate_reason = {"reason": f"Unexpected affected_rows: {affected_rows}"}
+                        logger.warning(f"예상치 못한 affected_rows: {affected_rows}")
+
+                    # 로그 기록
+                    if processing_status:
+                        self._log_api_url_processing(
+                            session=session,
+                            site_code=db_site_code,  # ← site_code → db_site_code (일관성)
+                            url_key=url_key,
+                            url_key_hash=url_key_hash,
+                            processing_status=processing_status,
+                            announcement_url=origin_url,
+                            scraping_url=scraping_url,
+                            preprocessing_id=record_id,
+                            existing_preprocessing_id=existing_preprocessing_id,
+                            existing_site_type=existing_site_type,
+                            existing_site_code=existing_site_code,
+                            duplicate_reason=duplicate_reason,
+                            title=title,
+                            folder_name=folder_name
+                        )
+
+                # API 사이트인 경우 api_url_registry 테이블 업데이트 (commit 전에 실행)
+                api_registry_updated = False
+                if origin_url:
+                    api_registry_updated = self._update_api_url_registry(
+                        session, origin_url, record_id, db_site_code, scraping_url  # ← db_site_code 사용
+                    )
+
+                    # API 사이트인데 api_url_registry 업데이트 실패 시 경고
+                    if not api_registry_updated and db_site_code in ["kStartUp", "bizInfo", "smes24"]:
+                        logger.warning(
+                            f"⚠️  API 사이트이지만 api_url_registry 업데이트 실패: "
+                            f"site_code={db_site_code}, origin_url={origin_url[:80]}..."
+                        )
+
+                # 모든 변경사항을 한 번에 커밋
+                session.commit()
                 logger.info(f"처리 결과 저장 완료: ID {record_id}, 상태: {status}")
+
                 return record_id
 
         except Exception as e:
@@ -1330,6 +1995,28 @@ def main():
 
         # site_type 결정
         site_type = determine_site_type(args.directory, args.site_code)
+
+        # Unknown site_type 검증
+        if site_type == "Unknown":
+            logger.error(
+                f"\n{'='*60}\n"
+                f"❌ site_type을 결정할 수 없습니다.\n"
+                f"{'='*60}\n"
+                f"입력 정보:\n"
+                f"  - directory: {args.directory}\n"
+                f"  - site_code: {args.site_code}\n"
+                f"\n"
+                f"확인 사항:\n"
+                f"  1. 디렉토리명에 'scraped' 또는 'eminwon' 포함 여부\n"
+                f"  2. site_code가 kStartUp, bizInfo, smes24 중 하나인지\n"
+                f"\n"
+                f"올바른 예시:\n"
+                f"  - scraped_data/jeju → Homepage\n"
+                f"  - eminwon_data/seoul → Eminwon\n"
+                f"  - scraped_data --site-code kStartUp → api_scrap\n"
+                f"{'='*60}\n"
+            )
+            sys.exit(1)
 
         logger.info(f"기본 디렉토리: {base_directory}")
         logger.info(f"Site Type: {site_type}")

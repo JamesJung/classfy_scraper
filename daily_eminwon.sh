@@ -4,7 +4,7 @@
 ROOT_DIR="/home/zium/classfy_scraper"
 LOG_DIR="/home/zium/classfy_scraper/logs"
 DATE=$(date +%Y%m%d)
-LOG_FILE="${LOG_DIR}/daily_${DATE}.log"
+LOG_FILE="${LOG_DIR}/eminwon_daily_${DATE}.log"
 
 echo "DEBUG: cd ROOT_DIR" >> "$LOG_FILE" # <--- 디버그 포인트 1
 

@@ -40,6 +40,46 @@ class DomainKeyExtractor:
             'articleNo', 'boardId', 'contentId', 'srnID'
         ]
 
+        # Phase 13: 제외할 페이지네이션/검색/정렬 파라미터 목록
+        self.EXCLUDED_PARAMS = {
+            # 페이지네이션 (기존)
+            'page', 'pageNo', 'pageNum', 'pageIndex', 'pageSize', 'pageUnit',
+            'offset', 'limit', 'start', 'Start', 'end',
+            'currentPage', 'curPage', 'pageNumber', 'pn',
+            'ofr_pageSize',
+
+            # 페이지네이션 (Phase 10 추가 - 누락된 변형)
+            'homepage_pbs_yn',    # eminwon 시스템
+            'cpage',              # 창원, 김해
+            'startPage',          # 부안, 거제, 금정
+            'q_currPage',         # 광명, 파주, 노원
+            'pageLine',           # 경남도청
+            'pageCd',             # 남해
+            'recordCountPerPage', # 강원도청
+            'pageId',             # 광주, 함평
+            'page_id',            # 영등포
+            'pageid',             # 영등포 변형
+            'GotoPage',           # 영등포21
+            'q_rowPerPage',       # 파주, 노원
+
+            # 검색 관련
+            'search', 'searchWord', 'searchType', 'searchCategory',
+            'searchCnd', 'searchKrwd', 'searchGosiSe', 'search_type',
+            'keyword', 'query', 'q',
+
+            # Phase 15 추가: 게시판 검색/카테고리 파라미터
+            'searchCtgry',        # 검색 카테고리 (원주, 보은, 영월, 태백 등)
+            'integrDeptCode',     # 통합 부서 코드 (원주, 보은, 영월 등)
+            'searchCnd2',         # 검색 조건 2 (서귀포)
+            'depNm',              # 부서명 (서귀포)
+
+            # 정렬 관련
+            'sort', 'order', 'orderBy', 'sortField', 'sortOrder',
+
+            # 뷰 모드
+            'view', 'viewMode', 'display', 'listType',
+        }
+
     def _get_connection(self):
         """DB 연결 획득"""
         if self.pool:
@@ -159,7 +199,9 @@ class DomainKeyExtractor:
             parsed = urlparse(url)
             domain = parsed.netloc
             path = parsed.path
-            query_params = parse_qs(parsed.query)
+            # Phase 15: keep_blank_values=True로 빈 파라미터도 유지
+            # 예: ?searchCtgry=&integrDeptCode= → {'searchCtgry': [''], 'integrDeptCode': ['']}
+            query_params = parse_qs(parsed.query, keep_blank_values=True)
 
             # 1. 도메인 설정 조회 (경로 매칭 지원)
             config = self.get_domain_config(domain, path)
@@ -201,10 +243,18 @@ class DomainKeyExtractor:
             ⚠️ 중요: key_params는 이미 알파벳 순으로 정렬되어 있어야 합니다.
             파라미터 순서를 알파벳 순으로 정렬하여 URL 파라미터 순서와 무관하게
             동일한 키를 생성합니다.
+
+            Phase 13: EXCLUDED_PARAMS에 있는 파라미터는 key_params에서 제외됩니다.
         """
         key_parts = []
+        excluded_count = 0
 
         for param in key_params:
+            # Phase 13: 페이지네이션/검색/정렬 파라미터 제외
+            if param in self.EXCLUDED_PARAMS:
+                excluded_count += 1
+                continue
+
             if param in query_params:
                 # 파라미터가 존재하면 OK (빈 값도 허용)
                 if query_params[param]:
@@ -218,6 +268,11 @@ class DomainKeyExtractor:
                 # 파라미터 자체가 URL에 없음 → 실패
                 print(f"⚠️  필수 파라미터 누락: {domain} - {param}")
                 return None
+
+        # Phase 13: 모든 key_params가 EXCLUDED_PARAMS에 해당하는 경우 fallback
+        if not key_parts and excluded_count > 0:
+            # 페이지네이션만 있는 경우 fallback 로직 사용
+            return self._extract_by_fallback(domain, query_params)
 
         if key_parts:
             # 알파벳 순으로 정렬하여 파라미터 순서 무관하게 동일한 키 생성
@@ -293,17 +348,22 @@ class DomainKeyExtractor:
 
         Returns:
             URL 키 또는 None
+
+        Phase 13: EXCLUDED_PARAMS에 있는 파라미터는 제외합니다.
         """
+        # Phase 13: fallback_priority에서도 EXCLUDED_PARAMS 제외
         for param in self.fallback_priority:
+            if param in self.EXCLUDED_PARAMS:
+                continue
             if param in query_params and query_params[param]:
                 value = query_params[param][0]
                 return f"{domain}|{param}={value}"
 
-        # 우선순위에 없으면 첫 번째 파라미터 사용
+        # Phase 13: 우선순위에 없으면 EXCLUDED_PARAMS를 제외한 첫 번째 파라미터 사용
         if query_params:
-            first_param = list(query_params.keys())[0]
-            first_value = query_params[first_param][0]
-            return f"{domain}|{first_param}={first_value}"
+            for param, values in query_params.items():
+                if param not in self.EXCLUDED_PARAMS and values:
+                    return f"{domain}|{param}={values[0]}"
 
         return None
 

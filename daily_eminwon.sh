@@ -1,66 +1,86 @@
 #!/bin/bash
 
-# 기본 디렉토리 설정
+# =============================================================================
+# Eminwon 일일 수집 스크립트 (CRON 최적화 버전)
+# =============================================================================
+
+# ============= 1. CRON 환경 대응: PATH 및 환경 변수 명시적 설정 =============
+export PATH="/home/zium/.nvm/versions/node/v18.16.0/bin:/usr/local/bin:/usr/bin:/bin"
+export HOME="/home/zium"
+export USER="zium"
+export SHELL="/bin/bash"
+
+# ============= 2. 기본 디렉토리 설정 (변수 인용 추가) =============
 ROOT_DIR="/home/zium/classfy_scraper"
 LOG_DIR="/home/zium/classfy_scraper/logs"
 DATE=$(date +%Y%m%d)
 LOG_FILE="${LOG_DIR}/eminwon_daily_${DATE}.log"
 
-echo "DEBUG: cd ROOT_DIR" >> "$LOG_FILE" # <--- 디버그 포인트 1
+# ============= 3. 로그 디렉토리 생성 (mkdir -p는 이미 존재해도 에러 없음) =============
+mkdir -p "${LOG_DIR}"
 
-cd $ROOT_DIR || exit 1
+# ============= 4. 작업 디렉토리 이동 (인용 추가) =============
+cd "${ROOT_DIR}" || {
+    echo "ERROR: Cannot change directory to ${ROOT_DIR}" >> "${LOG_FILE}" 2>&1
+    exit 1
+}
 
-# logs 디렉토리가 없으면 생성
-mkdir -p $LOG_DIR
-echo "DEBUG: Log directory created." >> "$LOG_FILE" # <--- 디버그 포인트 1
-
-# NVM 로드 (Node.js 사용을 위해)
-# export NVM_DIR="$HOME/.nvm"
-# [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-
-export PATH="/home/zium/.nvm/versions/node/v18.16.0/bin:$PATH"
-
-# 환경 설정
-#    export PATH="/home/zium/.nvm/versions/node/v18.16.0/bin:$PATH:/usr/local/bin:/usr/bin:/bin"
-# export NODE_PATH="/home/zium/.nvm/versions/node/v18.16.0/bin/node"
-cd $ROOT_DIR
-
-
-# .env 파일 로드
-if [ -f .env ]; then
-    export $(cat .env | grep -v '^#' | xargs)
-    echo "DEBUG: .env file loaded." >> "$LOG_FILE" # <--- 디버그 포인트 2
+# ============= 5. .env 파일 로드 (개선된 버전) =============
+if [ -f "${ROOT_DIR}/.env" ]; then
+    # set -a: 이후 변수를 자동으로 export
+    # source: .env 파일을 현재 셸에서 실행
+    # set +a: 자동 export 해제
+    set -a
+    source "${ROOT_DIR}/.env"
+    set +a
+    echo "DEBUG: .env file loaded successfully" >> "${LOG_FILE}"
+else
+    echo "WARNING: .env file not found at ${ROOT_DIR}/.env" >> "${LOG_FILE}"
 fi
 
-echo "=== Eminwon 일일 수집 시작: $(date) ===" >> "$LOG_FILE"
-
-
+# ============= 6. 수집 시작 로그 =============
+echo "===================================================================================" >> "${LOG_FILE}"
+echo "=== Eminwon 일일 수집 시작: $(date '+%Y-%m-%d %H:%M:%S') ===" >> "${LOG_FILE}"
+echo "===================================================================================" >> "${LOG_FILE}"
 
 # 시작 시간 기록
 START_TIME=$(date +%s)
-echo "Node version: $(node --version)" >> "$LOG_FILE"
-echo "Python version: $(python3 --version)" >> "$LOG_FILE"
 
-echo "DEBUG: Node & Python version" >> "$LOG_FILE" # <--- 디버그 포인트 2
+# ============= 7. 환경 정보 로깅 (디버깅용) =============
+echo "Working Directory: $(pwd)" >> "${LOG_FILE}"
+echo "User: $(whoami)" >> "${LOG_FILE}"
+echo "PATH: ${PATH}" >> "${LOG_FILE}"
+echo "Node version: $(node --version 2>&1)" >> "${LOG_FILE}"
+echo "Python version: $(python3 --version 2>&1)" >> "${LOG_FILE}"
+echo "" >> "${LOG_FILE}"
 
-# 1. 증분 수집
-echo "[1/2] 증분 수집 시작..." >> "$LOG_FILE"
-/usr/bin/python3 eminwon_incremental_orchestrator.py >> "$LOG_FILE" 2>&1
+# ============= 8. 증분 수집 실행 =============
+echo "[1/2] 증분 수집 시작..." >> "${LOG_FILE}"
 
-echo "DEBUG: RUN!!!" >> "$LOG_FILE" # <--- 디버그 포인트 2
+# Python 스크립트 실행 (절대 경로 사용)
+/usr/bin/python3 "${ROOT_DIR}/eminwon_incremental_orchestrator.py" >> "${LOG_FILE}" 2>&1
+EXIT_CODE=$?
 
-if [ $? -eq 0 ]; then
-    echo "[1/2] ✅ 증분 수집 완료" >> "$LOG_FILE"
+if [ ${EXIT_CODE} -eq 0 ]; then
+    echo "[1/2] ✅ 증분 수집 완료" >> "${LOG_FILE}"
 else
-    echo "[1/2] ❌ 증분 수집 실패" >> "$LOG_FILE"
+    echo "[1/2] ❌ 증분 수집 실패 (Exit Code: ${EXIT_CODE})" >> "${LOG_FILE}"
 fi
 
+echo "" >> "${LOG_FILE}"
 
-# 종료 시간 및 총 실행 시간 계산
+# ============= 9. 종료 시간 및 총 실행 시간 계산 =============
 END_TIME=$(date +%s)
 ELAPSED_TIME=$((END_TIME - START_TIME))
 ELAPSED_MIN=$((ELAPSED_TIME / 60))
 ELAPSED_SEC=$((ELAPSED_TIME % 60))
 
-echo "=== 완료: $(date) ===" >> "$LOG_FILE"
-echo "총 실행 시간: ${ELAPSED_MIN}분 ${ELAPSED_SEC}초" >> "$LOG_FILE"
+# ============= 10. 완료 로그 =============
+echo "===================================================================================" >> "${LOG_FILE}"
+echo "=== 완료: $(date '+%Y-%m-%d %H:%M:%S') ===" >> "${LOG_FILE}"
+echo "총 실행 시간: ${ELAPSED_MIN}분 ${ELAPSED_SEC}초" >> "${LOG_FILE}"
+echo "Exit Code: ${EXIT_CODE}" >> "${LOG_FILE}"
+echo "===================================================================================" >> "${LOG_FILE}"
+
+# ============= 11. Exit Code 반환 =============
+exit ${EXIT_CODE}

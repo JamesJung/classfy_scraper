@@ -1244,15 +1244,37 @@ class AnnouncementPreProcessor:
 
             # 제외할 페이지네이션/검색/정렬 파라미터 목록
             EXCLUDED_PARAMS = {
-                # 페이지네이션
+                # 페이지네이션 (기존)
                 'page', 'pageNo', 'pageNum', 'pageIndex', 'pageSize', 'pageUnit',
                 'offset', 'limit', 'start', 'Start', 'end',
                 'currentPage', 'curPage', 'pageNumber', 'pn',
                 'ofr_pageSize',
+
+                # 페이지네이션 (Phase 10 추가 - 누락된 변형)
+                'homepage_pbs_yn',    # 16,095개
+                'cpage',              # 2,497개
+                'startPage',          # 1,348개
+                'q_currPage',         # 728개
+                'pageLine',           # 438개
+                'pageCd',             # 390개
+                'recordCountPerPage', # 227개
+                'pageId',             # 205개
+                'page_id',            # 196개
+                'pageid',             # 196개
+                'GotoPage',           # 149개
+                'q_rowPerPage',       # 51개
+
                 # 검색 관련
                 'search', 'searchWord', 'searchType', 'searchCategory',
                 'searchCnd', 'searchKrwd', 'searchGosiSe', 'search_type',
                 'keyword', 'query', 'q',
+
+                # Phase 15 추가: 게시판 검색/카테고리 파라미터
+                'searchCtgry',        # 검색 카테고리 (원주, 보은, 영월, 태백 등)
+                'integrDeptCode',     # 통합 부서 코드 (원주, 보은, 영월 등)
+                'searchCnd2',         # 검색 조건 2 (서귀포)
+                'depNm',              # 부서명 (서귀포)
+
                 # 정렬 관련
                 'sort', 'order', 'orderBy', 'sortField', 'sortOrder',
                 # 뷰 모드

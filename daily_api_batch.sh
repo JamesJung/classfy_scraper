@@ -13,8 +13,13 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# 스크립트 디렉토리 설정
+# 스크립트 디렉토리 설정 및 작업 디렉토리 이동
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR" || {
+    echo -e "${RED}[ERROR]${NC} 작업 디렉토리 이동 실패: $SCRIPT_DIR"
+    exit 1
+}
+
 LOG_DIR="$SCRIPT_DIR/logs/api_batch"
 API_DIR="$SCRIPT_DIR/api_dir"
 
@@ -102,9 +107,10 @@ process_site() {
     check_memory
 
     # Python 스크립트 실행
-    log_info "명령: $PYTHON_CMD announcement_pre_processor.py -d api_dir --site-code $site_code"
+    log_info "명령: $PYTHON_CMD $SCRIPT_DIR/announcement_pre_processor.py -d api_dir --site-code $site_code"
+    log_info "작업 디렉토리: $(pwd)"
 
-    $PYTHON_CMD announcement_pre_processor.py -d api_dir --site-code "$site_code" 2>&1 | tee -a "$LOG_FILE"
+    $PYTHON_CMD "$SCRIPT_DIR/announcement_pre_processor.py" -d api_dir --site-code "$site_code" 2>&1 | tee -a "$LOG_FILE"
     local exit_code=${PIPESTATUS[0]}
 
     # 처리 후 메모리 상태 확인

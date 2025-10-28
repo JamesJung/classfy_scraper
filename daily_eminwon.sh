@@ -28,8 +28,29 @@ echo "  ✓ USER: ${USER}"
 # ============= 2. 기본 디렉토리 설정 =============
 echo "[STEP 2/10] 디렉토리 설정..."
 
-ROOT_DIR="/home/zium/classfy_scraper"
-LOG_DIR="/home/zium/classfy_scraper/logs"
+# 환경 자동 감지
+if [ -d "/home/zium/classfy_scraper" ]; then
+    # 배포 서버 환경
+    ROOT_DIR="/home/zium/classfy_scraper"
+    echo "  ✓ 환경: 배포 서버 (zium)"
+elif [ -d "/mnt/d/workspace/sources/classfy_scraper" ]; then
+    # WSL 환경
+    ROOT_DIR="/mnt/d/workspace/sources/classfy_scraper"
+    echo "  ✓ 환경: WSL (로컬)"
+elif [ -d "/Users/jin/classfy_scraper" ]; then
+    # Mac 환경
+    ROOT_DIR="/Users/jin/classfy_scraper"
+    echo "  ✓ 환경: Mac (로컬)"
+else
+    # 현재 디렉토리 사용
+    ROOT_DIR="$(pwd)"
+    echo "  ⚠ 환경: 알 수 없음, 현재 디렉토리 사용"
+fi
+
+# 변수에서 캐리지 리턴 제거 (Windows 줄바꿈 문제 대응)
+ROOT_DIR=$(echo "$ROOT_DIR" | tr -d '\r')
+
+LOG_DIR="${ROOT_DIR}/logs"
 DATE=$(date +%Y%m%d)
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 LOG_FILE="${LOG_DIR}/eminwon_daily_${TIMESTAMP}.log"
@@ -147,6 +168,10 @@ fi
 
 # 필수 스크립트 확인
 ORCHESTRATOR_SCRIPT="${ROOT_DIR}/eminwon_incremental_orchestrator.py"
+echo "  디버깅: ROOT_DIR=${ROOT_DIR}"
+echo "  디버깅: 현재 디렉토리=$(pwd)"
+echo "  디버깅: ORCHESTRATOR_SCRIPT=${ORCHESTRATOR_SCRIPT}"
+
 if [ -f "${ORCHESTRATOR_SCRIPT}" ]; then
     echo "  ✓ Orchestrator 스크립트: ${ORCHESTRATOR_SCRIPT}"
     if [ -r "${ORCHESTRATOR_SCRIPT}" ]; then
@@ -157,6 +182,12 @@ if [ -f "${ORCHESTRATOR_SCRIPT}" ]; then
     fi
 else
     echo "  ✗ ERROR: Orchestrator 스크립트를 찾을 수 없음: ${ORCHESTRATOR_SCRIPT}"
+    echo "  디버깅: 현재 위치의 Python 파일 목록"
+    ls -la *.py 2>/dev/null | head -10 || echo "    Python 파일 없음"
+    echo ""
+    echo "  ⚠ 주의: 이 스크립트는 배포 서버(/home/zium/classfy_scraper)에서만 실행되어야 합니다"
+    echo "  현재 위치: $(pwd)"
+    echo "  예상 위치: /home/zium/classfy_scraper"
     exit 1
 fi
 

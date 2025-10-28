@@ -175,3 +175,6 @@ Icon
 # ChromeDriver
 chromedriver*
 geckodriver*
+data_dir
+api_dir
+AGENTS.md

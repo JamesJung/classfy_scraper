@@ -28,27 +28,39 @@ echo "  ✓ USER: ${USER}"
 # ============= 2. 기본 디렉토리 설정 =============
 echo "[STEP 2/10] 디렉토리 설정..."
 
-# 환경 자동 감지
-if [ -d "/home/zium/classfy_scraper" ]; then
-    # 배포 서버 환경
+# 현재 사용자와 현재 작업 디렉토리 확인
+CURRENT_USER=$(whoami)
+CURRENT_PWD=$(pwd)
+
+echo "  디버깅: CURRENT_USER=${CURRENT_USER}"
+echo "  디버깅: CURRENT_PWD=${CURRENT_PWD}"
+
+# 배포 서버 환경인지 확인 (zium 계정)
+if [ "$CURRENT_USER" = "zium" ] && [ -d "/home/zium/classfy_scraper" ]; then
+    # 배포 서버 환경 (최우선)
     ROOT_DIR="/home/zium/classfy_scraper"
     echo "  ✓ 환경: 배포 서버 (zium)"
+# 현재 디렉토리가 classfy_scraper인지 확인
+elif [[ "$CURRENT_PWD" == *"classfy_scraper"* ]]; then
+    # 현재 디렉토리 사용 (이미 올바른 위치)
+    ROOT_DIR="$CURRENT_PWD"
+    echo "  ✓ 환경: 현재 디렉토리 사용"
+# WSL 환경 확인
 elif [ -d "/mnt/d/workspace/sources/classfy_scraper" ]; then
-    # WSL 환경
     ROOT_DIR="/mnt/d/workspace/sources/classfy_scraper"
     echo "  ✓ 환경: WSL (로컬)"
+# Mac 환경 확인
 elif [ -d "/Users/jin/classfy_scraper" ]; then
-    # Mac 환경
     ROOT_DIR="/Users/jin/classfy_scraper"
     echo "  ✓ 환경: Mac (로컬)"
 else
-    # 현재 디렉토리 사용
-    ROOT_DIR="$(pwd)"
+    # 현재 디렉토리를 기본값으로
+    ROOT_DIR="$CURRENT_PWD"
     echo "  ⚠ 환경: 알 수 없음, 현재 디렉토리 사용"
 fi
 
-# 변수에서 캐리지 리턴 제거 (Windows 줄바꿈 문제 대응)
-ROOT_DIR=$(echo "$ROOT_DIR" | tr -d '\r')
+# 변수에서 캐리지 리턴 및 후행 슬래시 제거
+ROOT_DIR=$(echo "$ROOT_DIR" | tr -d '\r' | sed 's:/*$::')
 
 LOG_DIR="${ROOT_DIR}/logs"
 DATE=$(date +%Y%m%d)

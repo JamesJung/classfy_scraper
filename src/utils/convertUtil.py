@@ -22,6 +22,15 @@ from src.config.constants import (
 from src.config.logConfig import setup_logging
 from src.utils.lazy_imports import get_hwp_libraries
 
+# hwp5 라이브러리 커스텀 패치 적용 (UnderlineStyle 값 15 지원)
+try:
+    from src.utils import hwp5_custom
+    # import 시 자동으로 패치 적용됨
+except Exception as e:
+    # 패치 실패해도 계속 진행 (fallback 방법 사용 가능)
+    import logging
+    logging.getLogger(__name__).warning(f"hwp5 커스텀 패치 적용 실패: {e}")
+
 # Heavy libraries moved to lazy imports for faster startup
 # These will be imported only when the respective functions are called:
 # - markitdown.MarkItDown

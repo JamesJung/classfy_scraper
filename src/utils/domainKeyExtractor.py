@@ -161,8 +161,8 @@ class DomainKeyExtractor:
         if path:
             for config in configs:
                 if config.get('path_pattern'):
-                    # path가 path_pattern으로 시작하는지 확인
-                    if path.startswith(config['path_pattern']):
+                    # path_pattern이 정규표현식이므로 re.search 사용
+                    if re.search(config['path_pattern'], path):
                         return config
 
         # 2. path_pattern이 없는 기본 설정 찾기

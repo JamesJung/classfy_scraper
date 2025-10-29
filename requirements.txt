@@ -13,6 +13,9 @@ pytesseract>=0.3.10
 Pillow>=10.0.0
 easyocr>=1.7.0  # Fallback OCR
 
+# 인코딩 감지
+chardet>=5.0.0
+
 # PDF/문서 처리 (기존 프로젝트에서 사용)
 markitdown
 docling

@@ -486,6 +486,110 @@ def _calculate_korean_ratio(text: str) -> float:
     return korean_chars / total_chars if total_chars > 0 else 0.0
 
 
+def _detect_pdf_encoding(pdf_path: str) -> str:
+    """
+    PDF 파일의 인코딩을 자동으로 감지합니다.
+
+    Args:
+        pdf_path: PDF 파일 경로
+
+    Returns:
+        감지된 인코딩 이름 (예: 'utf-8', 'euc-kr', 'cp949' 등) 또는 None
+    """
+    try:
+        # chardet 라이브러리 사용 (설치 필요: pip install chardet)
+        try:
+            import chardet
+        except ImportError:
+            logger.debug("chardet 라이브러리가 없어 기본 인코딩 감지만 수행")
+            # chardet 없이도 작동하도록 기본 인코딩 목록 시도
+            return _detect_encoding_fallback(pdf_path)
+
+        # PDF 파일의 일부를 읽어서 인코딩 감지
+        with open(pdf_path, 'rb') as f:
+            # PDF 헤더 건너뛰기
+            raw_data = f.read(10240)  # 처음 10KB 읽기
+
+            # PDF 스트림 객체 찾기 (실제 텍스트 내용)
+            stream_start = raw_data.find(b'stream')
+            if stream_start > 0:
+                # stream 이후 데이터부터 분석
+                raw_data = raw_data[stream_start:]
+
+            # chardet로 인코딩 감지
+            result = chardet.detect(raw_data)
+            detected_encoding = result['encoding']
+            confidence = result['confidence']
+
+            if detected_encoding and confidence > 0.7:
+                logger.info(f"PDF 인코딩 감지 성공: {detected_encoding} (신뢰도: {confidence:.2%})")
+                return detected_encoding
+            else:
+                logger.warning(f"PDF 인코딩 감지 신뢰도 낮음: {detected_encoding} ({confidence:.2%})")
+                # 신뢰도가 낮으면 폴백 방식 시도
+                return _detect_encoding_fallback(pdf_path)
+
+    except Exception as e:
+        logger.warning(f"PDF 인코딩 감지 실패: {e}")
+        return _detect_encoding_fallback(pdf_path)
+
+
+def _detect_encoding_fallback(pdf_path: str) -> str:
+    """
+    chardet 없이 일반적인 인코딩을 순서대로 시도하여 감지합니다.
+
+    Args:
+        pdf_path: PDF 파일 경로
+
+    Returns:
+        작동하는 인코딩 이름 또는 None
+    """
+    # 한국어 PDF에서 자주 사용되는 인코딩 순서
+    encodings_to_try = [
+        'utf-8',
+        'cp949',      # Windows 한글 (EUC-KR 확장)
+        'euc-kr',     # 유닉스/리눅스 한글
+        'utf-16',
+        'iso-8859-1', # Latin-1
+        'cp1252',     # Windows Western Europe
+        'gbk',        # 중국어 간체
+        'big5',       # 중국어 번체
+        'shift-jis',  # 일본어
+    ]
+
+    try:
+        with open(pdf_path, 'rb') as f:
+            raw_data = f.read(10240)
+
+            # 한글이 포함되어 있는지 확인할 샘플 추출
+            for encoding in encodings_to_try:
+                try:
+                    # 디코딩 시도
+                    decoded = raw_data.decode(encoding, errors='strict')
+
+                    # 한글이 포함되어 있는지 확인
+                    korean_ratio = _calculate_korean_ratio(decoded)
+
+                    if korean_ratio > 0.1:  # 10% 이상 한글이면 성공
+                        logger.info(f"폴백 인코딩 감지 성공: {encoding} (한글 비율: {korean_ratio:.2%})")
+                        return encoding
+                    elif encoding == 'utf-8' and not any(ord(c) > 127 for c in decoded if c.strip()):
+                        # ASCII 범위만 있으면 UTF-8로 간주
+                        logger.info(f"ASCII 전용 파일, UTF-8 사용: {encoding}")
+                        return encoding
+
+                except (UnicodeDecodeError, UnicodeError):
+                    # 이 인코딩은 맞지 않음, 다음 시도
+                    continue
+
+        logger.warning("모든 인코딩 시도 실패, UTF-8 기본값 사용")
+        return 'utf-8'
+
+    except Exception as e:
+        logger.error(f"폴백 인코딩 감지 중 오류: {e}")
+        return 'utf-8'
+
+
 def _direct_byte_conversion(text: str) -> str:
     """바이트 레벨에서 직접 변환을 시도합니다."""
     try:
@@ -929,26 +1033,67 @@ def convert_pdf_to_md_docling(pdf_path: str, output_path: str = None) -> bool:
                 logger.info("PDF 파일 읽기 실패했지만 변환 시도를 계속합니다...")
 
             # PDF 변환 실행
-            conversion_result = converter.convert(pdf_path)
+            try:
+                conversion_result = converter.convert(pdf_path)
 
-            # Markdown으로 내보내기
-            markdown_content = conversion_result.document.export_to_markdown()
-            # logger.info(markdown_content)
+                # Markdown으로 내보내기
+                markdown_content = conversion_result.document.export_to_markdown()
+                # logger.info(markdown_content)
 
-            # 내용이 비어있는지 확인
-            if not markdown_content or not markdown_content.strip():
-                logger.warning(f"Docling 변환 결과가 비어있음: {pdf_path}")
+                # 내용이 비어있는지 확인
+                if not markdown_content or not markdown_content.strip():
+                    logger.warning(f"Docling 변환 결과가 비어있음: {pdf_path}")
+                    return convert_pdf_to_md_markitdown_fallback(pdf_path, output_path)
+
+                # 파일에 저장
+                with open(output_path, "w", encoding="utf-8") as f:
+                    f.write(markdown_content)
+
+                logger.info(f"Docling PDF 변환 완료: {output_path}")
+                return True
+
+            except UnicodeDecodeError as ude:
+                logger.warning(f"Docling PDF 인코딩 오류 감지: {pdf_path} - {ude}")
+
+                # 인코딩 자동 감지 및 재시도
+                detected_encoding = _detect_pdf_encoding(pdf_path)
+                if detected_encoding and detected_encoding.lower() != 'utf-8':
+                    logger.info(f"감지된 인코딩: {detected_encoding}, 재변환 시도")
+                    try:
+                        # 감지된 인코딩으로 PDF 재처리 시도
+                        conversion_result = converter.convert(pdf_path)
+                        markdown_content = conversion_result.document.export_to_markdown()
+
+                        if markdown_content and markdown_content.strip():
+                            # 인코딩 수정 후 저장
+                            try:
+                                # 감지된 인코딩으로 디코드 후 UTF-8로 재인코딩
+                                if isinstance(markdown_content, bytes):
+                                    markdown_content = markdown_content.decode(detected_encoding, errors='replace')
+
+                                with open(output_path, "w", encoding="utf-8") as f:
+                                    f.write(markdown_content)
+
+                                logger.info(f"인코딩 수정 후 Docling 변환 완료: {output_path}")
+                                return True
+                            except Exception as enc_e:
+                                logger.warning(f"인코딩 변환 실패: {enc_e}")
+                    except Exception as retry_e:
+                        logger.warning(f"인코딩 수정 후 재시도 실패: {retry_e}")
+
+                logger.info(f"인코딩 오류로 markitdown 폴백: {pdf_path}")
+                return convert_pdf_to_md_markitdown_fallback(pdf_path, output_path)
+            except Exception as conv_e:
+                logger.warning(f"Docling 변환 실행 중 오류: {pdf_path} - {conv_e}")
+                logger.info(f"Docling 변환 실패, markitdown 폴백: {pdf_path}")
                 return convert_pdf_to_md_markitdown_fallback(pdf_path, output_path)
 
-            # 파일에 저장
-            with open(output_path, "w", encoding="utf-8") as f:
-                f.write(markdown_content)
-
-            logger.info(f"Docling PDF 변환 완료: {output_path}")
-            return True
-
+    except UnicodeDecodeError as e:
+        logger.warning(f"Docling PDF 인코딩 오류: {pdf_path} - {e}")
+        logger.info(f"인코딩 오류로 markitdown 폴백: {pdf_path}")
+        return convert_pdf_to_md_markitdown_fallback(pdf_path, output_path)
     except Exception as e:
-        logger.error(f"Docling PDF 변환 중 오류 발생: {e}\n{traceback.format_exc()}")
+        logger.error(f"Docling PDF 변환 중 오류 발생: {e}")
         # 기존 markitdown으로 폴백
         logger.info(f"Docling 변환 실패, markitdown으로 폴백: {pdf_path}")
         return convert_pdf_to_md_markitdown_fallback(pdf_path, output_path)

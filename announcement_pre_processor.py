@@ -1837,6 +1837,12 @@ class AnnouncementPreProcessor:
                     import hashlib
                     url_key_hash = hashlib.md5(url_key.encode('utf-8')).hexdigest()
 
+                    # domain_key_config 확인
+                    from urllib.parse import urlparse
+                    parsed_url = urlparse(origin_url)
+                    domain = parsed_url.netloc
+                    domain_has_config = self.url_key_extractor.get_domain_config(domain, parsed_url.path)
+
                     # 처리 상태 결정
                     processing_status = None
                     existing_preprocessing_id = None
@@ -1844,7 +1850,36 @@ class AnnouncementPreProcessor:
                     existing_site_code = None
                     duplicate_reason = None
 
-                    if affected_rows == 1:
+                    # domain_key_config 없는 경우: 중복 체크 제외
+                    if not domain_has_config:
+                        logger.info(
+                            f"domain_key_config 없음, 중복 체크 제외: {domain} "
+                            f"(폴백 로직 사용, url_key={url_key})"
+                        )
+
+                        # affected_rows 무시하고 단순 처리
+                        if affected_rows == 1:
+                            processing_status = 'new_inserted'
+                            logger.debug(f"새 레코드 삽입 (중복 체크 제외): ID={record_id}")
+                        elif affected_rows == 2:
+                            # UPSERT가 실행되었지만, 중복 체크를 의도하지 않았으므로 건너뜀
+                            processing_status = 'duplicate_skipped'
+                            duplicate_reason = {
+                                "reason": f"domain_key_config 없음, 중복 감지했으나 제외됨 (domain={domain})",
+                                "domain": domain,
+                                "fallback_used": True
+                            }
+                            logger.warning(
+                                f"url_key_hash 중복 감지했으나 제외됨: "
+                                f"{url_key_hash[:16]}... (domain_key_config 없음, domain={domain})"
+                            )
+                        else:
+                            processing_status = 'failed'
+                            duplicate_reason = {"reason": f"Unexpected affected_rows: {affected_rows}"}
+                            logger.warning(f"예상치 못한 affected_rows: {affected_rows}")
+
+                    # domain_key_config 있는 경우: 정상 중복 체크
+                    elif affected_rows == 1:
                         # 새로 INSERT됨
                         processing_status = 'new_inserted'
                         logger.debug(f"새 레코드 삽입: ID={record_id}, url_key_hash={url_key_hash[:16]}...")

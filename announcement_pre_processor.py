@@ -1366,7 +1366,7 @@ class AnnouncementPreProcessor:
                 update_sql = text("""
                     UPDATE api_url_registry
                     SET preprocessing_id = :preprocessing_id,
-                        updated_at = NOW()
+                        update_at = NOW()
                     WHERE scrap_url = :scraping_url
                     LIMIT 1
                 """)
@@ -1402,7 +1402,7 @@ class AnnouncementPreProcessor:
                     update_sql = text("""
                         UPDATE api_url_registry
                         SET preprocessing_id = :preprocessing_id,
-                            updated_at = NOW()
+                            update_at = NOW()
                         WHERE announcement_url = :scraping_url
                         LIMIT 1
                     """)
@@ -1428,7 +1428,7 @@ class AnnouncementPreProcessor:
                     update_sql = text("""
                         UPDATE api_url_registry
                         SET preprocessing_id = :preprocessing_id,
-                            updated_at = NOW()
+                            update_at = NOW()
                         WHERE announcement_url = :origin_url
                         LIMIT 1
                     """)

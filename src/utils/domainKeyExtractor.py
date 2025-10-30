@@ -194,29 +194,38 @@ class DomainKeyExtractor:
 
             >>> extractor.extract_url_key("https://www.suwon.go.kr/BD_board.view.do?seq=12345&bbsCd=1042")
             'www.suwon.go.kr|seq=12345&bbsCd=1042'
+
+            >>> extractor.extract_url_key("https://www.sbiz24.kr/#/pbanc/532")
+            'www.sbiz24.kr|532'
         """
         try:
             parsed = urlparse(url)
             domain = parsed.netloc
             path = parsed.path
+            fragment = parsed.fragment  # 🆕 fragment 추가 (예: #/pbanc/532)
             # Phase 15: keep_blank_values=True로 빈 파라미터도 유지
             # 예: ?searchCtgry=&integrDeptCode= → {'searchCtgry': [''], 'integrDeptCode': ['']}
             query_params = parse_qs(parsed.query, keep_blank_values=True)
 
             # 1. 도메인 설정 조회 (경로 매칭 지원)
-            config = self.get_domain_config(domain, path)
+            # 🆕 fragment가 있으면 path 대신 fragment를 사용하여 설정 조회
+            search_path = fragment if fragment else path
+            config = self.get_domain_config(domain, search_path)
 
             if config:
                 # 설정된 방법으로 추출
                 if config['extraction_method'] == 'query_params':
                     return self._extract_by_query_params(domain, query_params, config['key_params'])
                 elif config['extraction_method'] == 'path_pattern':
-                    return self._extract_by_path_pattern(domain, path, config['path_pattern'])
+                    # 🆕 path_pattern은 fragment 또는 path에 적용
+                    return self._extract_by_path_pattern(domain, search_path, config['path_pattern'])
                 elif config['extraction_method'] == 'mixed':
                     return self._extract_mixed(domain, parsed, query_params, config)
 
-            # 2. 설정 없으면 폴백 로직
-            return self._extract_by_fallback(domain, query_params)
+            # 2. 설정 없으면 NULL 반환 (fallback 비활성화)
+            # domain_key_config에 설정되지 않은 도메인은 url_key를 생성하지 않음
+            # 이는 중복 체크가 불가능한 URL에 대해 부정확한 url_key 생성을 방지함
+            return None
 
         except Exception as e:
             print(f"⚠️  URL 키 추출 실패: {url} - {e}")
@@ -269,10 +278,12 @@ class DomainKeyExtractor:
                 print(f"⚠️  필수 파라미터 누락: {domain} - {param}")
                 return None
 
-        # Phase 13: 모든 key_params가 EXCLUDED_PARAMS에 해당하는 경우 fallback
+        # Phase 13: 모든 key_params가 EXCLUDED_PARAMS에 해당하는 경우 NULL 반환
         if not key_parts and excluded_count > 0:
-            # 페이지네이션만 있는 경우 fallback 로직 사용
-            return self._extract_by_fallback(domain, query_params)
+            # 페이지네이션만 있는 경우 중복 체크 불가 → NULL 반환
+            # (fallback 로직 비활성화: domain_key_config에 유효한 key_params가 없음)
+            print(f"⚠️  domain_key_config에 유효한 key_params 없음 (EXCLUDED_PARAMS만 존재): {domain}")
+            return None
 
         if key_parts:
             # 알파벳 순으로 정렬하여 파라미터 순서 무관하게 동일한 키 생성
@@ -289,7 +300,7 @@ class DomainKeyExtractor:
 
         Args:
             domain: 도메인
-            path: URL 경로
+            path: URL 경로 또는 fragment (fragment의 경우 # 제거된 상태)
             pattern: 정규표현식 패턴
 
         Returns:
@@ -297,6 +308,10 @@ class DomainKeyExtractor:
         """
         if not pattern:
             return None
+
+        # 🆕 pattern에서 /# 제거 (fragment 패턴)
+        # 예: /#/pbanc/([0-9]+) → /pbanc/([0-9]+)
+        pattern = pattern.replace('/#/', '/')
 
         match = re.search(pattern, path)
         if match:

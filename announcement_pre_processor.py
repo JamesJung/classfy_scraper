@@ -1889,33 +1889,20 @@ class AnnouncementPreProcessor:
                     existing_site_code = None
                     duplicate_reason = None
 
-                    # domain_key_config 없는 경우: 중복 체크 제외
+                    # ⚠️ 논리 검증: url_key가 있다는 것은 domain_key_config가 있다는 의미
+                    #    (fallback 비활성화로 domain_key_config 없으면 url_key = NULL)
                     if not domain_has_config:
-                        logger.info(
-                            f"domain_key_config 없음, 중복 체크 제외: {domain} "
-                            f"(폴백 로직 사용, url_key={url_key})"
+                        logger.error(
+                            f"❌ 논리 오류: url_key는 생성되었지만 domain_key_config가 없음! "
+                            f"domain={domain}, url_key={url_key[:50]}... "
+                            f"fallback 로직이 재활성화되었거나 버그일 수 있습니다."
                         )
-
-                        # affected_rows 무시하고 단순 처리
-                        if affected_rows == 1:
-                            processing_status = 'new_inserted'
-                            logger.debug(f"새 레코드 삽입 (중복 체크 제외): ID={record_id}")
-                        elif affected_rows == 2:
-                            # UPSERT가 실행되었지만, 중복 체크를 의도하지 않았으므로 건너뜀
-                            processing_status = 'duplicate_skipped'
-                            duplicate_reason = {
-                                "reason": f"domain_key_config 없음, 중복 감지했으나 제외됨 (domain={domain})",
-                                "domain": domain,
-                                "fallback_used": True
-                            }
-                            logger.warning(
-                                f"url_key_hash 중복 감지했으나 제외됨: "
-                                f"{url_key_hash[:16]}... (domain_key_config 없음, domain={domain})"
-                            )
-                        else:
-                            processing_status = 'failed'
-                            duplicate_reason = {"reason": f"Unexpected affected_rows: {affected_rows}"}
-                            logger.warning(f"예상치 못한 affected_rows: {affected_rows}")
+                        processing_status = 'failed'
+                        duplicate_reason = {
+                            "reason": f"Logic error: url_key exists but domain_key_config missing (domain={domain})",
+                            "domain": domain,
+                            "url_key": url_key
+                        }
 
                     # domain_key_config 있는 경우: 정상 중복 체크
                     elif affected_rows == 1:

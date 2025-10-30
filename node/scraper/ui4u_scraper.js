@@ -292,6 +292,10 @@ class Ui4uScraper extends AnnouncementScraper {
                             savePath
                         });
 
+                        // 디렉토리가 없으면 생성
+                        const saveDir = path.dirname(savePath);
+                        fs.ensureDirSync(saveDir);
+                        
                         await download.saveAs(savePath);
 
                         // 파일이 실제로 저장되었는지 확인

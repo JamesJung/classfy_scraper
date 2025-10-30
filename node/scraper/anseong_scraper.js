@@ -818,6 +818,10 @@ class AnnouncementScraper {
                         const saveDir = path.dirname(savePath);
                         console.log(`디렉토리 확인: ${saveDir}`);
 
+                        // attachments 디렉토리가 없으면 생성
+                        fs.ensureDirSync(saveDir);
+                        console.log(`✅ 디렉토리 준비 완료: ${saveDir}`);
+
                         let tempPath = await download.path();
 
                         // 파일이 실제로 다운로드될 때까지 대기

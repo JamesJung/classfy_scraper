@@ -743,6 +743,10 @@ class AnnouncementScraper {
                         console.log(`디렉토리 확인: ${saveDir}`);
 
                         // 파일 저장
+                        // 디렉토리가 없으면 생성
+                        const saveDir = path.dirname(savePath);
+                        fs.ensureDirSync(saveDir);
+                        
                         await download.saveAs(savePath);
                         console.log(`✅ 파일 저장 완료: ${savePath}`);
 

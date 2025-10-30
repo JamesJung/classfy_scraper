@@ -16,7 +16,7 @@ echo "=========================================="
 # ============= 1. CRON 환경 대응: PATH 및 환경 변수 명시적 설정 =============
 echo "[STEP 1/10] 환경 변수 설정..."
 
-export PATH="/home/zium/.nvm/versions/node/v18.16.0/bin:/usr/local/bin:/usr/bin:/bin"
+export PATH="/usr/local/bin:/usr/bin:/bin"
 export HOME="/home/zium"
 export USER="zium"
 export SHELL="/bin/bash"

@@ -45,8 +45,20 @@ else
     echo "Homepage 처리 실패 (오류 코드: $HOMEPAGE_RESULT)" >> "$LOG_FILE"
 fi
 
+# 3. Scraper 데이터 처리 (data_dir)
+echo "" >> "$LOG_FILE"
+echo "3. Scraper 데이터 처리 시작..." >> "$LOG_FILE"
+$PYTHON_PATH batch_scraper_to_pre_processor.py --source scraper >> "$LOG_FILE" 2>&1
+SCRAPER_RESULT=$?
+
+if [ $SCRAPER_RESULT -eq 0 ]; then
+    echo "Scraper 처리 성공" >> "$LOG_FILE"
+else
+    echo "Scraper 처리 실패 (오류 코드: $SCRAPER_RESULT)" >> "$LOG_FILE"
+fi
+
 # 전체 결과 확인
-if [ $EMINWON_RESULT -eq 0 ] && [ $HOMEPAGE_RESULT -eq 0 ]; then
+if [ $EMINWON_RESULT -eq 0 ] && [ $HOMEPAGE_RESULT -eq 0 ] && [ $SCRAPER_RESULT -eq 0 ]; then
     echo "" >> "$LOG_FILE"
     echo "모든 처리 성공: $(date)" >> "$LOG_FILE"
     EXIT_CODE=0

@@ -2030,6 +2030,8 @@ def determine_site_type(directory_name: str, site_code: str) -> str:
         return "Homepage"
     elif "eminwon" in directory_name.lower():
         return "Eminwon"
+    elif "data_dir" in directory_name.lower():
+        return "Scraper"
     else:
         return "Unknown"
 

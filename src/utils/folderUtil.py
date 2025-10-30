@@ -996,7 +996,7 @@ def detect_directory_pattern(folder_path: Path) -> str:
                 logger.info(
                     f"bizInfo 패턴 감지: {folder_path} (PBLN_* 폴더 + JSON 파일)"
                 )
-                return "bizinfo"
+                return "bizInfo"
 
         # koita 패턴 감지: metadata.json 존재하고 attachments 폴더도 있어야 함
         metadata_json = folder_path / "metadata.json"

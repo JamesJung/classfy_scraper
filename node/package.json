@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "Node.js based announcement scraper with date filtering and attachment handling",
   "main": "scraper.js",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
   "scripts": {
     "start": "node scraper.js",
     "dev": "nodemon scraper.js"
@@ -31,7 +35,7 @@
     "puppeteer": "^24.20.0",
     "sanitize-filename": "^1.6.3",
     "turndown": "^7.2.1",
-    "undici": "^6.19.8",
+    "undici": "^5.28.4",
     "yargs": "^17.7.2"
   },
   "devDependencies": {

@@ -31,6 +31,13 @@ class UnifiedBatchProcessor:
             force: 이미 처리된 항목도 다시 처리
             attach_force: 첨부파일 강제 재처리
         """
+        # Load .env file
+        try:
+            from dotenv import load_dotenv
+            load_dotenv()
+        except ImportError:
+            pass
+
         # 데이터 소스 설정
         self.data_source = data_source
 
@@ -40,15 +47,27 @@ class UnifiedBatchProcessor:
         else:
             self.target_date = datetime.now().strftime('%Y-%m-%d')
 
-        # 기본 디렉토리 설정 - 데이터 소스에 따라 다르게 설정
+        # 기본 디렉토리 설정 - 환경 변수 또는 기본값 사용
         if self.data_source == 'eminwon':
-            self.base_dir = Path('eminwon_data_new') / self.target_date
+            base_dir_path = os.environ.get(
+                'EMINWON_OUTPUT_BASE_DIR',
+                '/home/zium/moabojo/incremental/eminwon'
+            )
+            self.base_dir = Path(base_dir_path) / self.target_date
         elif self.data_source == 'homepage':
-            self.base_dir = Path('scraped_incremental_v2') / self.target_date
+            base_dir_path = os.environ.get(
+                'HOMEPAGE_OUTPUT_BASE_DIR',
+                '/home/zium/moabojo/incremental/homepage'
+            )
+            self.base_dir = Path(base_dir_path) / self.target_date
         elif self.data_source == 'scraper':
             # scraper는 날짜별 디렉토리 사용 (YYYYMMDD 형식)
+            base_dir_path = os.environ.get(
+                'BTP_OUTPUT_BASE_DIR',
+                '/home/zium/moabojo/incremental/btp'
+            )
             formatted_date = self.target_date.replace('-', '')  # 2025-10-30 → 20251030
-            self.base_dir = Path('data_dir') / formatted_date
+            self.base_dir = Path(base_dir_path) / formatted_date
         else:
             raise ValueError(f"Invalid data source: {data_source}. Must be 'eminwon', 'homepage', or 'scraper'")
         
@@ -235,6 +254,16 @@ class UnifiedBatchProcessor:
         """메인 실행"""
         self.logger.info('='*80)
         self.logger.info(f'{self.data_source.upper()} 배치 처리 시작 - {self.target_date}')
+
+        # 환경 변수 표시
+        env_var_name = {
+            'eminwon': 'EMINWON_OUTPUT_BASE_DIR',
+            'homepage': 'HOMEPAGE_OUTPUT_BASE_DIR',
+            'scraper': 'BTP_OUTPUT_BASE_DIR'
+        }.get(self.data_source)
+
+        env_value = os.environ.get(env_var_name, '(기본값 사용)')
+        self.logger.info(f'환경 변수: {env_var_name}={env_value}')
         self.logger.info(f'데이터 소스: {self.base_dir}')
         self.logger.info('='*80)
 

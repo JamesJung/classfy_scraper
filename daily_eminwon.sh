@@ -171,13 +171,36 @@ fi
 # ============= 7. 필수 실행 파일 검증 =============
 echo "[STEP 7/10] 필수 실행 파일 검증..."
 
-# Node.js 확인
+# Node.js 확인 및 버전 체크
 if command -v node >/dev/null 2>&1; then
     NODE_VERSION=$(node --version 2>&1)
     echo "  ✓ Node.js: ${NODE_VERSION}"
+
+    # 버전 번호 추출 (v20.11.1 -> 20)
+    NODE_MAJOR_VERSION=$(echo "$NODE_VERSION" | sed 's/v\([0-9]*\).*/\1/')
+
+    # Node.js 18 이상 필요
+    if [ "$NODE_MAJOR_VERSION" -lt 18 ]; then
+        echo "  ✗ ERROR: Node.js 버전이 너무 낮습니다"
+        echo "    현재 버전: ${NODE_VERSION}"
+        echo "    필요 버전: v18.0.0 이상 (권장: v20.0.0+)"
+        echo "    설치 방법:"
+        echo "      # nvm 사용 (권장)"
+        echo "      nvm install 20"
+        echo "      nvm use 20"
+        echo "      # 또는 직접 설치"
+        echo "      https://nodejs.org/en/download/"
+        exit 1
+    else
+        echo "  ✓ Node.js 버전 요구사항 충족 (>=18.0.0)"
+        if [ "$NODE_MAJOR_VERSION" -lt 20 ]; then
+            echo "  ⚠ 권장: Node.js 20 이상으로 업그레이드하면 더 나은 성능과 최신 기능 사용 가능"
+        fi
+    fi
 else
     echo "  ✗ ERROR: Node.js를 찾을 수 없음"
     echo "    PATH: ${PATH}"
+    exit 1
 fi
 
 # Python 확인

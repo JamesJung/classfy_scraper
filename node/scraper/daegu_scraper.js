@@ -379,6 +379,10 @@ class DaeguScraper extends AnnouncementScraper {
                     const fileName = attachment.name || download.suggestedFilename();
                     const savePath = path.join(attachDir, fileName);
 
+                    // 디렉토리가 없으면 생성
+                    const saveDir = path.dirname(savePath);
+                    fs.ensureDirSync(saveDir);
+                    
                     await download.saveAs(savePath);
                     console.log(`다운로드 완료: ${fileName}`);
                 } catch (downloadError) {

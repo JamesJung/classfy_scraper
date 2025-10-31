@@ -7,6 +7,7 @@ python-dotenv>=1.1.0
 # 데이터베이스 연동
 SQLAlchemy>=2.0.0
 PyMySQL>=1.1.0
+mysql-connector-python>=8.0.0
 
 # 이미지 OCR 처리
 pytesseract>=0.3.10

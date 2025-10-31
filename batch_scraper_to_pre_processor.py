@@ -21,32 +21,36 @@ import time
 import json
 
 class UnifiedBatchProcessor:
-    def __init__(self, data_source: str = 'eminwon', date_str: Optional[str] = None, 
+    def __init__(self, data_source: str = 'eminwon', date_str: Optional[str] = None,
                  max_workers: int = 5, force: bool = False, attach_force: bool = False):
         """
         Args:
-            data_source: 'eminwon' 또는 'homepage' 
-            date_str: 처리할 날짜 (YYYY-MM-DD 형식). None이면 오늘 날짜
+            data_source: 'eminwon', 'homepage', 또는 'scraper'
+            date_str: 처리할 날짜 (YYYY-MM-DD 형식). None이면 오늘 날짜 (scraper는 사용 안 함)
             max_workers: 병렬 처리 워커 수
             force: 이미 처리된 항목도 다시 처리
             attach_force: 첨부파일 강제 재처리
         """
         # 데이터 소스 설정
         self.data_source = data_source
-        
+
         # 날짜 설정
         if date_str:
             self.target_date = date_str
         else:
             self.target_date = datetime.now().strftime('%Y-%m-%d')
-        
+
         # 기본 디렉토리 설정 - 데이터 소스에 따라 다르게 설정
         if self.data_source == 'eminwon':
             self.base_dir = Path('eminwon_data_new') / self.target_date
         elif self.data_source == 'homepage':
             self.base_dir = Path('scraped_incremental_v2') / self.target_date
+        elif self.data_source == 'scraper':
+            # scraper는 날짜별 디렉토리 사용 (YYYYMMDD 형식)
+            formatted_date = self.target_date.replace('-', '')  # 2025-10-30 → 20251030
+            self.base_dir = Path('data_dir') / formatted_date
         else:
-            raise ValueError(f"Invalid data source: {data_source}. Must be 'eminwon' or 'homepage'")
+            raise ValueError(f"Invalid data source: {data_source}. Must be 'eminwon', 'homepage', or 'scraper'")
         
         # 병렬 처리 설정
         self.max_workers = max_workers
@@ -233,10 +237,28 @@ class UnifiedBatchProcessor:
         self.logger.info(f'{self.data_source.upper()} 배치 처리 시작 - {self.target_date}')
         self.logger.info(f'데이터 소스: {self.base_dir}')
         self.logger.info('='*80)
-        
+
+        # Scraper 소스인 경우 날짜 디렉토리 존재 확인
+        if self.data_source == 'scraper' and not self.base_dir.exists():
+            self.logger.error(f"날짜 디렉토리가 존재하지 않습니다: {self.base_dir}")
+
+            # 사용 가능한 날짜 목록 출력
+            data_dir = Path('data_dir')
+            if data_dir.exists():
+                available_dates = sorted([
+                    d.name for d in data_dir.iterdir()
+                    if d.is_dir() and d.name.isdigit() and len(d.name) == 8
+                ], reverse=True)
+
+                if available_dates:
+                    self.logger.info(f"사용 가능한 날짜: {', '.join(available_dates[:10])}")
+                else:
+                    self.logger.warning("data_dir에 날짜 형식의 디렉토리가 없습니다.")
+            return False
+
         # 처리할 지역 폴더 목록
         region_folders = self.get_region_folders()
-        
+
         if not region_folders:
             self.logger.warning(f"처리할 지역 폴더가 없습니다: {self.base_dir}")
             return False
@@ -357,19 +379,22 @@ def main():
 예시:
   # Eminwon 데이터 처리 (오늘 날짜)
   python batch_scraper_to_pre_processor.py --source eminwon
-  
+
   # Homepage 데이터 처리 (오늘 날짜)
   python batch_scraper_to_pre_processor.py --source homepage
-  
+
+  # Scraper 데이터 처리 (data_dir)
+  python batch_scraper_to_pre_processor.py --source scraper
+
   # 특정 날짜 데이터 처리
   python batch_scraper_to_pre_processor.py --source eminwon --date 2025-09-22
-  
+
   # 워커 수 조정
   python batch_scraper_to_pre_processor.py --source homepage --workers 10
-  
+
   # 강제 재처리
   python batch_scraper_to_pre_processor.py --source eminwon --force --attach-force
-  
+
   # 어제 날짜 Homepage 데이터 처리
   python batch_scraper_to_pre_processor.py --source homepage --yesterday
         """
@@ -378,9 +403,9 @@ def main():
     parser.add_argument(
         '--source',
         type=str,
-        choices=['eminwon', 'homepage'],
+        choices=['eminwon', 'homepage', 'scraper'],
         required=True,
-        help='데이터 소스 선택: eminwon (eminwon_data_new) 또는 homepage (scraped_incremental_v2)'
+        help='데이터 소스 선택: eminwon (eminwon_data_new), homepage (scraped_incremental_v2), scraper (data_dir)'
     )
     
     parser.add_argument(

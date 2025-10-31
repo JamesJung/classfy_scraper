@@ -31,7 +31,6 @@ else
     export USER="zium"
     export SHELL="/bin/bash"
 fi
-
 echo "  ✓ PATH: ${PATH}"
 echo "  ✓ HOME: ${HOME}"
 echo "  ✓ USER: ${USER}"

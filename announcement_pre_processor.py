@@ -1330,7 +1330,8 @@ class AnnouncementPreProcessor:
             return url
 
     def _update_api_url_registry(
-        self, session, origin_url: str, preprocessing_id: int, site_code: str, scraping_url: str = None
+        self, session, origin_url: str, preprocessing_id: int, site_code: str,
+        scraping_url: str = None, url_key_hash: str = None
     ) -> bool:
         """
         api_url_registry 테이블의 preprocessing_id를 업데이트합니다.
@@ -1341,6 +1342,7 @@ class AnnouncementPreProcessor:
             preprocessing_id: announcement_pre_processing 테이블의 ID
             site_code: 사이트 코드
             scraping_url: 스크래핑 URL (API 사이트의 경우 우선 매칭)
+            url_key_hash: 정규화된 URL 해시 (가장 우선적으로 매칭)
 
         Returns:
             업데이트 성공 여부
@@ -1356,6 +1358,43 @@ class AnnouncementPreProcessor:
             # ⚠️ 테이블 컬럼 구조:
             # - api_url_registry.announcement_url: 공고 URL (bizInfo, smes24 사용)
             # - api_url_registry.scrap_url: 스크래핑 URL (kStartUp 사용)
+            # - api_url_registry.url_key_hash: 정규화된 URL 해시 (우선 매칭)
+
+            # 🆕 0순위: url_key_hash로 매칭 (가장 정확, 쿼리 파라미터 순서 무관)
+            if url_key_hash:
+                try:
+                    update_sql = text("""
+                        UPDATE api_url_registry
+                        SET preprocessing_id = :preprocessing_id,
+                            update_at = NOW()
+                        WHERE url_key_hash = :url_key_hash
+                        AND site_code = :site_code
+                        LIMIT 1
+                    """)
+
+                    result = session.execute(
+                        update_sql,
+                        {
+                            "preprocessing_id": preprocessing_id,
+                            "url_key_hash": url_key_hash,
+                            "site_code": site_code
+                        }
+                    )
+
+                    rows_affected = result.rowcount
+                    if rows_affected > 0:
+                        logger.info(
+                            f"✅ api_url_registry 업데이트 성공 ({site_code}, url_key_hash): "
+                            f"hash={url_key_hash[:16]}..., preprocessing_id={preprocessing_id}"
+                        )
+                        return True
+                    else:
+                        logger.debug(
+                            f"url_key_hash로 매칭 실패, 문자열 매칭으로 폴백: {url_key_hash[:16]}..."
+                        )
+                except Exception as e:
+                    # url_key_hash 컬럼이 없을 수 있음 (에러 무시하고 기존 로직으로 폴백)
+                    logger.debug(f"url_key_hash 매칭 실패 (컬럼 없을 수 있음), 문자열 매칭으로 폴백: {e}")
 
             if site_code == "kStartUp":
                 # kStartUp: scrap_url 컬럼 사용 (announcement_url은 신뢰할 수 없음)
@@ -1837,6 +1876,12 @@ class AnnouncementPreProcessor:
                     import hashlib
                     url_key_hash = hashlib.md5(url_key.encode('utf-8')).hexdigest()
 
+                    # domain_key_config 확인
+                    from urllib.parse import urlparse
+                    parsed_url = urlparse(origin_url)
+                    domain = parsed_url.netloc
+                    domain_has_config = self.url_key_extractor.get_domain_config(domain, parsed_url.path)
+
                     # 처리 상태 결정
                     processing_status = None
                     existing_preprocessing_id = None
@@ -1844,7 +1889,23 @@ class AnnouncementPreProcessor:
                     existing_site_code = None
                     duplicate_reason = None
 
-                    if affected_rows == 1:
+                    # ⚠️ 논리 검증: url_key가 있다는 것은 domain_key_config가 있다는 의미
+                    #    (fallback 비활성화로 domain_key_config 없으면 url_key = NULL)
+                    if not domain_has_config:
+                        logger.error(
+                            f"❌ 논리 오류: url_key는 생성되었지만 domain_key_config가 없음! "
+                            f"domain={domain}, url_key={url_key[:50]}... "
+                            f"fallback 로직이 재활성화되었거나 버그일 수 있습니다."
+                        )
+                        processing_status = 'failed'
+                        duplicate_reason = {
+                            "reason": f"Logic error: url_key exists but domain_key_config missing (domain={domain})",
+                            "domain": domain,
+                            "url_key": url_key
+                        }
+
+                    # domain_key_config 있는 경우: 정상 중복 체크
+                    elif affected_rows == 1:
                         # 새로 INSERT됨
                         processing_status = 'new_inserted'
                         logger.debug(f"새 레코드 삽입: ID={record_id}, url_key_hash={url_key_hash[:16]}...")
@@ -1938,7 +1999,8 @@ class AnnouncementPreProcessor:
                 api_registry_updated = False
                 if origin_url:
                     api_registry_updated = self._update_api_url_registry(
-                        session, origin_url, record_id, db_site_code, scraping_url  # ← db_site_code 사용
+                        session, origin_url, record_id, db_site_code, scraping_url,
+                        url_key_hash=url_key_hash  # 🆕 url_key_hash 추가
                     )
 
                     # API 사이트인데 api_url_registry 업데이트 실패 시 경고
@@ -1968,6 +2030,8 @@ def determine_site_type(directory_name: str, site_code: str) -> str:
         return "Homepage"
     elif "eminwon" in directory_name.lower():
         return "Eminwon"
+    elif "data_dir" in directory_name.lower():
+        return "Scraper"
     else:
         return "Unknown"
 

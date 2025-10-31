@@ -31,7 +31,7 @@ class EminwonIncrementalOrchestrator:
         normalized = re.sub(r"(시|군|구)$", "", region)
         return normalized
 
-    def __init__(self, test_mode=False, specific_regions=None, verbose=False):
+    def __init__(self, test_mode=False, specific_regions=None, verbose=False, target_date=None):
         # Database configuration
         import os
 
@@ -63,8 +63,9 @@ class EminwonIncrementalOrchestrator:
 
         # Node.js paths
         self.node_path = "node"
+        self.eminwon_scraper_path = "node/scraper/eminwon_scraper.js"  # 메인 스크래퍼
         self.list_collector_path = (
-            "node/scraper/eminwon_incremental_v2.js"  # 새 버전 사용
+            "node/scraper/eminwon_incremental_v2.js"  # 리스트 수집용 (pages 옵션)
         )
         self.detail_scraper_path = (
             "node/scraper/eminwon_detail_scraper.js"  # 개별 URL 처리용
@@ -83,6 +84,7 @@ class EminwonIncrementalOrchestrator:
         self.specific_regions = specific_regions
         self.verbose = verbose
         self.pages = 3  # 기본 페이지 수
+        self.target_date = target_date  # 날짜 필터링 옵션
 
         # Setup logging
         self.setup_logging()
@@ -114,9 +116,9 @@ class EminwonIncrementalOrchestrator:
             self.logger.info(f"Node.js version: {result.stdout.strip()}")
 
             # Check scripts exist
-            if not Path(self.list_collector_path).exists():
+            if not Path(self.eminwon_scraper_path).exists():
                 raise Exception(
-                    f"List collector script not found: {self.list_collector_path}"
+                    f"Main scraper script not found: {self.eminwon_scraper_path}"
                 )
             if not Path(self.detail_scraper_path).exists():
                 raise Exception(
@@ -128,21 +130,73 @@ class EminwonIncrementalOrchestrator:
             self.logger.error(f"Dependency check failed: {e}")
             return False
 
-    def collect_list_from_node(self, region, pages=None):
-        """Call Node.js script to collect announcement list"""
+    def process_region_with_scraper(self, region):
+        """Process a region using the main eminwon_scraper with date option"""
         try:
-            self.logger.info(f"Collecting list for {region} ({pages} pages)...")
-
-            # Run Node.js list collector
+            # 날짜 기반 수집을 위해 eminwon_scraper.js 직접 사용
+            self.logger.info(f"Processing {region} with date filter: {self.target_date}")
+            
+            # 출력 디렉토리 설정
+            normalized_region = self.normalize_region_name(region)
+            output_dir = str(self.output_dir / normalized_region)
+            
+            cmd_args = [
+                self.node_path,
+                self.eminwon_scraper_path,
+                "--region",
+                region,
+                "--date",
+                self.target_date,
+                "--output",
+                output_dir
+            ]
+            
+            self.logger.info(f"Running command: {' '.join(cmd_args)}")
+            
             result = subprocess.run(
-                [
-                    self.node_path,
-                    self.list_collector_path,
-                    "--region",
-                    region,
-                    "--pages",
-                    str(pages),
-                ],
+                cmd_args,
+                capture_output=True,
+                text=True,
+                timeout=600,  # 10분 타임아웃
+            )
+            
+            if result.returncode == 0:
+                self.logger.info(f"✅ Successfully processed {region}")
+                # stderr에서 통계 추출 시도
+                if result.stderr:
+                    lines = result.stderr.split('\n')
+                    for line in lines:
+                        if '개 수집 완료' in line or '개 공고 수집' in line:
+                            self.logger.info(f"  {line}")
+                return True
+            else:
+                self.logger.error(f"❌ Failed to process {region}: {result.stderr}")
+                return False
+                
+        except subprocess.TimeoutExpired:
+            self.logger.error(f"Timeout processing {region}")
+            return False
+        except Exception as e:
+            self.logger.error(f"Error processing {region}: {e}")
+            return False
+
+    def collect_list_from_node(self, region, pages=None):
+        """Call Node.js script to collect announcement list (for page-based collection only)"""
+        try:
+            # This method is now only used for page-based collection
+            self.logger.info(f"Collecting list for {region} ({pages} pages)...")
+            cmd_args = [
+                self.node_path,
+                self.list_collector_path,
+                "--region",
+                region,
+                "--pages",
+                str(pages),
+            ]
+
+            # Run Node.js collector
+            result = subprocess.run(
+                cmd_args,
                 capture_output=True,
                 text=True,
                 timeout=120,
@@ -488,6 +542,7 @@ class EminwonIncrementalOrchestrator:
 
         try:
             # 1. Collect list from Node.js
+            # If we have target_date, pages will be ignored in the collector
             pages = (
                 self.pages if hasattr(self, "pages") else (1 if self.test_mode else 3)
             )
@@ -544,8 +599,12 @@ class EminwonIncrementalOrchestrator:
         """Main execution method"""
         self.logger.info("=" * 80)
         self.logger.info(
-            "Starting Eminwon Incremental Collection (Node.js Integration)"
+            "Starting Eminwon Collection"
         )
+        if self.target_date:
+            self.logger.info(f"Date filter: {self.target_date} to now")
+        else:
+            self.logger.info(f"Page-based collection: {self.pages} pages per region")
         self.logger.info("=" * 80)
 
         # Check dependencies
@@ -565,66 +624,88 @@ class EminwonIncrementalOrchestrator:
 
         self.logger.info(f"Processing {len(regions_to_process)} regions...")
 
-        # Process regions
-        if self.test_mode or len(regions_to_process) <= 5:
-            # Sequential processing for test mode or small batches
+        # If using date-based collection, use the main scraper directly
+        if self.target_date:
+            # Process regions with date-based filtering
+            success_count = 0
+            fail_count = 0
+            
             for region in regions_to_process:
                 self.logger.info(f"\n{'='*40}")
                 self.logger.info(f"Processing: {region}")
                 self.logger.info(f"{'='*40}")
-                stats = self.process_region(region)
-                self.logger.info(
-                    f"Results: Checked={stats['checked']}, New={stats['new']}, Downloaded={stats['downloaded']}"
-                )
+                
+                if self.process_region_with_scraper(region):
+                    success_count += 1
+                else:
+                    fail_count += 1
+                    
+            self.logger.info(f"\n{'='*80}")
+            self.logger.info(f"Completed: {success_count} succeeded, {fail_count} failed")
+            self.logger.info(f"{'='*80}")
+            
+            return fail_count == 0
         else:
-            # Parallel processing for production
-            with ThreadPoolExecutor(max_workers=3) as executor:
-                futures = {
-                    executor.submit(self.process_region, region): region
-                    for region in regions_to_process
-                }
+            # Original page-based processing logic
+            if self.test_mode or len(regions_to_process) <= 5:
+                # Sequential processing for test mode or small batches
+                for region in regions_to_process:
+                    self.logger.info(f"\n{'='*40}")
+                    self.logger.info(f"Processing: {region}")
+                    self.logger.info(f"{'='*40}")
+                    stats = self.process_region(region)
+                    self.logger.info(
+                        f"Results: Checked={stats['checked']}, New={stats['new']}, Downloaded={stats['downloaded']}"
+                    )
+            else:
+                # Parallel processing for production
+                with ThreadPoolExecutor(max_workers=3) as executor:
+                    futures = {
+                        executor.submit(self.process_region, region): region
+                        for region in regions_to_process
+                    }
 
-                for future in tqdm(
-                    as_completed(futures), total=len(futures), desc="Processing regions"
-                ):
-                    region = futures[future]
-                    try:
-                        stats = future.result(timeout=300)
-                        if stats["new"] > 0:
-                            tqdm.write(
-                                f"✓ {region:15} - New: {stats['new']:3}, Downloaded: {stats['downloaded']:3}"
-                            )
-                    except Exception as e:
-                        self.logger.error(f"Failed processing {region}: {e}")
+                    for future in tqdm(
+                        as_completed(futures), total=len(futures), desc="Processing regions"
+                    ):
+                        region = futures[future]
+                        try:
+                            stats = future.result(timeout=300)
+                            if stats["new"] > 0:
+                                tqdm.write(
+                                    f"✓ {region:15} - New: {stats['new']:3}, Downloaded: {stats['downloaded']:3}"
+                                )
+                        except Exception as e:
+                            self.logger.error(f"Failed processing {region}: {e}")
 
-        # Print summary
-        self.logger.info("\n" + "=" * 80)
-        self.logger.info("Collection Summary:")
-        self.logger.info("=" * 80)
-        self.logger.info(
-            f"Total announcements checked: {self.stats['total_checked']:,}"
-        )
-        self.logger.info(f"New announcements found: {self.stats['new_found']:,}")
-        self.logger.info(f"Successfully downloaded: {self.stats['downloaded']:,}")
-        self.logger.info(f"Duplicates (already in DB): {self.stats['duplicates']:,}")
-        self.logger.info(f"Errors: {self.stats['errors']:,}")
-        self.logger.info("=" * 80)
-
-        # Save statistics
-        stats_file = self.output_dir / "collection_stats.json"
-        with open(stats_file, "w", encoding="utf-8") as f:
-            json.dump(
-                {
-                    "timestamp": datetime.now().isoformat(),
-                    "stats": self.stats,
-                    "regions_processed": len(regions_to_process),
-                },
-                f,
-                ensure_ascii=False,
-                indent=2,
+            # Print summary for page-based collection
+            self.logger.info("\n" + "=" * 80)
+            self.logger.info("Collection Summary:")
+            self.logger.info("=" * 80)
+            self.logger.info(
+                f"Total announcements checked: {self.stats['total_checked']:,}"
             )
+            self.logger.info(f"New announcements found: {self.stats['new_found']:,}")
+            self.logger.info(f"Successfully downloaded: {self.stats['downloaded']:,}")
+            self.logger.info(f"Duplicates (already in DB): {self.stats['duplicates']:,}")
+            self.logger.info(f"Errors: {self.stats['errors']:,}")
+            self.logger.info("=" * 80)
 
-        return True
+            # Save statistics
+            stats_file = self.output_dir / "collection_stats.json"
+            with open(stats_file, "w", encoding="utf-8") as f:
+                json.dump(
+                    {
+                        "timestamp": datetime.now().isoformat(),
+                        "stats": self.stats,
+                        "regions_processed": len(regions_to_process),
+                    },
+                    f,
+                    ensure_ascii=False,
+                    indent=2,
+                )
+
+            return True
 
 
 def main():
@@ -642,6 +723,11 @@ def main():
         help="Number of pages to collect per region (default: 3)",
     )
     parser.add_argument(
+        "--date",
+        type=str,
+        help="Target date in YYYYMMDD format (e.g., 20240101) to collect announcements from this date to now",
+    )
+    parser.add_argument(
         "--verbose",
         "-v",
         action="store_true",
@@ -650,11 +736,22 @@ def main():
 
     args = parser.parse_args()
 
+    # date 옵션이 있으면 기본값으로 7일 전 날짜 설정
+    target_date = args.date
+    if not target_date:
+        # 기본값: 7일 전
+        seven_days_ago = datetime.now() - timedelta(days=7)
+        target_date = seven_days_ago.strftime("%Y%m%d")
+
     orchestrator = EminwonIncrementalOrchestrator(
-        test_mode=args.test, specific_regions=args.regions, verbose=args.verbose
+        test_mode=args.test, 
+        specific_regions=args.regions, 
+        verbose=args.verbose,
+        target_date=target_date
     )
 
     # 페이지 수 설정 (테스트 모드면 1, 아니면 지정값 또는 기본값 3)
+    # date 옵션이 있으면 pages는 무시됨
     if args.test:
         orchestrator.pages = 1
     else:

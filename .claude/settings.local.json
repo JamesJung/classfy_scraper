@@ -73,7 +73,19 @@
       "WebFetch(domain:www.geumsan.go.kr)",
       "WebFetch(domain:www.gokseong.go.kr)",
       "Bash(npm ls:*)",
-      "Bash(npm update:*)"
+      "Bash(npm update:*)",
+      "Bash(./daily_eminwon.sh:*)",
+      "Bash(/usr/local/bin/python3 -m pip install:*)",
+      "Bash(ping:*)",
+      "Bash(nc:*)",
+      "Bash(telnet:*)",
+      "Bash(/usr/local/bin/python3:*)",
+      "Read(//Library/Frameworks/Python.framework/Versions/3.10/bin/**)",
+      "Bash(host:*)",
+      "Bash(./test_eminwon_single.sh:*)",
+      "Bash(/opt/anaconda3/bin/mysql -h 192.168.0.95 -u root -pb3UvSDS232GbdZ42 -P3309 subvention -e \"SELECT COUNT(*) as site_count FROM eminwon_site_announcement_date;\")",
+      "Bash(/opt/anaconda3/bin/python:*)",
+      "Bash(/opt/anaconda3/bin/mysql -h 192.168.0.95 -u root -pb3UvSDS232GbdZ42 -P3309 subvention -e \"SELECT ''test'' as result;\")"
     ],
     "deny": [],
     "ask": []

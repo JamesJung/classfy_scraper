@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # =============================================================================
-# Eminwon 일일 수집 스크립트 (CRON 최적화 버전 v2.0)
+# Eminwon 일일 수집 스크립트 (날짜 기반 버전 v3.0)
+# eminwon_site_announcement_date 테이블 기반 날짜별 증분 수집
 # 단계별 로깅 및 문제 진단 기능 추가
 # =============================================================================
 
@@ -16,10 +17,20 @@ echo "=========================================="
 # ============= 1. CRON 환경 대응: PATH 및 환경 변수 명시적 설정 =============
 echo "[STEP 1/10] 환경 변수 설정..."
 
-export PATH="/home/zium/.nvm/versions/node/v18.16.0/bin:/usr/local/bin:/usr/bin:/bin"
-export HOME="/home/zium"
-export USER="zium"
-export SHELL="/bin/bash"
+# 운영체제별 환경 변수 설정
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # Mac 환경
+    export PATH="/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin"
+    export HOME="$(/usr/bin/printenv HOME)"
+    export USER="$(/usr/bin/whoami)"
+    export SHELL="/bin/bash"
+else
+    # Linux 환경 (기존 설정)
+    export PATH="/home/zium/.nvm/versions/node/v18.16.0/bin:/usr/local/bin:/usr/bin:/bin"
+    export HOME="/home/zium"
+    export USER="zium"
+    export SHELL="/bin/bash"
+fi
 
 echo "  ✓ PATH: ${PATH}"
 echo "  ✓ HOME: ${HOME}"
@@ -117,9 +128,9 @@ echo "[STEP 5/10] 정식 로그 파일로 전환..."
 # 임시 로그 내용을 정식 로그로 복사
 if cat "${TEMP_LOG}" >> "${LOG_FILE}" 2>/dev/null; then
     echo "  ✓ 로그 파일 생성 성공: ${LOG_FILE}"
-    # 이제부터 정식 로그 파일로 출력
-    exec >> "${LOG_FILE}" 2>&1
-    echo "  ✓ 로그 리다이렉션 완료"
+    # 이제부터 정식 로그 파일과 터미널 모두에 출력 (tee 사용)
+    exec > >(tee -a "${LOG_FILE}") 2>&1
+    echo "  ✓ 로그 리다이렉션 완료 (파일 + 터미널)"
     rm -f "${TEMP_LOG}"
 else
     echo "  ⚠ WARNING: 정식 로그 파일 생성 실패, 임시 로그 계속 사용: ${TEMP_LOG}"
@@ -179,7 +190,7 @@ else
 fi
 
 # 필수 스크립트 확인
-ORCHESTRATOR_SCRIPT="${ROOT_DIR}/eminwon_incremental_orchestrator.py"
+ORCHESTRATOR_SCRIPT="${ROOT_DIR}/eminwon_daily_date_orchestrator.py"
 echo "  디버깅: ROOT_DIR=${ROOT_DIR}"
 echo "  디버깅: 현재 디렉토리=$(pwd)"
 echo "  디버깅: ORCHESTRATOR_SCRIPT=${ORCHESTRATOR_SCRIPT}"
@@ -222,19 +233,19 @@ echo ""
 # 시작 시간 기록
 START_TIME=$(date +%s)
 
-# ============= 9. 증분 수집 실행 =============
-echo "[STEP 9/10] Eminwon 증분 수집 실행..."
+# ============= 9. 날짜 기반 수집 실행 =============
+echo "[STEP 9/10] Eminwon 날짜 기반 수집 실행..."
 echo "==================================================================================="
 
 # Python 스크립트 실행 (절대 경로 사용)
-if python3 "${ORCHESTRATOR_SCRIPT}"; then
+if python3 "${ORCHESTRATOR_SCRIPT}" --verbose; then
     EXIT_CODE=$?
     echo ""
-    echo "  ✓ 증분 수집 완료 (Exit Code: ${EXIT_CODE})"
+    echo "  ✓ 날짜 기반 수집 완료 (Exit Code: ${EXIT_CODE})"
 else
     EXIT_CODE=$?
     echo ""
-    echo "  ✗ 증분 수집 실패 (Exit Code: ${EXIT_CODE})"
+    echo "  ✗ 날짜 기반 수집 실패 (Exit Code: ${EXIT_CODE})"
     echo "  스크립트: ${ORCHESTRATOR_SCRIPT}"
     echo "  Python: $(which python3)"
 fi

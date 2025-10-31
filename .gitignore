@@ -30,6 +30,8 @@ node/scraper/eminwon_data22/
 node/scraper/-page/
 node/test_output/
 node/node_modules/
+batch_homepage_result/
+batch_eminwon_result/
 
 
 # Node scraper temporary files

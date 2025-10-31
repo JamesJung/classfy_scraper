@@ -85,7 +85,18 @@
       "Bash(./test_eminwon_single.sh:*)",
       "Bash(/opt/anaconda3/bin/mysql -h 192.168.0.95 -u root -pb3UvSDS232GbdZ42 -P3309 subvention -e \"SELECT COUNT(*) as site_count FROM eminwon_site_announcement_date;\")",
       "Bash(/opt/anaconda3/bin/python:*)",
-      "Bash(/opt/anaconda3/bin/mysql -h 192.168.0.95 -u root -pb3UvSDS232GbdZ42 -P3309 subvention -e \"SELECT ''test'' as result;\")"
+      "Bash(/opt/anaconda3/bin/mysql -h 192.168.0.95 -u root -pb3UvSDS232GbdZ42 -P3309 subvention -e \"SELECT ''test'' as result;\")",
+      "Bash(npm uninstall:*)",
+      "Bash(npm cache clean:*)",
+      "Bash(/opt/anaconda3/bin/mysql:*)",
+      "Bash(mariadb:*)",
+      "Bash(sudo mariadb:*)",
+      "Bash(echo:*)",
+      "Bash(if [ -f \".env.local\" ])",
+      "Bash(then cat .env.local)",
+      "Bash(if [ -f \".env\" ])",
+      "Bash(then cat .env)",
+      "Bash(/opt/homebrew/bin/mysql:*)"
     ],
     "deny": [],
     "ask": []

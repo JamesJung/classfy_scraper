@@ -434,31 +434,27 @@ class HomepageDailyDateOrchestrator:
 
                 self.logger.info(f"✅ {site_code}: {collected_count}개 수집 완료")
 
-                # Update latest_announcement_date to today
-                today_str = datetime.now().strftime('%Y-%m-%d')
-                if self.update_latest_announcement_date(site_code, today_str):
-                    self.stats['success_sites'] += 1
-                    self.stats['total_collected'] += collected_count
-
-                    # Log success result
-                    self.log_scraper_result(
-                        site_code, target_date, start_time, end_time,
-                        'success', collected_count, None
-                    )
-
-                    return {'status': 'success', 'collected': collected_count, 'site': site_code}
+                # Update latest_announcement_date only if collected_count > 0
+                if collected_count > 0:
+                    today_str = datetime.now().strftime('%Y-%m-%d')
+                    if self.update_latest_announcement_date(site_code, today_str):
+                        self.logger.info(f"Updated {site_code} latest_announcement_date to {today_str}")
+                    else:
+                        self.logger.warning(f"Failed to update {site_code} latest_announcement_date")
                 else:
-                    # DB update failed
-                    self.stats['failed_sites'] += 1
-                    error_msg = f"DB update failed for {site_code}"
-                    self.stats['errors'].append(error_msg)
+                    self.logger.info(f"{site_code}: No new announcements, latest_announcement_date not updated")
 
-                    self.log_scraper_result(
-                        site_code, target_date, start_time, end_time,
-                        'failed', collected_count, error_msg
-                    )
+                # Always count as success and log result
+                self.stats['success_sites'] += 1
+                self.stats['total_collected'] += collected_count
 
-                    return {'status': 'failed', 'error': error_msg, 'site': site_code}
+                # Log success result
+                self.log_scraper_result(
+                    site_code, target_date, start_time, end_time,
+                    'success', collected_count, None
+                )
+
+                return {'status': 'success', 'collected': collected_count, 'site': site_code}
             else:
                 # Scraper failed
                 error_msg = f"Scraper failed: {result.stderr[:200] if result.stderr else 'Unknown error'}"

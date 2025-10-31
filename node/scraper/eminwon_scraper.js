@@ -1178,8 +1178,8 @@ class EminwonScraper {
             if (this.targetDate && listDate) {
                 const listDateStr = listDate.format('YYYYMMDD');
                 console.log(`날짜 비교: 리스트 날짜 ${listDateStr} vs 대상 날짜 ${this.targetDate}`);
-                if (listDateStr <= this.targetDate) {
-                    console.log(`리스트 날짜 ${listDate.format('YYYY-MM-DD')}가 대상 날짜(${this.targetDate}) 이하입니다. (대상 날짜 제외)`);
+                if (listDateStr < this.targetDate) {
+                    console.log(`리스트 날짜 ${listDate.format('YYYY-MM-DD')}가 대상 날짜(${this.targetDate}) 미만입니다. (대상 날짜 포함하여 이후 수집)`);
                     console.log(`스크래핑 중단 신호를 보냅니다.`);
                     return true; // 스크래핑 중단
                 }
@@ -1198,8 +1198,8 @@ class EminwonScraper {
                 // 많은 중복이 연속으로 나타날 경우 종료 조건 판단을 위함
                 if (this.targetDate && listDate) {
                     const targetMoment = moment(this.targetDate, 'YYYYMMDD');
-                    if (listDate.isSameOrBefore(targetMoment)) {
-                        console.log(`중복 게시물이지만 날짜가 ${listDate.format('YYYY-MM-DD')}로 대상 날짜 이하입니다. (대상 날짜 제외) 종료 신호.`);
+                    if (listDate.isBefore(targetMoment)) {
+                        console.log(`중복 게시물이지만 날짜가 ${listDate.format('YYYY-MM-DD')}로 대상 날짜 미만입니다. (대상 날짜 포함하여 이후 수집) 종료 신호.`);
                         return true; // 스크래핑 중단
                     }
                 }
@@ -1217,8 +1217,8 @@ class EminwonScraper {
             if (this.targetDate && detailContent.date) {
                 const detailDateStr = detailContent.date.format('YYYYMMDD');
                 console.log(`날짜 비교: 상세 페이지 날짜 ${detailDateStr} vs 대상 날짜 ${this.targetDate}`);
-                if (detailDateStr <= this.targetDate) {
-                    console.log(`상세 페이지 날짜 ${detailContent.date.format('YYYY-MM-DD')}가 대상 날짜(${this.targetDate}) 이하입니다. (대상 날짜 제외)`);
+                if (detailDateStr < this.targetDate) {
+                    console.log(`상세 페이지 날짜 ${detailContent.date.format('YYYY-MM-DD')}가 대상 날짜(${this.targetDate}) 미만입니다. (대상 날짜 포함하여 이후 수집)`);
                     console.log(`스크래핑 중단 신호를 보냅니다.`);
                     return true; // 스크래핑 중단
                 }

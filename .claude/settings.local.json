@@ -97,7 +97,10 @@
       "Bash(if [ -f \".env\" ])",
       "Bash(then cat .env)",
       "Bash(/opt/homebrew/bin/mysql:*)",
-      "Bash(bash -c '\nNODE_VERSION=$(node --version 2>&1)\nNODE_MAJOR_VERSION=$(echo \"\"$NODE_VERSION\"\" | sed \"\"s/v\\([0-9]*\\).*/\\1/\"\")\n\necho \"\"현재 Node.js 버전: $NODE_VERSION\"\"\necho \"\"주 버전 번호: $NODE_MAJOR_VERSION\"\"\n\nif [ \"\"$NODE_MAJOR_VERSION\"\" -lt 20 ]; then\n    echo \"\"❌ 버전 요구사항 미충족 (<20)\"\"\nelse\n    echo \"\"✅ 버전 요구사항 충족 (>=20)\"\"\nfi\n')"
+      "Bash(bash -c '\nNODE_VERSION=$(node --version 2>&1)\nNODE_MAJOR_VERSION=$(echo \"\"$NODE_VERSION\"\" | sed \"\"s/v\\([0-9]*\\).*/\\1/\"\")\n\necho \"\"현재 Node.js 버전: $NODE_VERSION\"\"\necho \"\"주 버전 번호: $NODE_MAJOR_VERSION\"\"\n\nif [ \"\"$NODE_MAJOR_VERSION\"\" -lt 20 ]; then\n    echo \"\"❌ 버전 요구사항 미충족 (<20)\"\"\nelse\n    echo \"\"✅ 버전 요구사항 충족 (>=20)\"\"\nfi\n')",
+      "Bash(jobs:*)",
+      "Bash(grep:*)",
+      "Bash(awk:*)"
     ],
     "deny": [],
     "ask": []

@@ -2023,15 +2023,31 @@ class AnnouncementPreProcessor:
 
 def determine_site_type(directory_name: str, site_code: str) -> str:
     """디렉토리명과 사이트 코드에서 site_type을 결정합니다."""
+    # 절대 경로 정규화 (대소문자 구분 없이)
+    dir_lower = directory_name.lower()
+
     # 특수 API 사이트 체크
     if site_code in ["kStartUp", "bizInfo", "smes24"]:
         return "api_scrap"
-    elif "scraped" in directory_name.lower():
-        return "Homepage"
-    elif "eminwon" in directory_name.lower():
+
+    # 프로덕션 환경 경로 체크 (/home/zium/moabojo/incremental/*)
+    if "/incremental/api" in dir_lower or "\\incremental\\api" in dir_lower:
+        return "api_scrap"
+    elif "/incremental/eminwon" in dir_lower or "\\incremental\\eminwon" in dir_lower:
         return "Eminwon"
-    elif "data_dir" in directory_name.lower():
+    elif "/incremental/homepage" in dir_lower or "\\incremental\\homepage" in dir_lower:
+        return "Homepage"
+    elif "/incremental/btp" in dir_lower or "\\incremental\\btp" in dir_lower:
         return "Scraper"
+
+    # 기존 개발 환경 경로 체크 (하위 호환성)
+    elif "scraped" in dir_lower:
+        return "Homepage"
+    elif "eminwon" in dir_lower:
+        return "Eminwon"
+    elif "data_dir" in dir_lower:
+        return "Scraper"
+
     else:
         return "Unknown"
 
@@ -2092,14 +2108,20 @@ def main():
                 f"  - directory: {args.directory}\n"
                 f"  - site_code: {args.site_code}\n"
                 f"\n"
-                f"확인 사항:\n"
-                f"  1. 디렉토리명에 'scraped' 또는 'eminwon' 포함 여부\n"
-                f"  2. site_code가 kStartUp, bizInfo, smes24 중 하나인지\n"
+                f"지원되는 디렉토리 패턴:\n"
+                f"  프로덕션:\n"
+                f"    - /incremental/api → api_scrap\n"
+                f"    - /incremental/eminwon → Eminwon\n"
+                f"    - /incremental/homepage → Homepage\n"
+                f"    - /incremental/btp → Scraper\n"
                 f"\n"
-                f"올바른 예시:\n"
-                f"  - scraped_data/jeju → Homepage\n"
-                f"  - eminwon_data/seoul → Eminwon\n"
-                f"  - scraped_data --site-code kStartUp → api_scrap\n"
+                f"  개발 환경:\n"
+                f"    - 'scraped' 포함 → Homepage\n"
+                f"    - 'eminwon' 포함 → Eminwon\n"
+                f"    - 'data_dir' 포함 → Scraper\n"
+                f"\n"
+                f"  특수 사이트:\n"
+                f"    - site_code: kStartUp, bizInfo, smes24 → api_scrap\n"
                 f"{'='*60}\n"
             )
             sys.exit(1)

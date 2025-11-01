@@ -64,7 +64,17 @@ class AnnouncementPreProcessor:
         self.site_code = site_code  # site_code를 인스턴스 변수로 저장
 
         # URL 정규화를 위한 DomainKeyExtractor 초기화
-        self.url_key_extractor = DomainKeyExtractor()
+        # SQLAlchemy engine에서 DB 연결 정보 추출
+        db_url = self.db_manager.engine.url
+        db_config = {
+            'host': db_url.host,
+            'user': db_url.username,
+            'password': db_url.password,
+            'database': db_url.database,
+            'port': db_url.port or 3306,
+            'charset': 'utf8mb4'
+        }
+        self.url_key_extractor = DomainKeyExtractor(db_config=db_config)
 
         # 데이터베이스 테이블 생성 (없는 경우)
         self._ensure_database_tables()
@@ -1647,6 +1657,181 @@ class AnnouncementPreProcessor:
             logger.warning(f"API URL 처리 로그 기록 실패 (무시하고 계속): {e}")
             return False
 
+    def _log_announcement_duplicate(
+        self,
+        session,
+        preprocessing_id: int,
+        url_key_hash: str,
+        duplicate_type: str,
+        site_code: str,
+        folder_name: str,
+        domain: str = None,
+        domain_configured: bool = False,
+        existing_record: dict = None,
+        error_message: str = None,
+    ) -> bool:
+        """
+        announcement_duplicate_log 테이블에 중복 처리 로그를 기록합니다.
+
+        Args:
+            session: SQLAlchemy 세션
+            preprocessing_id: 저장/업데이트된 레코드 ID
+            url_key_hash: URL 키 해시 (MD5) - domain_key_config 없으면 NULL
+            duplicate_type: 중복 유형
+                - 'unconfigured_domain': domain_key_config에 설정 없음
+                - 'new_inserted': 신규 삽입 (domain_key_config 있고 중복 없음)
+                - 'replaced': 기존 데이터 교체 (우선순위 높음)
+                - 'kept_existing': 기존 데이터 유지 (우선순위 낮음)
+                - 'same_type_duplicate': 동일 타입 재수집 (우선순위 동일)
+                - 'error': 처리 중 오류
+            site_code: 사이트 코드
+            folder_name: 폴더명
+            domain: 도메인명
+            domain_configured: domain_key_config에 설정 여부
+            existing_record: 기존 레코드 정보 (중복 시)
+            error_message: 에러 메시지 (오류 시)
+
+        Returns:
+            로그 기록 성공 여부
+        """
+        try:
+            from sqlalchemy import text
+            import json
+            from datetime import datetime
+
+            # 우선순위 계산
+            new_priority = self._get_priority(self.site_type)
+            existing_priority = None
+            existing_preprocessing_id = None
+            existing_site_type = None
+            existing_site_code = None
+            duplicate_detail = None
+
+            # 기존 레코드 정보 추출
+            if existing_record:
+                existing_preprocessing_id = existing_record.get('id')
+                existing_site_type = existing_record.get('site_type')
+                existing_site_code = existing_record.get('site_code')
+                existing_priority = self._get_priority(existing_site_type)
+
+                # 상세 정보 JSON 생성
+                if duplicate_type == 'replaced':
+                    decision = '기존 데이터 교체'
+                    reason = f'우선순위 높음: {self.site_type}({new_priority}) > {existing_site_type}({existing_priority})'
+                elif duplicate_type == 'kept_existing':
+                    decision = '기존 데이터 유지'
+                    reason = f'우선순위 낮음: {self.site_type}({new_priority}) < {existing_site_type}({existing_priority})'
+                elif duplicate_type == 'same_type_duplicate':
+                    decision = '최신 데이터로 업데이트'
+                    reason = f'우선순위 동일: {self.site_type}({new_priority}) = {existing_site_type}({existing_priority})'
+                else:
+                    decision = '알 수 없음'
+                    reason = f'duplicate_type={duplicate_type}'
+
+                duplicate_detail = {
+                    'decision': decision,
+                    'reason': reason,
+                    'existing_folder': existing_record.get('folder_name'),
+                    'existing_url_key': existing_record.get('url_key'),
+                    'priority_comparison': f'{new_priority} vs {existing_priority}',
+                    'domain': domain,
+                    'domain_configured': domain_configured,
+                    'timestamp': datetime.now().isoformat()
+                }
+
+            elif duplicate_type == 'unconfigured_domain':
+                # domain_key_config에 없는 경우
+                duplicate_detail = {
+                    'decision': '신규 등록 (domain_key_config 없음)',
+                    'reason': 'domain_key_config 테이블에 설정이 없어서 중복 체크 생략',
+                    'domain': domain,
+                    'domain_configured': False,
+                    'timestamp': datetime.now().isoformat()
+                }
+
+            elif duplicate_type == 'new_inserted':
+                # domain_key_config에 있지만 url_key_hash 중복 없음
+                duplicate_detail = {
+                    'decision': '신규 등록',
+                    'reason': 'url_key_hash 중복 없음',
+                    'domain': domain,
+                    'domain_configured': domain_configured,
+                    'timestamp': datetime.now().isoformat()
+                }
+
+            # announcement_duplicate_log INSERT
+            sql = text("""
+                INSERT INTO announcement_duplicate_log (
+                    preprocessing_id,
+                    existing_preprocessing_id,
+                    duplicate_type,
+                    url_key_hash,
+                    new_site_type,
+                    new_site_code,
+                    existing_site_type,
+                    existing_site_code,
+                    new_priority,
+                    existing_priority,
+                    new_folder_name,
+                    duplicate_detail,
+                    error_message
+                ) VALUES (
+                    :preprocessing_id,
+                    :existing_preprocessing_id,
+                    :duplicate_type,
+                    :url_key_hash,
+                    :new_site_type,
+                    :new_site_code,
+                    :existing_site_type,
+                    :existing_site_code,
+                    :new_priority,
+                    :existing_priority,
+                    :new_folder_name,
+                    :duplicate_detail,
+                    :error_message
+                )
+            """)
+
+            # JSON 직렬화
+            duplicate_detail_json = None
+            if duplicate_detail:
+                duplicate_detail_json = json.dumps(duplicate_detail, ensure_ascii=False)
+
+            # 파라미터 바인딩
+            params = {
+                'preprocessing_id': preprocessing_id,
+                'existing_preprocessing_id': existing_preprocessing_id,
+                'duplicate_type': duplicate_type,
+                'url_key_hash': url_key_hash,  # unconfigured_domain일 때 NULL
+                'new_site_type': self.site_type,
+                'new_site_code': site_code,
+                'existing_site_type': existing_site_type,
+                'existing_site_code': existing_site_code,
+                'new_priority': new_priority,
+                'existing_priority': existing_priority,
+                'new_folder_name': folder_name,
+                'duplicate_detail': duplicate_detail_json,
+                'error_message': error_message
+            }
+
+            # 실행
+            session.execute(sql, params)
+            # session.commit()는 호출하지 않음 (상위 함수에서 commit)
+
+            logger.debug(
+                f"중복 로그 기록 완료: {duplicate_type} - "
+                f"preprocessing_id={preprocessing_id}, "
+                f"domain_configured={domain_configured}, "
+                f"url_key_hash={url_key_hash[:16] if url_key_hash else 'None'}..."
+            )
+
+            return True
+
+        except Exception as e:
+            logger.error(f"중복 로그 기록 실패: {e}")
+            # 로그 기록 실패해도 메인 처리는 계속 진행
+            return False
+
     def _save_processing_result(
         self,
         folder_name: str,
@@ -1856,10 +2041,29 @@ class AnnouncementPreProcessor:
                 affected_rows = result.rowcount
 
                 # ================================================
+                # 🔧 url_key_hash 조회 (GENERATED COLUMN이므로 DB에서 자동 생성)
+                # ================================================
+                # url_key가 있는 경우 DB에서 자동 생성된 url_key_hash 조회
+                url_key_hash = None
+                if url_key:
+                    url_key_hash_result = session.execute(
+                        text("SELECT url_key_hash FROM announcement_pre_processing WHERE id = :id"),
+                        {"id": record_id}
+                    ).fetchone()
+                    if url_key_hash_result:
+                        url_key_hash = url_key_hash_result.url_key_hash
+                        logger.debug(f"DB 생성 url_key_hash: {url_key_hash[:16]}... (record_id={record_id})")
+                    else:
+                        logger.warning(f"url_key_hash 조회 실패: record_id={record_id}")
+
+                # ================================================
                 # 🆕 API URL 처리 로그 기록
                 # ================================================
                 # url_key가 없으면 'no_url_key' 상태로 기록
                 if not url_key:
+                    # ================================================
+                    # 🆕 api_url_processing_log 기록 (삭제 예정)
+                    # ================================================
                     self._log_api_url_processing(
                         session=session,
                         site_code=db_site_code,  # ← site_code → db_site_code (일관성)
@@ -1871,10 +2075,35 @@ class AnnouncementPreProcessor:
                         folder_name=folder_name,
                         error_message="URL 정규화 실패 (url_key 없음)"
                     )
+
+                    # ================================================
+                    # 🆕 announcement_duplicate_log 기록 (신규)
+                    # ================================================
+                    # url_key가 없음 → domain_key_config에 설정 없음 or URL 추출 실패
+                    from urllib.parse import urlparse
+                    domain = None
+                    if origin_url:
+                        try:
+                            parsed_url = urlparse(origin_url)
+                            domain = parsed_url.netloc
+                        except Exception as e:
+                            logger.warning(f"URL 파싱 실패: {origin_url}, {e}")
+
+                    self._log_announcement_duplicate(
+                        session=session,
+                        preprocessing_id=record_id,
+                        url_key_hash=None,
+                        duplicate_type='unconfigured_domain',  # domain_key_config 없거나 URL 추출 실패
+                        site_code=db_site_code,
+                        folder_name=folder_name,
+                        domain=domain,
+                        domain_configured=False,
+                        existing_record=None,
+                        error_message="URL 정규화 실패 (url_key 없음)"
+                    )
                 else:
-                    # url_key_hash 계산
-                    import hashlib
-                    url_key_hash = hashlib.md5(url_key.encode('utf-8')).hexdigest()
+                    # ⚠️ url_key_hash는 GENERATED COLUMN이므로 이미 위에서 DB 조회로 취득함
+                    # (line 2037-2047에서 조회)
 
                     # domain_key_config 확인
                     from urllib.parse import urlparse
@@ -1978,6 +2207,9 @@ class AnnouncementPreProcessor:
 
                     # 로그 기록
                     if processing_status:
+                        # ================================================
+                        # 🆕 api_url_processing_log 기록 (삭제 예정)
+                        # ================================================
                         self._log_api_url_processing(
                             session=session,
                             site_code=db_site_code,  # ← site_code → db_site_code (일관성)
@@ -1993,6 +2225,58 @@ class AnnouncementPreProcessor:
                             duplicate_reason=duplicate_reason,
                             title=title,
                             folder_name=folder_name
+                        )
+
+                        # ================================================
+                        # 🆕 announcement_duplicate_log 기록 (신규)
+                        # ================================================
+                        # processing_status를 duplicate_type으로 매핑
+                        duplicate_type_map = {
+                            'new_inserted': 'new_inserted',
+                            'duplicate_updated': 'replaced',  # 업데이트됨 → 교체
+                            'duplicate_preserved': 'kept_existing',  # 기존 유지
+                            'failed': 'error'
+                        }
+
+                        # duplicate_type 결정
+                        announcement_duplicate_type = duplicate_type_map.get(processing_status, 'error')
+
+                        # duplicate_updated의 경우 우선순위 비교로 세부 타입 결정
+                        if processing_status == 'duplicate_updated' and existing_record_before_upsert:
+                            current_priority = self._get_priority(self.site_type)
+                            existing_priority_value = self._get_priority(existing_record_before_upsert.site_type)
+
+                            if current_priority == existing_priority_value:
+                                # 우선순위 동일 → same_type_duplicate
+                                announcement_duplicate_type = 'same_type_duplicate'
+                            elif current_priority > existing_priority_value:
+                                # 우선순위 높음 → replaced
+                                announcement_duplicate_type = 'replaced'
+                            # current_priority < existing_priority_value는 이론적으로 발생하지 않음 (UPSERT 조건상)
+
+                        # existing_record dict 준비
+                        existing_record_dict = None
+                        if existing_record_before_upsert:
+                            existing_record_dict = {
+                                'id': existing_record_before_upsert.id,
+                                'site_type': existing_record_before_upsert.site_type,
+                                'site_code': existing_record_before_upsert.site_code,
+                                'folder_name': existing_record_before_upsert.folder_name,
+                                'url_key': url_key  # url_key는 동일
+                            }
+
+                        # announcement_duplicate_log 기록
+                        self._log_announcement_duplicate(
+                            session=session,
+                            preprocessing_id=record_id,
+                            url_key_hash=url_key_hash,
+                            duplicate_type=announcement_duplicate_type,
+                            site_code=db_site_code,
+                            folder_name=folder_name,
+                            domain=domain,
+                            domain_configured=True,  # url_key가 있으므로 domain_key_config 있음
+                            existing_record=existing_record_dict,
+                            error_message=None
                         )
 
                 # API 사이트인 경우 api_url_registry 테이블 업데이트 (commit 전에 실행)

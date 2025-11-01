@@ -2379,8 +2379,8 @@ def main():
             logger.error(f"디렉토리가 존재하지 않습니다: {base_directory}")
             sys.exit(1)
 
-        # site_type 결정
-        site_type = determine_site_type(args.directory, args.site_code)
+        # site_type 결정 (절대 경로 사용)
+        site_type = determine_site_type(str(base_directory), args.site_code)
 
         # Unknown site_type 검증
         if site_type == "Unknown":

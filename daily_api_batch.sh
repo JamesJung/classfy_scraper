@@ -21,7 +21,7 @@ cd "$SCRIPT_DIR" || {
 }
 
 LOG_DIR="$SCRIPT_DIR/logs/api_batch"
-API_DIR="$SCRIPT_DIR/api_dir"
+API_DIR="/home/zium/moabojo/incremental/api"
 
 # 로그 디렉토리 생성
 mkdir -p "$LOG_DIR"
@@ -107,10 +107,10 @@ process_site() {
     check_memory
 
     # Python 스크립트 실행
-    log_info "명령: $PYTHON_CMD $SCRIPT_DIR/announcement_pre_processor.py -d api_dir --site-code $site_code"
+    log_info "명령: $PYTHON_CMD $SCRIPT_DIR/announcement_pre_processor.py -d $API_DIR --site-code $site_code"
     log_info "작업 디렉토리: $(pwd)"
 
-    $PYTHON_CMD "$SCRIPT_DIR/announcement_pre_processor.py" -d api_dir --site-code "$site_code" 2>&1 | tee -a "$LOG_FILE"
+    $PYTHON_CMD "$SCRIPT_DIR/announcement_pre_processor.py" -d "$API_DIR" --site-code "$site_code" 2>&1 | tee -a "$LOG_FILE"
     local exit_code=${PIPESTATUS[0]}
 
     # 처리 후 메모리 상태 확인

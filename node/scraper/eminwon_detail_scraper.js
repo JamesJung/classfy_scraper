@@ -335,6 +335,11 @@ class EminwonDetailScraper {
 
         // 날짜 정보 추가
         const date = content.metadata.date || announcementData?.date;
+        console.log("content.metadata", content.metadata)
+        console.log("announcementData", announcementData)
+
+
+        console.log("date", date)
         if (date) {
             md += `**작성일**: ${date}\n\n`;
         }

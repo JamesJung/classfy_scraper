@@ -137,7 +137,7 @@ class EminwonScraper {
                     this.processedTitles.add(title);
                 }
             }
-            
+
             console.log(`기존 폴더에서 ${this.processedTitles.size}개의 제목 로드`);
         } catch (error) {
             console.log('기존 제목 로드 중 오류:', error.message);
@@ -273,12 +273,12 @@ class EminwonScraper {
         try {
             await this.initBrowser();
             await fs.ensureDir(this.outputDir);
-            
+
             // 기존 폴더에서 마지막 카운터 번호를 가져와서 그 다음부터 시작
             const lastCounter = await this.getLastCounterNumber();
             this.counter = lastCounter + 1;
             console.log(`시작 카운터 번호: ${this.counter} (기존 최대 번호: ${lastCounter})`);
-            
+
             // 기존 폴더의 제목들을 processedTitles에 추가
             await this.loadExistingTitles();
 
@@ -873,11 +873,11 @@ class EminwonScraper {
                         },
                         "부산중구": {
                             "table": ".bbs_ltype",
-                            "titleIndex": 1, "dateIndex": 3
+                            "titleIndex": 2, "dateIndex": 4
                         },
                         "부산강서구": {
                             "table": ".tb_board",
-                            "titleIndex": 1, "dateIndex": 3
+                            "titleIndex": 2, "dateIndex": 4
                         },
                         "평창군": {
                             "table": ".tb_board",
@@ -886,19 +886,19 @@ class EminwonScraper {
 
                         "해운대구": {
                             "table": ".tstyle_list",
-                            "titleIndex": 1, "dateIndex": 3
+                            "titleIndex": 2, "dateIndex": 4
                         },
                         "수영구": {
                             "table": ".list01",
-                            "titleIndex": 1, "dateIndex": 3
+                            "titleIndex": 2, "dateIndex": 4
                         },
                         "부산진구": {
                             "table": ".board-list-wrap table",
-                            "titleIndex": 1, "dateIndex": 3
+                            "titleIndex": 2, "dateIndex": 4
                         },
                         "부산서구": {
                             "table": ".board-list-wrap table",
-                            "titleIndex": 1, "dateIndex": 3
+                            "titleIndex": 2, "dateIndex": 4
                         },
                         "광주동구": {
                             "table": ".dbody",
@@ -909,15 +909,15 @@ class EminwonScraper {
 
                         "울산남구": {
                             "table": ".basic_table",
-                            "titleIndex": 1, "dateIndex": 3
+                            "titleIndex": 2, "dateIndex": 4
                         },
                         "울산동구": {
                             "table": ".bbs_list",
-                            "titleIndex": 1, "dateIndex": 3
+                            "titleIndex": 2, "dateIndex": 4
                         },
                         "연수구": {
                             "table": ".general_board",
-                            "titleIndex": 1, "dateIndex": 3
+                            "titleIndex": 2, "dateIndex": 4
                         }
 
                     }
@@ -1145,6 +1145,7 @@ class EminwonScraper {
                     }
                 }
 
+                console.log(announcements)
                 console.log(`리스트에서 ${announcements.length}개 공고 발견`);
                 return announcements;
 
@@ -2030,8 +2031,13 @@ class EminwonScraper {
             }
         }
 
+        // 날짜처럼 보이지 않는 텍스트는 조기 반환 (숫자가 없거나 연도가 없는 경우)
+        if (!cleanText.match(/\d/) || !cleanText.match(/\d{4}/)) {
+            return null;
+        }
+
         const naturalDate = moment(cleanText);
-        if (naturalDate.isValid() && cleanText.match(/\d{4}/)) {
+        if (naturalDate.isValid()) {
             return naturalDate;
         }
 

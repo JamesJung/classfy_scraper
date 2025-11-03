@@ -515,19 +515,25 @@ class AnnouncementPreProcessor:
                                     )
                                 else:
                                     # JSON에 없으면 content.md에서 추출
-                                    announcement_date = self._extract_announcement_date_from_content(
+                                    announcement_date_raw = self._extract_announcement_date_from_content(
                                         content_md
                                     )
+                                    if announcement_date_raw:
+                                        announcement_date = self._convert_to_yyyymmdd(announcement_date_raw)
                             except Exception as e:
                                 logger.warning(
                                     f"{site_code} JSON 날짜 추출 실패, content.md 사용: {e}"
                                 )
-                                announcement_date = self._extract_announcement_date_from_content(
+                                announcement_date_raw = self._extract_announcement_date_from_content(
                                     content_md
                                 )
+                                if announcement_date_raw:
+                                    announcement_date = self._convert_to_yyyymmdd(announcement_date_raw)
                         else:
                             # JSON 파일이 없으면 content.md에서 추출
-                            announcement_date = self._extract_announcement_date_from_content(content_md)
+                            announcement_date_raw = self._extract_announcement_date_from_content(content_md)
+                            if announcement_date_raw:
+                                announcement_date = self._convert_to_yyyymmdd(announcement_date_raw)
 
                     except Exception as e:
                         logger.error(f"content.md 읽기 실패: {e}")
@@ -570,7 +576,9 @@ class AnnouncementPreProcessor:
             if site_code not in ["kStartUp", "bizInfo", "smes24"]:
                 title = self._extract_title_from_content(content_md)
                 origin_url = self._extract_origin_url_from_content(content_md)
-                announcement_date = self._extract_announcement_date_from_content(content_md)
+                announcement_date_raw = self._extract_announcement_date_from_content(content_md)
+                if announcement_date_raw:
+                    announcement_date = self._convert_to_yyyymmdd(announcement_date_raw)
 
             # 3.5. origin_url에서 url_key 추출 (URL 정규화)
             # 우선순위 1: domain_key_config 사용
@@ -1197,7 +1205,7 @@ class AnnouncementPreProcessor:
             for fmt in date_formats:
                 try:
                     dt = datetime.strptime(date_str.strip(), fmt)
-                    return dt.strftime("%Y%m%d")
+                    return dt.strftime("%Y%m%d")  # YYYYMMDD 형식
                 except ValueError:
                     continue
 

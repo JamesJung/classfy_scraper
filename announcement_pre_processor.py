@@ -478,6 +478,11 @@ class AnnouncementPreProcessor:
                             content_md = f.read()
                         logger.info(f"content.md 읽기 완료: {len(content_md)} 문자")
 
+                        # DO_NOT_PROCESS 플래그 확인 (구 데이터 건너뛰기)
+                        if "DO_NOT_PROCESS" in content_md:
+                            logger.info(f"⏭️  건너뜀 (ARCHIVED): {folder_name} - DO_NOT_PROCESS 플래그 감지")
+                            return False
+
                         # content.md에서 기본 정보 추출
                         title = self._extract_title_from_content(content_md)
                         origin_url = self._extract_origin_url_from_content(content_md)
@@ -557,6 +562,11 @@ class AnnouncementPreProcessor:
                         with open(content_md_path, "r", encoding="utf-8") as f:
                             content_md = f.read()
                         logger.info(f"content.md 읽기 완료: {len(content_md)} 문자")
+
+                        # DO_NOT_PROCESS 플래그 확인 (구 데이터 건너뛰기)
+                        if "DO_NOT_PROCESS" in content_md:
+                            logger.info(f"⏭️  건너뜀 (ARCHIVED): {folder_name} - DO_NOT_PROCESS 플래그 감지")
+                            return False
                     except Exception as e:
                         logger.error(f"content.md 읽기 실패: {e}")
                         return self._save_processing_result(

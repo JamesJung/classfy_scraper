@@ -180,3 +180,4 @@ geckodriver*
 data_dir
 api_dir
 AGENTS.md
+server_logs

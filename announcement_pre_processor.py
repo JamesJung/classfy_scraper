@@ -1874,6 +1874,39 @@ class AnnouncementPreProcessor:
             from sqlalchemy import text
 
             with self.db_manager.SessionLocal() as session:
+                # ================================================
+                # 🆕 예외 케이스: smes24 + bizinfo URL 중복 체크
+                # ================================================
+                # smes24의 origin_url이 bizInfo의 scraping_url과 일치하면 스킵
+                if site_code == 'smes24' and origin_url and 'bizinfo.go.kr' in origin_url.lower():
+                    try:
+                        existing_bizinfo = session.execute(
+                            text("""
+                                SELECT id, site_type, site_code, folder_name, url_key, created_at
+                                FROM announcement_pre_processing
+                                WHERE scraping_url = :origin_url
+                                AND site_code = 'bizInfo'
+                                LIMIT 1
+                            """),
+                            {"origin_url": origin_url}
+                        ).fetchone()
+
+                        if existing_bizinfo:
+                            logger.info(
+                                f"🚫 중복 스킵 (예외 로직): smes24 origin_url이 bizInfo scraping_url과 일치\n"
+                                f"   smes24 folder: {folder_name}\n"
+                                f"   origin_url: {origin_url[:100]}...\n"
+                                f"   기존 bizInfo: ID={existing_bizinfo.id}, folder={existing_bizinfo.folder_name}\n"
+                                f"   기존 url_key: {existing_bizinfo.url_key}\n"
+                                f"   → bizInfo 우선 (지자체 원본 데이터 유지)"
+                            )
+
+                            return existing_bizinfo.id  # 기존 ID 반환하고 종료
+
+                    except Exception as e:
+                        logger.error(f"예외 케이스 중복 체크 실패 (계속 진행): {e}")
+                        # 에러 발생 시 기존 로직으로 폴백
+
                 # UPSERT 실행 전에 기존 레코드 조회 (우선순위 비교를 위해)
                 existing_record_before_upsert = None
                 if force and url_key:
@@ -2136,17 +2169,16 @@ class AnnouncementPreProcessor:
                     existing_site_code = None
                     duplicate_reason = None
 
-                    # ⚠️ 논리 검증: url_key가 있다는 것은 domain_key_config가 있다는 의미
-                    #    (fallback 비활성화로 domain_key_config 없으면 url_key = NULL)
+                    # domain_key_config 확인 및 처리
                     if not domain_has_config:
-                        logger.error(
-                            f"❌ 논리 오류: url_key는 생성되었지만 domain_key_config가 없음! "
-                            f"domain={domain}, url_key={url_key[:50]}... "
-                            f"fallback 로직이 재활성화되었거나 버그일 수 있습니다."
+                        # domain_key_config에 없는 경우 (API 외부 도메인 등)
+                        logger.debug(
+                            f"domain_key_config 없음: domain={domain}, url_key={url_key[:50]}... "
+                            f"fallback으로 url_key 생성됨"
                         )
-                        processing_status = 'failed'
+                        processing_status = 'new_inserted'  # domain_key_config 없어도 신규로 처리
                         duplicate_reason = {
-                            "reason": f"Logic error: url_key exists but domain_key_config missing (domain={domain})",
+                            "reason": f"domain_key_config not found, treated as new (domain={domain})",
                             "domain": domain,
                             "url_key": url_key
                         }

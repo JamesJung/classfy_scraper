@@ -339,6 +339,8 @@ def read_html_file(file_path: Path) -> str:
             # 텍스트 품질 검증
             korean_chars = sum(1 for c in content if 0xAC00 <= ord(c) <= 0xD7AF)
             chinese_chars = sum(1 for c in content if 0x4E00 <= ord(c) <= 0x9FFF)
+            # 키릴 문자 범위 추가 (U+0400~U+04FF: Cyrillic, U+0500~U+052F: Cyrillic Supplement)
+            cyrillic_chars = sum(1 for c in content if 0x0400 <= ord(c) <= 0x052F)
             total_meaningful_chars = len(
                 [c for c in content if c.strip() and c.isalpha()]
             )
@@ -346,11 +348,13 @@ def read_html_file(file_path: Path) -> str:
             if total_meaningful_chars > 0:
                 korean_ratio = korean_chars / total_meaningful_chars
                 chinese_ratio = chinese_chars / total_meaningful_chars
+                cyrillic_ratio = cyrillic_chars / total_meaningful_chars
 
-                # 중국어 문자가 한글보다 많으면 인코딩 문제로 판단
-                if chinese_ratio > korean_ratio and chinese_ratio > 0.1:
+                # 중국어 또는 키릴 문자 감지 시 인코딩 문제로 판단 (임계값 낮춤: 10% -> 1%)
+                if (chinese_ratio > korean_ratio and chinese_ratio > 0.01) or \
+                   (cyrillic_ratio > 0.01):  # 키릴은 1%만 있어도 복구 시도
                     logger.warning(
-                        f"인코딩 문제 감지됨 - 한글: {korean_ratio:.2%}, 중국어: {chinese_ratio:.2%}: {file_path}"
+                        f"인코딩 문제 감지됨 - 한글: {korean_ratio:.2%}, 중국어: {chinese_ratio:.2%}, 키릴: {cyrillic_ratio:.2%}: {file_path}"
                     )
                     # 인코딩 복구 시도
                     content = fix_hwp_encoding(content)
@@ -384,6 +388,8 @@ def read_html_file(file_path: Path) -> str:
                 # 한글 문자 비율 확인 (인코딩 문제 감지)
                 korean_chars = sum(1 for c in content if 0xAC00 <= ord(c) <= 0xD7AF)
                 chinese_chars = sum(1 for c in content if 0x4E00 <= ord(c) <= 0x9FFF)
+                # 키릴 문자 범위 추가 (U+0400~U+04FF: Cyrillic, U+0500~U+052F: Cyrillic Supplement)
+                cyrillic_chars = sum(1 for c in content if 0x0400 <= ord(c) <= 0x052F)
                 total_meaningful_chars = len(
                     [c for c in content if c.strip() and c.isalpha()]
                 )
@@ -391,11 +397,13 @@ def read_html_file(file_path: Path) -> str:
                 if total_meaningful_chars > 0:
                     korean_ratio = korean_chars / total_meaningful_chars
                     chinese_ratio = chinese_chars / total_meaningful_chars
+                    cyrillic_ratio = cyrillic_chars / total_meaningful_chars
 
-                    # 중국어 문자가 한글보다 많으면 인코딩 문제로 판단
-                    if chinese_ratio > korean_ratio and chinese_ratio > 0.1:
+                    # 중국어 또는 키릴 문자 감지 시 인코딩 문제로 판단 (임계값 낮춤: 10% -> 1%)
+                    if (chinese_ratio > korean_ratio and chinese_ratio > 0.01) or \
+                       (cyrillic_ratio > 0.01):  # 키릴은 1%만 있어도 복구 시도
                         logger.warning(
-                            f"인코딩 문제 감지됨 - 한글: {korean_ratio:.2%}, 중국어: {chinese_ratio:.2%}: {file_path}"
+                            f"인코딩 문제 감지됨 - 한글: {korean_ratio:.2%}, 중국어: {chinese_ratio:.2%}, 키릴: {cyrillic_ratio:.2%}: {file_path}"
                         )
 
                         # 인코딩 복구 시도
@@ -422,7 +430,7 @@ def read_html_file(file_path: Path) -> str:
 def fix_hwp_encoding(text: str) -> str:
     """
     HWP 파일에서 추출된 텍스트의 인코딩 문제를 수정합니다.
-    한글이 중국어 문자로 잘못 변환된 경우 복구를 시도합니다.
+    한글이 중국어 문자 또는 키릴 문자로 잘못 변환된 경우 복구를 시도합니다.
 
     Args:
         text: 인코딩 문제가 있을 수 있는 텍스트
@@ -435,6 +443,11 @@ def fix_hwp_encoding(text: str) -> str:
         if len(text.strip()) < 10:
             return text
 
+        # 키릴 문자 비율 확인
+        cyrillic_chars = sum(1 for c in text if 0x0400 <= ord(c) <= 0x052F)
+        total_chars = len([c for c in text if c.strip() and c.isalpha()])
+        cyrillic_ratio = cyrillic_chars / total_chars if total_chars > 0 else 0.0
+
         # 여러 인코딩 복구 방법 시도
         recovery_methods = [
             # 방법 1: UTF-8 -> EUC-KR -> UTF-8 재변환
@@ -444,6 +457,11 @@ def fix_hwp_encoding(text: str) -> str:
             # 방법 3: 바이트 레벨에서 직접 변환
             lambda t: _direct_byte_conversion(t),
         ]
+
+        # 키릴 문자가 있으면 키릴 복구 시도를 먼저 추가 (임계값 낮춤: 10% -> 1%)
+        if cyrillic_ratio > 0.01:
+            logger.info(f"키릴 문자 감지됨 ({cyrillic_ratio:.2%}), 키릴->한글 복구 시도")
+            recovery_methods.insert(0, lambda t: _recover_from_cyrillic(t))
 
         best_text = text
         best_korean_ratio = _calculate_korean_ratio(text)
@@ -668,6 +686,72 @@ def _direct_byte_conversion(text: str) -> str:
         return result
 
     except Exception:
+        return text
+
+
+def _recover_from_cyrillic(text: str) -> str:
+    """
+    키릴 문자로 잘못 인코딩된 한글 텍스트를 복구합니다.
+
+    HWP 파일에서 HTML 변환 시 한글 EUC-KR/CP949 바이트가
+    키릴 문자(Cyrillic)로 잘못 해석된 경우를 처리합니다.
+
+    예: 'лҸ…мқј көӯм ң' (키릴) -> '독일 조명 및' (한글)
+
+    Args:
+        text: 키릴 문자가 포함된 텍스트
+
+    Returns:
+        복구된 텍스트 (실패 시 원본)
+    """
+    try:
+        # UTF-8 바이트를 얻음
+        utf8_bytes = text.encode('utf-8')
+
+        # 방법 1: UTF-8 바이트를 ISO-8859-1로 디코딩 후 EUC-KR로 재해석
+        try:
+            # UTF-8 -> ISO-8859-1 (바이트 값 보존) -> EUC-KR
+            latin1_text = utf8_bytes.decode('iso-8859-1')
+            recovered = latin1_text.encode('iso-8859-1').decode('euc-kr', errors='ignore')
+
+            # 복구 결과 검증 - 한글이 포함되어 있는지 확인 (임계값 낮춤: 10자 -> 1자)
+            korean_chars = sum(1 for c in recovered if 0xAC00 <= ord(c) <= 0xD7AF)
+            if korean_chars > 1:  # 최소 1자 이상 한글이 있어야 성공으로 간주
+                logger.info(f"키릴->한글 복구 성공 (방법1: ISO-8859-1->EUC-KR): {korean_chars}자 한글 복구")
+                return recovered
+        except Exception as e:
+            logger.debug(f"키릴 복구 방법1 실패: {e}")
+
+        # 방법 2: CP949 시도
+        try:
+            latin1_text = utf8_bytes.decode('iso-8859-1')
+            recovered = latin1_text.encode('iso-8859-1').decode('cp949', errors='ignore')
+
+            korean_chars = sum(1 for c in recovered if 0xAC00 <= ord(c) <= 0xD7AF)
+            if korean_chars > 1:  # 임계값 낮춤: 10자 -> 1자
+                logger.info(f"키릴->한글 복구 성공 (방법2: ISO-8859-1->CP949): {korean_chars}자 한글 복구")
+                return recovered
+        except Exception as e:
+            logger.debug(f"키릴 복구 방법2 실패: {e}")
+
+        # 방법 3: Windows-1251 (키릴 인코딩) -> EUC-KR
+        try:
+            # 현재 UTF-8 문자열을 Windows-1251 바이트로 재해석
+            cp1251_bytes = text.encode('cp1251', errors='ignore')
+            recovered = cp1251_bytes.decode('euc-kr', errors='ignore')
+
+            korean_chars = sum(1 for c in recovered if 0xAC00 <= ord(c) <= 0xD7AF)
+            if korean_chars > 1:  # 임계값 낮춤: 10자 -> 1자
+                logger.info(f"키릴->한글 복구 성공 (방법3: CP1251->EUC-KR): {korean_chars}자 한글 복구")
+                return recovered
+        except Exception as e:
+            logger.debug(f"키릴 복구 방법3 실패: {e}")
+
+        logger.warning("키릴 복구 실패 - 원본 반환")
+        return text
+
+    except Exception as e:
+        logger.error(f"키릴 복구 중 오류: {e}")
         return text
 
 
@@ -2206,7 +2290,13 @@ def convert_file_to_text(file_path: Path, file_type: str) -> str | None:
 def convert_hwp_to_markdown(hwp_file_path: Path, output_path: Path) -> bool:
     """
     HWP 파일을 Markdown으로 변환합니다.
-    HTML 변환을 우선적으로 시도한 후, MarkItDown, 직접 텍스트 추출 순서로 진행합니다.
+    HTML 변환을 우선 시도하고, 키릴 문자 감지 시 hwp5txt로 재시도합니다.
+
+    변환 순서:
+    1. HTML 변환 (hwp5html → MarkItDown)
+       → 키릴 문자 감지 시: hwp5txt로 재변환 시도
+    2. MarkItDown (fallback)
+    3. 직접 텍스트 추출 (gethwp)
 
     Args:
         hwp_file_path: 변환할 HWP 파일 경로
@@ -2265,7 +2355,7 @@ def convert_hwp_to_markdown(hwp_file_path: Path, output_path: Path) -> bool:
         except Exception as sig_check_error:
             logger.debug(f"HWP 서명 점검 중 오류(무시): {sig_check_error}")
 
-        # 1차 시도: HTML 변환 (우선순위)
+        # 1차 시도: HTML 변환
         try:
             from tempfile import TemporaryDirectory
 
@@ -2277,6 +2367,49 @@ def convert_hwp_to_markdown(hwp_file_path: Path, output_path: Path) -> bool:
                     if html_file.exists():
                         content = read_html_file(html_file)
                         if content and len(content.strip()) > 50:
+                            # 키릴 문자 인코딩 문제 검증
+                            has_issue, message = has_cyrillic_encoding_issue(content)
+                            if has_issue:
+                                logger.warning(
+                                    f"HTML 변환 시 키릴 문자 인코딩 문제 감지: {hwp_file_path.name} - {message}"
+                                )
+                                # hwp5txt로 재시도
+                                logger.info(f"hwp5txt로 재변환 시도: {hwp_file_path.name}")
+                                try:
+                                    import subprocess
+                                    result = subprocess.run(
+                                        ['hwp5txt', str(hwp_file_path)],
+                                        capture_output=True,
+                                        timeout=30,
+                                        check=False
+                                    )
+
+                                    if result.returncode == 0:
+                                        text = result.stdout.decode('utf-8', errors='replace')
+
+                                        if text and len(text.strip()) > 50:
+                                            # 키릴 문자 재검증
+                                            has_issue_retry, message_retry = has_cyrillic_encoding_issue(text)
+
+                                            if not has_issue_retry:
+                                                # 텍스트 정리
+                                                from src.utils.textCleaner import clean_extracted_text
+                                                cleaned_text = clean_extracted_text(text)
+
+                                                with open(output_path, "w", encoding="utf-8") as f:
+                                                    f.write(cleaned_text)
+
+                                                logger.info(
+                                                    f"hwp5txt 재변환 성공 (키릴 문제 해결): {hwp_file_path.name} → {output_path.name}"
+                                                )
+                                                return True
+                                            else:
+                                                logger.warning(
+                                                    f"hwp5txt 재변환에도 키릴 문자 발견: {message_retry}, HTML 결과 사용"
+                                                )
+                                except Exception as retry_error:
+                                    logger.warning(f"hwp5txt 재변환 실패: {retry_error}, HTML 결과 사용")
+
                             with open(output_path, "w", encoding="utf-8") as f:
                                 f.write(content)
                             logger.info(
@@ -2286,7 +2419,7 @@ def convert_hwp_to_markdown(hwp_file_path: Path, output_path: Path) -> bool:
         except Exception as e:
             logger.info(f"HTML 변환 실패: {e}")
 
-        # 2차 시도: MarkItDown 변환
+        # 3차 시도: MarkItDown 변환 (HWP는 지원하지 않지만 시도)
         try:
             try:
                 from markitdown import MarkItDown
@@ -2297,6 +2430,15 @@ def convert_hwp_to_markdown(hwp_file_path: Path, output_path: Path) -> bool:
             result = markitdown.convert(str(hwp_file_path))
 
             if result and result.text_content:
+                # 키릴 문자 인코딩 문제 검증
+                has_issue, message = has_cyrillic_encoding_issue(result.text_content)
+                if has_issue:
+                    logger.warning(
+                        f"MarkItDown 변환 시 키릴 문자 인코딩 문제 감지: {hwp_file_path.name} - {message}"
+                    )
+                    # 다음 방법으로 fallback
+                    raise ValueError(f"Cyrillic encoding issue: {message}")
+
                 with open(output_path, "w", encoding="utf-8") as f:
                     f.write(result.text_content)
                 logger.info(
@@ -2310,10 +2452,18 @@ def convert_hwp_to_markdown(hwp_file_path: Path, output_path: Path) -> bool:
         try:
             text_content = extract_hwp_text_fallback(hwp_file_path)
             if text_content:
+                # 키릴 문자 인코딩 문제 검증
+                has_issue, message = has_cyrillic_encoding_issue(text_content)
+                if has_issue:
+                    logger.error(
+                        f"직접 텍스트 추출 시 키릴 문자 인코딩 문제 감지: {hwp_file_path.name} - {message}"
+                    )
+                    # 문제가 있어도 저장은 하되, 에러 로그 남김
+
                 with open(output_path, "w", encoding="utf-8") as f:
                     f.write(text_content)
                 logger.info(
-                    f"2222HWP 직접 텍스트 추출 성공: {hwp_file_path.name} -> {output_path.name}"
+                    f"HWP 직접 텍스트 추출 성공: {hwp_file_path.name} -> {output_path.name}"
                 )
                 return True
         except Exception as e:
@@ -2452,6 +2602,35 @@ def clean_hwp_extracted_text(text: str) -> str:
     text = re.sub(r"\n{3,}", "\n\n", text)
 
     return text.strip()
+
+
+def has_cyrillic_encoding_issue(text: str, threshold: float = 0.01) -> tuple[bool, str]:
+    """
+    텍스트에 키릴 문자 인코딩 문제가 있는지 검사합니다.
+
+    Args:
+        text: 검사할 텍스트
+        threshold: 키릴 문자 비율 임계값 (기본 1%)
+
+    Returns:
+        tuple[bool, str]: (문제 발견 여부, 상세 메시지)
+    """
+    if not text or len(text) == 0:
+        return False, "Empty text"
+
+    # 키릴 문자 (러시아어) 패턴
+    cyrillic_pattern = r'[А-Яа-яЁё]'
+    cyrillic_matches = re.findall(cyrillic_pattern, text)
+    cyrillic_count = len(cyrillic_matches)
+
+    total_chars = len(text)
+    cyrillic_ratio = cyrillic_count / total_chars if total_chars > 0 else 0
+
+    if cyrillic_ratio > threshold:
+        message = f"Cyrillic encoding issue detected: {cyrillic_count}/{total_chars} chars ({cyrillic_ratio*100:.2f}%)"
+        return True, message
+
+    return False, "OK"
 
 
 def is_valid_hwp_file(hwp_file_path: Path) -> bool:

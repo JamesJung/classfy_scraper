@@ -65,16 +65,16 @@ def load_exclusion_keywords(conn):
 
 
 def load_successful_records(conn):
-    """processing_status가 'success'인 레코드 로드"""
+    """processing_status가 '성공'인 레코드 로드"""
     with conn.cursor() as cursor:
         cursor.execute("""
             SELECT id, title, processing_status, exclusion_keyword, exclusion_reason
             FROM announcement_pre_processing
-            WHERE processing_status = 'success'
+            WHERE processing_status = '성공'
         """)
         records = cursor.fetchall()
-    
-    print(f"\n📊 처리 대상 레코드: {len(records)}개 (processing_status = 'success')")
+
+    print(f"\n📊 처리 대상 레코드: {len(records)}개 (processing_status = '성공')")
     return records
 
 

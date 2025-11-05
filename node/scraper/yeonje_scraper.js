@@ -597,10 +597,12 @@ class AnnouncementScraper {
 
                         // The link is embedded in the onclick attribute.
                         const onclickAttr = link.getAttribute('onclick');
+                        const href = link.href;
 
                         attachments.push({
                             name: fileName,
-                            url: onclickAttr
+                            url: onclickAttr || href,  // onclick이 없으면 href 사용
+                            onclick: onclickAttr  // downloadSingleAttachment에서 사용
                         });
                     });
 
@@ -652,22 +654,14 @@ class AnnouncementScraper {
 
             await fs.ensureDir(folderPath);
 
-            // 첨부파일 다운로드 및 URL 정보 수집
-            let downloadUrlInfo = {};
+            // 첨부파일 다운로드 먼저 실행 (실제 URL 캡처)
+            let actualUrlInfo = [];
             if (detailContent.attachments && detailContent.attachments.length > 0) {
-                downloadUrlInfo = await this.downloadAttachments(detailContent.attachments, folderPath);
-
-                // 첨부파일에 다운로드 정보 추가
-                detailContent.attachments.forEach(attachment => {
-                    const fileName = attachment.name;
-                    if (downloadUrlInfo[fileName]) {
-                        attachment.downloadInfo = downloadUrlInfo[fileName];
-                    }
-                });
+                actualUrlInfo = await this.downloadAttachments(detailContent.attachments, folderPath);
             }
 
-            // content.md 생성 (다운로드 URL 정보 포함)
-            const contentMd = this.generateMarkdownContent(announcement, detailContent);
+            // 실제 다운로드 URL 정보를 포함해서 content.md 생성
+            const contentMd = this.generateMarkdownContent(announcement, detailContent, actualUrlInfo);
             await fs.writeFile(path.join(folderPath, 'content.md'), contentMd, 'utf8');
 
             this.counter++;
@@ -680,8 +674,13 @@ class AnnouncementScraper {
     /**
      * 첨부파일 다운로드
      */
+    /**
+     * 첨부파일 다운로드
+     * @returns {Array} 실제 다운로드 URL 정보가 포함된 배열
+     */
     async downloadAttachments(attachments, folderPath) {
-        const downloadUrlInfo = {};
+        const actualUrlInfo = [];
+
         try {
             const attachDir = path.join(folderPath, 'attachments');
             await fs.ensureDir(attachDir);
@@ -691,16 +690,25 @@ class AnnouncementScraper {
             for (let i = 0; i < attachments.length; i++) {
                 const attachment = attachments[i];
                 const result = await this.downloadSingleAttachment(attachment, attachDir, i + 1);
-                if (result) {
-                    Object.assign(downloadUrlInfo, result);
+
+                // 다운로드 결과에서 실제 URL 정보 저장
+                if (result && result.capturedUrl) {
+                    actualUrlInfo.push({
+                        name: attachment.name,
+                        originalUrl: attachment.url,
+                        actualUrl: result.capturedUrl,
+                        postData: result.capturedPostData
+                    });
                 }
+
                 await this.delay(500); // 0.5초 대기
             }
 
         } catch (error) {
             console.error('첨부파일 다운로드 실패:', error);
         }
-        return downloadUrlInfo;
+
+        return actualUrlInfo;
     }
 
     /**
@@ -716,16 +724,16 @@ class AnnouncementScraper {
             // JavaScript 방식 처리
             if (attachment.onclick) {
                 downloadType = 'onclick';
-                // goDownload 패턴 처리
-                const goDownloadMatch = attachment.onclick.match(/goDownload\(\s*['"]([^'"]*)['"]\s*,\s*['"]([^'"]*)['"]\s*,\s*['"]([^'"]*)['"]\s*\)/);
+                // goDownload 패턴 처리 - ); return false; 등 추가 코드 허용
+                const goDownloadMatch = attachment.onclick.match(/goDownload\(\s*['"]([^'"]+)['"][^'"]*['"]([^'"]+)['"][^'"]*['"]([^'"]+)['"]/i);
 
                 if (goDownloadMatch) {
                     const [, originalName, serverName, serverPath] = goDownloadMatch;
-                    // 실제 goDownload 함수와 동일한 URL 패턴 사용
-                    const enc_user_file_nm = encodeURIComponent(originalName);
-                    const enc_sys_file_nm = encodeURIComponent(serverName);
-                    const enc_file_path = encodeURIComponent(serverPath);
-                    downloadUrl = `https://eminwon.yangsan.go.kr/emwp/jsp/ofr/FileDown.jsp?user_file_nm=${enc_user_file_nm}&sys_file_nm=${enc_sys_file_nm}&file_path=${enc_file_path}`;
+                    // yeonje 사이트는 encodeURI() 사용
+                    const enc_user_file_nm = encodeURI(originalName);
+                    const enc_sys_file_nm = encodeURI(serverName);
+                    const enc_file_path = encodeURI(serverPath);
+                    downloadUrl = `https://eminwon.yeonje.go.kr/emwp/jsp/ofr/FileDown.jsp?user_file_nm=${enc_user_file_nm}&sys_file_nm=${enc_sys_file_nm}&file_path=${enc_file_path}`;
                     fileName = originalName; // 원본 파일명 사용
                     downloadType = 'goDownload';
                 } else {
@@ -905,7 +913,41 @@ class AnnouncementScraper {
     /**
      * 마크다운 컨텐츠 생성
      */
-    generateMarkdownContent(announcement, detailContent) {
+    /**
+     * goDownload JavaScript 호출을 실제 다운로드 URL로 변환
+     * yeonje 사이트는 encodeURI()를 사용함
+     */
+    convertJsDownloadToUrl(jsUrl) {
+        // goDownload('originalName', 'serverName', 'serverPath') 패턴 파싱
+        // onclick 속성에서는 ,%20 (URL 인코딩된 공백)이 사용될 수 있고 ); return false; 같은 추가 코드가 있을 수 있음
+        // [^'"]* 를 사용하여 모든 형태의 구분자를 매칭하고, 마지막도 닫는 따옴표 이후에 추가 문자 허용
+        const regex = /goDownload\(\s*['"]([^'"]+)['"][^'"]*['"]([^'"]+)['"][^'"]*['"]([^'"]+)['"]/i;
+        const matches = jsUrl.match(regex);
+
+        if (matches && matches.length === 4) {
+            let [, originalName, serverName, serverPath] = matches;
+
+            // onclick 속성에서는 파라미터가 이미 URL 인코딩되어 있을 수 있음
+            // 먼저 디코딩한 후 실제 goDownload 함수처럼 encodeURI() 사용
+            try {
+                originalName = decodeURIComponent(originalName);
+                serverName = decodeURIComponent(serverName);
+                serverPath = decodeURIComponent(serverPath);
+            } catch (e) {
+                // 이미 디코딩되어 있거나 디코딩 실패시 그대로 사용
+            }
+
+            const enc_user_file_nm = encodeURI(originalName);
+            const enc_sys_file_nm = encodeURI(serverName);
+            const enc_file_path = encodeURI(serverPath);
+
+            return `https://eminwon.yeonje.go.kr/emwp/jsp/ofr/FileDown.jsp?user_file_nm=${enc_user_file_nm}&sys_file_nm=${enc_sys_file_nm}&file_path=${enc_file_path}`;
+        }
+
+        return jsUrl; // 변환 실패시 원본 반환
+    }
+
+    generateMarkdownContent(announcement, detailContent, actualUrlInfo = []) {
         const lines = [];
 
         lines.push(`**제목**: ${announcement.title}`);
@@ -930,24 +972,24 @@ class AnnouncementScraper {
             lines.push('**첨부파일**:');
             lines.push('');
             detailContent.attachments.forEach((att, i) => {
+                // actualUrlInfo에서 실제 다운로드 정보 찾기
+                const actualInfo = actualUrlInfo.find(info => info.name === att.name);
 
-                let attachInfo = ""
-                // 다운로드 URL 정보가 있는 경우 추가
-                if (att.downloadInfo && att.downloadInfo.actualDownloadUrl) {
-                    attachInfo = `${i + 1}. ${att.name}:${att.downloadInfo.actualDownloadUrl}`
-                    // lines.push(`   - **원본 URL**: ${att.downloadInfo.originalUrl || att.downloadInfo.originalOnclick || '정보 없음'}`);
-                    // lines.push(`   - **실제 다운로드 URL**: ${att.downloadInfo.actualDownloadUrl || '정보 없음'}`);
-                    // if (att.downloadInfo.downloadType) {
-                    //     lines.push(`   - **다운로드 방식**: ${att.downloadInfo.downloadType}`);
-                    // }
-                    // if (att.downloadInfo.suggestedFilename && att.downloadInfo.suggestedFilename !== att.name) {
-                    //     lines.push(`   - **서버 제안 파일명**: ${att.downloadInfo.suggestedFilename}`);
-                    // }
+                if (actualInfo && actualInfo.actualUrl) {
+                    // 실제 캡처된 URL과 POST 데이터를 쿼리스트링으로 합치기
+                    let fullUrl = actualInfo.actualUrl;
+                    if (actualInfo.postData) {
+                        fullUrl = `${actualInfo.actualUrl}?${actualInfo.postData}`;
+                    }
+                    lines.push(`${i + 1}. ${att.name}: ${fullUrl}`);
                 } else {
-                    attachInfo = `${i + 1}. ${att.name}`;
+                    // 캡처된 정보가 없으면 기존 방식으로
+                    let downloadUrl = att.url;
+                    if (downloadUrl && /godownload/i.test(downloadUrl)) {
+                        downloadUrl = this.convertJsDownloadToUrl(downloadUrl);
+                    }
+                    lines.push(`${i + 1}. ${att.name}: ${downloadUrl}`);
                 }
-                lines.push(attachInfo);
-                lines.push('');
             });
         }
 

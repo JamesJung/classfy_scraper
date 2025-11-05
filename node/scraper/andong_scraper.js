@@ -67,7 +67,7 @@ class AnnouncementScraper {
                     this.processedTitles.add(title);
                 }
             }
-            
+
             console.log(`기존 폴더에서 ${this.processedTitles.size}개의 제목 로드`);
         } catch (error) {
             console.log('기존 제목 로드 중 오류:', error.message);
@@ -184,12 +184,12 @@ class AnnouncementScraper {
         try {
             await this.initBrowser();
             await fs.ensureDir(this.outputDir);
-            
+
             // 기존 폴더에서 마지막 카운터 번호를 가져와서 그 다음부터 시작
             const lastCounter = await this.getLastCounterNumber();
             this.counter = lastCounter + 1;
             console.log(`시작 카운터 번호: ${this.counter} (기존 최대 번호: ${lastCounter})`);
-            
+
             // 기존 폴더의 제목들을 processedTitles에 추가
             await this.loadExistingTitles();
 
@@ -720,10 +720,31 @@ class AnnouncementScraper {
             // 1단계: CDP를 통한 다운로드 설정
             await this.setupDownloadBehavior(attachDir);
 
-            // 2단계: 다운로드 이벤트 리스너 설정을 Promise로 감싸기
+            // 2단계: 네트워크 요청 모니터링 설정 (실제 다운로드 URL 캡처)
+            let capturedDownloadUrl = null;
+            let capturedPostData = null;
+            const requestListener = (request) => {
+                const url = request.url();
+                // FileDown.jsp 요청 감지
+                if (url.includes('FileDown')) {
+                    capturedDownloadUrl = url;
+                    console.log('🔍 캡처된 다운로드 URL:', url);
+
+                    // POST 요청인 경우 POST 데이터도 확인
+                    const postData = request.postData();
+                    if (postData) {
+                        capturedPostData = postData;
+                        console.log('📤 POST 데이터:', postData);
+                    }
+                }
+            };
+
+            this.page.on('request', requestListener);
+
+            // 3단계: 다운로드 이벤트 리스너 설정을 Promise로 감싸기
             let downloadResolve, downloadReject;
             let downloadTimeout;
-            
+
             const downloadPromise = new Promise((resolve, reject) => {
                 downloadResolve = resolve;
                 downloadReject = reject;
@@ -743,7 +764,7 @@ class AnnouncementScraper {
                     // 디렉토리가 없으면 생성
                     const saveDir = path.dirname(savePath);
                     fs.ensureDirSync(saveDir);
-                    
+
                     await download.saveAs(savePath);
 
                     // 파일이 실제로 저장되었는지 확인
@@ -753,7 +774,15 @@ class AnnouncementScraper {
 
                         // 이벤트 리스너 제거
                         this.page.off('download', downloadHandler);
-                        downloadResolve({ success: true, savedPath: savePath, size: stats.size });
+
+                        // 캡처된 URL 정보 포함
+                        downloadResolve({
+                            success: true,
+                            savedPath: savePath,
+                            size: stats.size,
+                            capturedUrl: capturedDownloadUrl,
+                            capturedPostData: capturedPostData
+                        });
                     } else {
                         throw new Error('파일이 저장되지 않았습니다');
                     }
@@ -770,7 +799,7 @@ class AnnouncementScraper {
 
             // 3단계: 네트워크 인터셉트를 설정하고 폼 제출 (한 번만 다운로드)
             const networkInterceptPromise = this.setupNetworkInterceptForDownload(fileNm, sysFileNm, filePath, attachDir);
-            
+
             // 4단계: 폼 제출 실행
 
             // URL 디코딩을 한 번만 수행 (과도한 인코딩 방지)
@@ -846,17 +875,39 @@ class AnnouncementScraper {
                     networkInterceptPromise,
                     downloadPromise
                 ]);
-                
+
                 if (result && result.success) {
-                    // 성공한 다운로드 이벤트 리스너 제거
+                    // 리스너 제거
                     this.page.off('download', downloadHandler);
+                    this.page.off('request', requestListener);
+
+                    // 캡처된 URL 출력
+                    if (capturedDownloadUrl) {
+                        console.log('📋 최종 다운로드 URL:', capturedDownloadUrl);
+                    }
+
                     console.log(`✅ 파일 다운로드 성공: ${result.savedPath || result.fileName}`);
+
+                    // 캡처한 URL 정보가 없으면 추가
+                    if (!result.capturedUrl && capturedDownloadUrl) {
+                        result.capturedUrl = capturedDownloadUrl;
+                        result.capturedPostData = capturedPostData;
+                    }
+
                     return result;
                 }
             } catch (error) {
                 console.log(`❌ 다운로드 실패: ${error.message}`);
-                // 다운로드 이벤트 리스너 제거
+
+                // 리스너 제거
                 this.page.off('download', downloadHandler);
+                this.page.off('request', requestListener);
+
+                // 캡처된 URL이 있으면 출력 (디버깅용)
+                if (capturedDownloadUrl) {
+                    console.log('⚠️ 다운로드 실패했지만 URL은 캡처됨:', capturedDownloadUrl);
+                }
+
                 throw error;
             }
 
@@ -883,10 +934,10 @@ class AnnouncementScraper {
 
             const requestHandler = async (route) => {
                 const request = route.request();
-                
+
                 if (request.url().includes('FileDown.jsp') || request.url().includes('FileDownNew.jsp')) {
                     console.log('FileDown 요청 인터셉트:', request.url());
-                    
+
                     try {
                         const response = await route.fetch();
                         const buffer = await response.body();
@@ -902,10 +953,10 @@ class AnnouncementScraper {
                             if (await fs.pathExists(savePath)) {
                                 const stats = await fs.stat(savePath);
                                 console.log(`✅ 네트워크 인터셉트로 파일 저장 성공: ${savePath} (${stats.size} bytes)`);
-                                
+
                                 clearTimeout(timeout);
                                 this.page.unroute('**/*', requestHandler);
-                                
+
                                 // 빈 응답으로 응답 (추가 다운로드 방지)
                                 try {
                                     await route.fulfill({
@@ -917,7 +968,7 @@ class AnnouncementScraper {
                                     // 이미 처리된 경우 무시
                                     console.log('Route already handled, ignoring');
                                 }
-                                
+
                                 resolve({
                                     success: true,
                                     savedPath: savePath,
@@ -1168,17 +1219,14 @@ class AnnouncementScraper {
 
             await fs.ensureDir(folderPath);
 
-            // 첨부파일 다운로드
-            let attachmentFiles = [];
-            let downloadUrlInfo = [];
+            // 첨부파일 다운로드 먼저 실행 (실제 URL 캡처)
+            let actualUrlInfo = [];
             if (detailContent.attachments && detailContent.attachments.length > 0) {
-                const downloadResult = await this.downloadAttachments(detailContent.attachments, folderPath);
-                attachmentFiles = downloadResult.files || [];
-                downloadUrlInfo = downloadResult.urlInfo || [];
+                actualUrlInfo = await this.downloadAttachments(detailContent.attachments, folderPath);
             }
 
-            // content.md 생성 - 원본 attachments 정보 사용
-            const contentMd = this.generateMarkdownContent(announcement, detailContent, detailContent.attachments);
+            // 실제 다운로드 URL 정보를 포함해서 content.md 생성
+            const contentMd = this.generateMarkdownContent(announcement, detailContent, actualUrlInfo);
             await fs.writeFile(path.join(folderPath, 'content.md'), contentMd, 'utf8');
 
             this.counter++;
@@ -1191,34 +1239,41 @@ class AnnouncementScraper {
     /**
      * 첨부파일 다운로드
      */
+    /**
+     * 첨부파일 다운로드
+     * @returns {Array} 실제 다운로드 URL 정보가 포함된 배열
+     */
     async downloadAttachments(attachments, folderPath) {
+        const actualUrlInfo = [];
+
         try {
             const attachDir = path.join(folderPath, 'attachments');
             await fs.ensureDir(attachDir);
-            const downloadedFiles = [];
-            const urlInfo = [];
 
             console.log(`${attachments.length}개 첨부파일 다운로드 중...`);
 
             for (let i = 0; i < attachments.length; i++) {
                 const attachment = attachments[i];
                 const result = await this.downloadSingleAttachment(attachment, attachDir, i + 1);
-                if (result) {
-                    if (typeof result === 'object' && result.fileName && result.downloadUrl) {
-                        downloadedFiles.push(result.fileName);
-                        urlInfo.push(result);
-                    } else {
-                        downloadedFiles.push(result);
-                    }
+
+                // 다운로드 결과에서 실제 URL 정보 저장
+                if (result && result.capturedUrl) {
+                    actualUrlInfo.push({
+                        name: attachment.name,
+                        originalUrl: attachment.url,
+                        actualUrl: result.capturedUrl,
+                        postData: result.capturedPostData
+                    });
                 }
+
                 await this.delay(500); // 0.5초 대기
             }
 
-            return { files: downloadedFiles, urlInfo: urlInfo };
         } catch (error) {
             console.error('첨부파일 다운로드 실패:', error);
-            return { files: [], urlInfo: [] };
         }
+
+        return actualUrlInfo;
     }
 
     /**
@@ -1573,7 +1628,30 @@ class AnnouncementScraper {
     /**
      * 마크다운 컨텐츠 생성
      */
-    generateMarkdownContent(announcement, detailContent, attachmentFiles) {
+    /**
+     * goDownLoad/goDownload JavaScript 호출을 실제 다운로드 URL로 변환
+     * andong 사이트는 encodeURI()를 사용함
+     */
+    convertJsDownloadToUrl(jsUrl) {
+        // goDownLoad 또는 goDownload 패턴 파싱 (대소문자 모두 지원)
+        const regex = /goDownload\('([^']+)',\s*'([^']+)',\s*'([^']+)'\)/i;
+        const matches = jsUrl.match(regex);
+
+        if (matches && matches.length === 4) {
+            const [, fileNm, sysFileNm, filePath] = matches;
+
+            // andong 사이트의 실제 goDownload 함수와 동일하게 encodeURI() 사용
+            const enc_user_file_nm = encodeURI(fileNm);
+            const enc_sys_file_nm = encodeURI(sysFileNm);
+            const enc_file_path = encodeURI(filePath);
+
+            return `https://eminwon.andong.go.kr/emwp/jsp/ofr/FileDown.jsp?user_file_nm=${enc_user_file_nm}&sys_file_nm=${enc_sys_file_nm}&file_path=${enc_file_path}`;
+        }
+
+        return jsUrl; // 변환 실패시 원본 반환
+    }
+
+    generateMarkdownContent(announcement, detailContent, actualUrlInfo = []) {
         const lines = [];
 
         lines.push(`# ${announcement.title}`);
@@ -1594,22 +1672,31 @@ class AnnouncementScraper {
             lines.push(detailContent.content);
         }
 
-        if (attachmentFiles && attachmentFiles.length > 0) {
+        if (detailContent.attachments && detailContent.attachments.length > 0) {
             lines.push('');
             lines.push('**첨부파일**:');
             lines.push('');
-            attachmentFiles.forEach((file, i) => {
-                if (typeof file === 'object' && file.fileName && file.downloadUrl) {
-                    lines.push(`${i + 1}. ${file.fileName}:${file.downloadUrl}`);
-                } else if (typeof file === 'object' && file.name && file.url) {
-                    lines.push(`${i + 1}. ${file.name}:${file.url}`);
-                } else if (typeof file === 'string') {
-                    lines.push(`${i + 1}. ${file}`);
+            detailContent.attachments.forEach((att, i) => {
+                // actualUrlInfo에서 실제 다운로드 정보 찾기
+                const actualInfo = actualUrlInfo.find(info => info.name === att.name);
+
+                if (actualInfo && actualInfo.actualUrl) {
+                    // 실제 캡처된 URL과 POST 데이터를 쿼리스트링으로 합치기
+
+                    console.log("실제 캡처된 URL과 POST 데이터를 쿼리스트링으로 합치기")
+                    let fullUrl = actualInfo.actualUrl;
+                    if (actualInfo.postData) {
+                        fullUrl = `${actualInfo.actualUrl}?${actualInfo.postData}`;
+                    }
+                    lines.push(`${i + 1}. ${att.name}: ${fullUrl}`);
                 } else {
-                    // 객체지만 예상한 프로퍼티가 없는 경우
-                    const fileName = file.name || file.fileName || 'unknown';
-                    const fileUrl = file.url || file.downloadUrl || '';
-                    lines.push(`${i + 1}. ${fileName}:${fileUrl}`);
+                    console.log("캡처된 정보가 없으면 기존 방식으로")
+                    // 캡처된 정보가 없으면 기존 방식으로
+                    let downloadUrl = att.url;
+                    if (downloadUrl && /godownload/i.test(downloadUrl)) {
+                        downloadUrl = this.convertJsDownloadToUrl(downloadUrl);
+                    }
+                    lines.push(`${i + 1}. ${att.name}: ${downloadUrl}`);
                 }
             });
         }
@@ -1733,12 +1820,12 @@ class AnnouncementScraper {
     /**
      * 날짜 추출
      */
-        extractDate(dateText) {
+    extractDate(dateText) {
         if (!dateText) return null;
 
         // 텍스트 정리
         let cleanText = dateText.trim();
-        
+
         // "2025년 9월 30일(화) 16:51:34" 형식 처리
         const koreanDateMatch = cleanText.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
         if (koreanDateMatch) {
@@ -1763,7 +1850,7 @@ class AnnouncementScraper {
             const day = yymmddMatch[3].padStart(2, '0');
             cleanText = `${year}-${month}-${day}`;
         }
-        
+
         const formats = [
             'YYYY-MM-DD',
             'YYYY.MM.DD',

@@ -1300,8 +1300,8 @@ class AnnouncementScraper {
 
         // 다양한 날짜 형식 시도
 
-        // YY.MM.DD 형식 체크 (예: 24.12.31)
-        const yymmddMatch = cleanText.match(/^(\d{2})\.(\d{1,2})\.(\d{1,2})$/);
+        // YY.MM.DD, YY-MM-DD, YY/MM/DD 형식 체크 (예: 24.12.31, 25-11-05, 24/12/31)
+        const yymmddMatch = cleanText.match(/^(\d{2})[\.\-\/](\d{1,2})[\.\-\/](\d{1,2})$/);
         if (yymmddMatch) {
             // 2자리 연도를 4자리로 변환 (00-99 → 2000-2099)
             const year = '20' + yymmddMatch[1];
@@ -1327,9 +1327,13 @@ class AnnouncementScraper {
         }
 
         // 자연어 형식 시도 (조심스럽게)
-        const naturalDate = moment(cleanText);
-        if (naturalDate.isValid() && cleanText.match(/\d{4}/)) {
-            return naturalDate;
+        try {
+            const naturalDate = moment(cleanText);
+            if (naturalDate.isValid() && cleanText.match(/\d{4}/)) {
+                return naturalDate;
+            }
+        } catch (error) {
+            // moment 파싱 실패시 조용히 무시
         }
 
         return null;

@@ -1777,6 +1777,11 @@ class AnnouncementPreProcessor:
                     'timestamp': datetime.now().isoformat()
                 }
 
+            # 기존 폴더명 추출
+            existing_folder_name = None
+            if existing_record:
+                existing_folder_name = existing_record.get('folder_name')
+
             # announcement_duplicate_log INSERT
             sql = text("""
                 INSERT INTO announcement_duplicate_log (
@@ -1791,6 +1796,7 @@ class AnnouncementPreProcessor:
                     new_priority,
                     existing_priority,
                     new_folder_name,
+                    existing_folder_name,
                     duplicate_detail,
                     error_message
                 ) VALUES (
@@ -1805,6 +1811,7 @@ class AnnouncementPreProcessor:
                     :new_priority,
                     :existing_priority,
                     :new_folder_name,
+                    :existing_folder_name,
                     :duplicate_detail,
                     :error_message
                 )
@@ -1828,6 +1835,7 @@ class AnnouncementPreProcessor:
                 'new_priority': new_priority,
                 'existing_priority': existing_priority,
                 'new_folder_name': folder_name,
+                'existing_folder_name': existing_folder_name,
                 'duplicate_detail': duplicate_detail_json,
                 'error_message': error_message
             }
@@ -2034,7 +2042,7 @@ class AnnouncementPreProcessor:
                     """
                     )
                 else:
-                    # 일반 INSERT
+                    # 일반 INSERT with UPSERT (중복 처리)
                     sql = text(
                         """
                         INSERT INTO announcement_pre_processing (
@@ -2048,6 +2056,24 @@ class AnnouncementPreProcessor:
                             :title, :origin_url, :url_key, :scraping_url, :announcement_date,
                             :processing_status, :error_message, NOW(), NOW()
                         )
+                        ON DUPLICATE KEY UPDATE
+                            folder_name = VALUES(folder_name),
+                            site_type = VALUES(site_type),
+                            site_code = VALUES(site_code),
+                            content_md = VALUES(content_md),
+                            combined_content = VALUES(combined_content),
+                            attachment_filenames = VALUES(attachment_filenames),
+                            attachment_files_list = VALUES(attachment_files_list),
+                            exclusion_keyword = VALUES(exclusion_keyword),
+                            exclusion_reason = VALUES(exclusion_reason),
+                            title = VALUES(title),
+                            origin_url = VALUES(origin_url),
+                            url_key = VALUES(url_key),
+                            scraping_url = VALUES(scraping_url),
+                            announcement_date = VALUES(announcement_date),
+                            processing_status = VALUES(processing_status),
+                            error_message = VALUES(error_message),
+                            updated_at = NOW()
                     """
                     )
 

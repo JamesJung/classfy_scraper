@@ -478,6 +478,11 @@ class AnnouncementPreProcessor:
                             content_md = f.read()
                         logger.info(f"content.md 읽기 완료: {len(content_md)} 문자")
 
+                        # DO_NOT_PROCESS 플래그 확인 (구 데이터 건너뛰기)
+                        if "DO_NOT_PROCESS" in content_md:
+                            logger.info(f"⏭️  건너뜀 (ARCHIVED): {folder_name} - DO_NOT_PROCESS 플래그 감지")
+                            return False
+
                         # content.md에서 기본 정보 추출
                         title = self._extract_title_from_content(content_md)
                         origin_url = self._extract_origin_url_from_content(content_md)
@@ -515,19 +520,25 @@ class AnnouncementPreProcessor:
                                     )
                                 else:
                                     # JSON에 없으면 content.md에서 추출
-                                    announcement_date = self._extract_announcement_date_from_content(
+                                    announcement_date_raw = self._extract_announcement_date_from_content(
                                         content_md
                                     )
+                                    if announcement_date_raw:
+                                        announcement_date = self._convert_to_yyyymmdd(announcement_date_raw)
                             except Exception as e:
                                 logger.warning(
                                     f"{site_code} JSON 날짜 추출 실패, content.md 사용: {e}"
                                 )
-                                announcement_date = self._extract_announcement_date_from_content(
+                                announcement_date_raw = self._extract_announcement_date_from_content(
                                     content_md
                                 )
+                                if announcement_date_raw:
+                                    announcement_date = self._convert_to_yyyymmdd(announcement_date_raw)
                         else:
                             # JSON 파일이 없으면 content.md에서 추출
-                            announcement_date = self._extract_announcement_date_from_content(content_md)
+                            announcement_date_raw = self._extract_announcement_date_from_content(content_md)
+                            if announcement_date_raw:
+                                announcement_date = self._convert_to_yyyymmdd(announcement_date_raw)
 
                     except Exception as e:
                         logger.error(f"content.md 읽기 실패: {e}")
@@ -551,6 +562,11 @@ class AnnouncementPreProcessor:
                         with open(content_md_path, "r", encoding="utf-8") as f:
                             content_md = f.read()
                         logger.info(f"content.md 읽기 완료: {len(content_md)} 문자")
+
+                        # DO_NOT_PROCESS 플래그 확인 (구 데이터 건너뛰기)
+                        if "DO_NOT_PROCESS" in content_md:
+                            logger.info(f"⏭️  건너뜀 (ARCHIVED): {folder_name} - DO_NOT_PROCESS 플래그 감지")
+                            return False
                     except Exception as e:
                         logger.error(f"content.md 읽기 실패: {e}")
                         return self._save_processing_result(
@@ -570,7 +586,9 @@ class AnnouncementPreProcessor:
             if site_code not in ["kStartUp", "bizInfo", "smes24"]:
                 title = self._extract_title_from_content(content_md)
                 origin_url = self._extract_origin_url_from_content(content_md)
-                announcement_date = self._extract_announcement_date_from_content(content_md)
+                announcement_date_raw = self._extract_announcement_date_from_content(content_md)
+                if announcement_date_raw:
+                    announcement_date = self._convert_to_yyyymmdd(announcement_date_raw)
 
             # 3.5. origin_url에서 url_key 추출 (URL 정규화)
             # 우선순위 1: domain_key_config 사용
@@ -1197,7 +1215,7 @@ class AnnouncementPreProcessor:
             for fmt in date_formats:
                 try:
                     dt = datetime.strptime(date_str.strip(), fmt)
-                    return dt.strftime("%Y%m%d")
+                    return dt.strftime("%Y%m%d")  # YYYYMMDD 형식
                 except ValueError:
                     continue
 
@@ -2136,7 +2154,7 @@ class AnnouncementPreProcessor:
                     # domain_key_config 있는 경우: 정상 중복 체크
                     elif affected_rows == 1:
                         # 새로 INSERT됨
-                        processing_status = 'new_inserted'
+                        processing_status = 'new_inserted'  # ← 중복 체크 결과 (duplicate_type용)
                         logger.debug(f"새 레코드 삽입: ID={record_id}, url_key_hash={url_key_hash[:16]}...")
 
                     elif affected_rows == 2:
@@ -2230,16 +2248,24 @@ class AnnouncementPreProcessor:
                         # ================================================
                         # 🆕 announcement_duplicate_log 기록 (신규)
                         # ================================================
-                        # processing_status를 duplicate_type으로 매핑
+                        # ⚠️ 중요: processing_status는 "중복 체크 결과"를 나타내는 내부 변수
+                        #          announcement_pre_processing.processing_status 컬럼과는 다름!
+                        # processing_status 값:
+                        #   - 'new_inserted': affected_rows=1 (신규 INSERT)
+                        #   - 'duplicate_updated': affected_rows=2 (UPDATE됨)
+                        #   - 'duplicate_preserved': affected_rows=2 + 우선순위 낮음
+                        #   - 'failed': affected_rows 예상치 못한 값
+
+                        # duplicate_type 매핑
                         duplicate_type_map = {
                             'new_inserted': 'new_inserted',
-                            'duplicate_updated': 'replaced',  # 업데이트됨 → 교체
-                            'duplicate_preserved': 'kept_existing',  # 기존 유지
+                            'duplicate_updated': 'replaced',  # 기본값 (우선순위 비교로 세부화)
+                            'duplicate_preserved': 'kept_existing',
                             'failed': 'error'
                         }
 
                         # duplicate_type 결정
-                        announcement_duplicate_type = duplicate_type_map.get(processing_status, 'error')
+                        announcement_duplicate_type = duplicate_type_map.get(processing_status, 'unknown')  # 기본값을 'unknown'으로 변경
 
                         # duplicate_updated의 경우 우선순위 비교로 세부 타입 결정
                         if processing_status == 'duplicate_updated' and existing_record_before_upsert:

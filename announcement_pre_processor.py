@@ -2359,6 +2359,14 @@ class AnnouncementPreProcessor:
                         # duplicate_type 결정
                         announcement_duplicate_type = duplicate_type_map.get(processing_status, 'unknown')  # 기본값을 'unknown'으로 변경
 
+                        # unknown 타입 발생 시 상세 로그 기록
+                        if announcement_duplicate_type == 'unknown':
+                            logger.warning(
+                                f"⚠️  예상치 못한 processing_status: '{processing_status}' "
+                                f"(preprocessing_id={record_id}, affected_rows={affected_rows}, "
+                                f"url_key_hash={url_key_hash[:16] if url_key_hash else 'None'}...)"
+                            )
+
                         # duplicate_updated의 경우 우선순위 비교로 세부 타입 결정
                         if processing_status == 'duplicate_updated' and existing_record_before_upsert:
                             current_priority = self._get_priority(self.site_type)

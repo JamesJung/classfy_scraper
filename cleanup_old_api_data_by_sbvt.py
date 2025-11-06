@@ -140,6 +140,8 @@ def extract_date_from_json(json_path: Path) -> str | None:
             'writtenDate',
             'announcementDate',
             'announcementStartDate',
+            'applicationStartDate',  # kStartUp
+            'applicationEndDate',    # kStartUp (fallback)
             'pblancDt',
             'writDt',
             'pbanc_rcpt_bgng_dt'

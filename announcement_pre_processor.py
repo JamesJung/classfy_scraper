@@ -1697,6 +1697,7 @@ class AnnouncementPreProcessor:
         domain_configured: bool = False,
         existing_record: dict = None,
         error_message: str = None,
+        new_data: dict = None,
     ) -> bool:
         """
         announcement_duplicate_log 테이블에 중복 처리 로그를 기록합니다.
@@ -1756,12 +1757,41 @@ class AnnouncementPreProcessor:
                     decision = '알 수 없음'
                     reason = f'duplicate_type={duplicate_type}'
 
+                # 변경된 필드 추적
+                changed_fields = {}
+                if new_data and existing_record:
+                    # 비교할 필드 목록
+                    compare_fields = ['title', 'folder_name', 'content_md', 'combined_content',
+                                     'attachment_filenames', 'exclusion_keyword', 'processing_status',
+                                     'announcement_date']
+
+                    for field in compare_fields:
+                        existing_value = existing_record.get(field)
+                        new_value = new_data.get(field)
+
+                        # 값이 다른 경우에만 기록
+                        if existing_value != new_value:
+                            # 긴 텍스트는 앞부분만 저장 (100자)
+                            if field in ['content_md', 'combined_content']:
+                                changed_fields[field] = {
+                                    'before': str(existing_value)[:100] + '...' if existing_value and len(str(existing_value)) > 100 else existing_value,
+                                    'after': str(new_value)[:100] + '...' if new_value and len(str(new_value)) > 100 else new_value,
+                                    'changed': True
+                                }
+                            else:
+                                changed_fields[field] = {
+                                    'before': existing_value,
+                                    'after': new_value,
+                                    'changed': True
+                                }
+
                 duplicate_detail = {
                     'decision': decision,
                     'reason': reason,
                     'existing_folder': existing_record.get('folder_name'),
                     'existing_url_key': existing_record.get('url_key'),
                     'priority_comparison': f'{new_priority} vs {existing_priority}',
+                    'changed_fields': changed_fields if changed_fields else None,
                     'domain': domain,
                     'domain_configured': domain_configured,
                     'timestamp': datetime.now().isoformat()
@@ -1926,13 +1956,17 @@ class AnnouncementPreProcessor:
                         logger.error(f"예외 케이스 중복 체크 실패 (계속 진행): {e}")
                         # 에러 발생 시 기존 로직으로 폴백
 
-                # UPSERT 실행 전에 기존 레코드 조회 (우선순위 비교를 위해)
+                # UPSERT 실행 전에 기존 레코드 조회 (우선순위 비교 및 변경 추적을 위해)
+                # ⚠️ force 여부와 관계없이 조회 (force=False에서도 중복 로그 기록 필요)
                 existing_record_before_upsert = None
-                if force and url_key:
+                if url_key:
                     try:
                         existing_record_before_upsert = session.execute(
                             text("""
-                                SELECT id, site_type, site_code, folder_name
+                                SELECT id, site_type, site_code, folder_name,
+                                       title, content_md, combined_content,
+                                       attachment_filenames, exclusion_keyword,
+                                       processing_status, announcement_date
                                 FROM announcement_pre_processing
                                 WHERE url_key = :url_key
                                 LIMIT 1
@@ -2344,6 +2378,14 @@ class AnnouncementPreProcessor:
                         # duplicate_type 결정
                         announcement_duplicate_type = duplicate_type_map.get(processing_status, 'unknown')  # 기본값을 'unknown'으로 변경
 
+                        # unknown 타입 발생 시 상세 로그 기록
+                        if announcement_duplicate_type == 'unknown':
+                            logger.warning(
+                                f"⚠️  예상치 못한 processing_status: '{processing_status}' "
+                                f"(preprocessing_id={record_id}, affected_rows={affected_rows}, "
+                                f"url_key_hash={url_key_hash[:16] if url_key_hash else 'None'}...)"
+                            )
+
                         # duplicate_updated의 경우 우선순위 비교로 세부 타입 결정
                         if processing_status == 'duplicate_updated' and existing_record_before_upsert:
                             current_priority = self._get_priority(self.site_type)
@@ -2365,8 +2407,27 @@ class AnnouncementPreProcessor:
                                 'site_type': existing_record_before_upsert.site_type,
                                 'site_code': existing_record_before_upsert.site_code,
                                 'folder_name': existing_record_before_upsert.folder_name,
+                                'title': existing_record_before_upsert.title,
+                                'content_md': existing_record_before_upsert.content_md,
+                                'combined_content': existing_record_before_upsert.combined_content,
+                                'attachment_filenames': existing_record_before_upsert.attachment_filenames,
+                                'exclusion_keyword': existing_record_before_upsert.exclusion_keyword,
+                                'processing_status': existing_record_before_upsert.processing_status,
+                                'announcement_date': existing_record_before_upsert.announcement_date,
                                 'url_key': url_key  # url_key는 동일
                             }
+
+                        # new_data dict 준비
+                        new_data_dict = {
+                            'title': title,
+                            'folder_name': folder_name,
+                            'content_md': content_md,
+                            'combined_content': combined_content,
+                            'attachment_filenames': ", ".join(attachment_filenames) if attachment_filenames else None,
+                            'exclusion_keyword': ", ".join(exclusion_keywords) if exclusion_keywords else None,
+                            'processing_status': status,
+                            'announcement_date': announcement_date
+                        }
 
                         # announcement_duplicate_log 기록
                         self._log_announcement_duplicate(
@@ -2379,6 +2440,7 @@ class AnnouncementPreProcessor:
                             domain=domain,
                             domain_configured=True,  # url_key가 있으므로 domain_key_config 있음
                             existing_record=existing_record_dict,
+                            new_data=new_data_dict,
                             error_message=None
                         )
 

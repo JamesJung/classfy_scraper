@@ -112,6 +112,7 @@ class AnnouncementPreProcessor:
                         CREATE TABLE IF NOT EXISTS announcement_pre_processing (
                             id INT PRIMARY KEY AUTO_INCREMENT,
                             folder_name VARCHAR(255) UNIQUE,
+                            folder_path TEXT,
                             site_type VARCHAR(50),
                             site_code VARCHAR(50),
                             content_md LONGTEXT,
@@ -452,6 +453,9 @@ class AnnouncementPreProcessor:
         logger.info(f"디렉토리 처리 시작: {folder_name} (site_code: {site_code})")
 
         try:
+            # 폴더 절대 경로 계산
+            folder_path_abs = str(directory_path.resolve())
+
             # 0. folder_name 중복 체크 (force 옵션이 없을 때만)
             if not force:
                 if self._check_folder_name_exists(folder_name, site_code):
@@ -550,6 +554,7 @@ class AnnouncementPreProcessor:
                             url_key=None,
                             status="error",
                             error_message=f"content.md 읽기 실패: {e}",
+                            folder_path=folder_path_abs,
                         )
                 else:
                     logger.warning(f"content.md 파일이 없음: {content_md_path}")
@@ -577,6 +582,7 @@ class AnnouncementPreProcessor:
                             url_key=None,
                             status="error",
                             error_message=f"content.md 읽기 실패: {e}",
+                            folder_path=folder_path_abs,
                         )
                 else:
                     logger.warning(f"content.md 파일이 없음: {content_md_path}")
@@ -655,6 +661,7 @@ class AnnouncementPreProcessor:
                     url_key=url_key,
                     status="error",
                     error_message=error_msg,
+                    folder_path=folder_path_abs,
                 )
 
             # 5. 제외 키워드가 있는 경우 제외 처리
@@ -679,6 +686,7 @@ class AnnouncementPreProcessor:
                     scraping_url=scraping_url,
                     exclusion_keywords=excluded_keywords,
                     exclusion_reason=exclusion_msg,
+                    folder_path=folder_path_abs,
                 )
 
             # 6. 데이터베이스에 저장 (URL 정규화 적용)
@@ -696,6 +704,7 @@ class AnnouncementPreProcessor:
                 scraping_url=scraping_url,
                 status="성공",
                 force=force,
+                folder_path=folder_path_abs,
             )
 
             if record_id:
@@ -715,6 +724,7 @@ class AnnouncementPreProcessor:
                 url_key=None,
                 status="error",
                 error_message=f"예상치 못한 오류: {e}",
+                folder_path=folder_path_abs,
             )
             return result is not None
 
@@ -1876,6 +1886,7 @@ class AnnouncementPreProcessor:
         scraping_url: str = None,
         announcement_date: str = None,
         attachment_files_info: List[Dict[str, Any]] = None,
+        folder_path: str = None,
     ) -> Optional[int]:
         """처리 결과를 데이터베이스에 저장합니다."""
         try:
@@ -1943,17 +1954,23 @@ class AnnouncementPreProcessor:
                     sql = text(
                         """
                         INSERT INTO announcement_pre_processing (
-                            folder_name, site_type, site_code, content_md, combined_content,
+                            folder_name, folder_path, site_type, site_code, content_md, combined_content,
                             attachment_filenames, attachment_files_list, exclusion_keyword, exclusion_reason,
                             title, origin_url, url_key, scraping_url, announcement_date,
                             processing_status, error_message, created_at, updated_at
                         ) VALUES (
-                            :folder_name, :site_type, :site_code, :content_md, :combined_content,
+                            :folder_name, :folder_path, :site_type, :site_code, :content_md, :combined_content,
                             :attachment_filenames, :attachment_files_list, :exclusion_keyword, :exclusion_reason,
                             :title, :origin_url, :url_key, :scraping_url, :announcement_date,
                             :processing_status, :error_message, NOW(), NOW()
                         )
                         ON DUPLICATE KEY UPDATE
+                            folder_path = IF(
+                                VALUES(site_type) IN ('Eminwon', 'Homepage', 'Scraper') OR
+                                site_type NOT IN ('Eminwon', 'Homepage', 'Scraper'),
+                                VALUES(folder_path),
+                                folder_path
+                            ),
                             site_type = IF(
                                 VALUES(site_type) IN ('Eminwon', 'Homepage', 'Scraper') OR
                                 site_type NOT IN ('Eminwon', 'Homepage', 'Scraper'),
@@ -2046,18 +2063,19 @@ class AnnouncementPreProcessor:
                     sql = text(
                         """
                         INSERT INTO announcement_pre_processing (
-                            folder_name, site_type, site_code, content_md, combined_content,
+                            folder_name, folder_path, site_type, site_code, content_md, combined_content,
                             attachment_filenames, attachment_files_list, exclusion_keyword, exclusion_reason,
                             title, origin_url, url_key, scraping_url, announcement_date,
                             processing_status, error_message, created_at, updated_at
                         ) VALUES (
-                            :folder_name, :site_type, :site_code, :content_md, :combined_content,
+                            :folder_name, :folder_path, :site_type, :site_code, :content_md, :combined_content,
                             :attachment_filenames, :attachment_files_list, :exclusion_keyword, :exclusion_reason,
                             :title, :origin_url, :url_key, :scraping_url, :announcement_date,
                             :processing_status, :error_message, NOW(), NOW()
                         )
                         ON DUPLICATE KEY UPDATE
                             folder_name = VALUES(folder_name),
+                            folder_path = VALUES(folder_path),
                             site_type = VALUES(site_type),
                             site_code = VALUES(site_code),
                             content_md = VALUES(content_md),
@@ -2090,6 +2108,7 @@ class AnnouncementPreProcessor:
 
                 params = {
                     "folder_name": folder_name,
+                    "folder_path": folder_path,
                     "site_type": self.site_type,
                     "site_code": db_site_code,
                     "content_md": content_md,

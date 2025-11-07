@@ -1956,6 +1956,114 @@ class AnnouncementPreProcessor:
                         logger.error(f"예외 케이스 중복 체크 실패 (계속 진행): {e}")
                         # 에러 발생 시 기존 로직으로 폴백
 
+                # ================================================
+                # 🆕 API 사이트: scraping_url 기반 중복 체크
+                # ================================================
+                # API 사이트(bizInfo, smes24, kStartUp)는 scraping_url이 실제 데이터 출처
+                # origin_url은 다르지만 scraping_url이 같으면 동일 공고로 간주
+                if site_code in ['bizInfo', 'smes24', 'kStartUp'] and scraping_url:
+                    # 안전 장치: 빈 문자열이나 너무 짧은 URL 제외
+                    scraping_url_stripped = scraping_url.strip()
+                    if scraping_url_stripped and len(scraping_url_stripped) > 10:
+                        try:
+                            # scraping_url이 동일한 기존 레코드 검색
+                            # - 같은 site_code는 제외 (자기 자신 제외)
+                            # - 우선순위 순서: bizInfo(1) > smes24(2) > kStartUp(3)
+                            # - 같은 우선순위면 먼저 등록된 것 우선
+                            existing_by_scraping = session.execute(
+                                text("""
+                                    SELECT id, site_type, site_code, folder_name, url_key,
+                                           origin_url, scraping_url, created_at
+                                    FROM announcement_pre_processing
+                                    WHERE scraping_url = :scraping_url
+                                    AND site_code != :current_site_code
+                                    ORDER BY
+                                        CASE site_code
+                                            WHEN 'bizInfo' THEN 1
+                                            WHEN 'smes24' THEN 2
+                                            WHEN 'kStartUp' THEN 3
+                                            ELSE 99
+                                        END,
+                                        created_at ASC
+                                    LIMIT 1
+                                """),
+                                {
+                                    "scraping_url": scraping_url_stripped,
+                                    "current_site_code": site_code
+                                }
+                            ).fetchone()
+
+                            if existing_by_scraping:
+                                # 우선순위 비교
+                                priority_map = {'bizInfo': 1, 'smes24': 2, 'kStartUp': 3}
+                                existing_priority = priority_map.get(existing_by_scraping.site_code, 99)
+                                current_priority = priority_map.get(site_code, 99)
+
+                                if existing_priority <= current_priority:
+                                    # 기존 데이터 우선순위가 높거나 같음 → 현재 데이터 스킵
+                                    logger.info(
+                                        f"🚫 중복 스킵 (scraping_url 기반): "
+                                        f"동일 scraping_url 발견\n"
+                                        f"   현재 데이터: site_code={site_code}, "
+                                        f"folder={folder_name}\n"
+                                        f"   scraping_url: {scraping_url_stripped[:100]}"
+                                        f"{'...' if len(scraping_url_stripped) > 100 else ''}\n"
+                                        f"   기존 데이터: ID={existing_by_scraping.id}, "
+                                        f"site_code={existing_by_scraping.site_code}, "
+                                        f"folder={existing_by_scraping.folder_name}\n"
+                                        f"   우선순위: {existing_by_scraping.site_code}"
+                                        f"({existing_priority}) >= {site_code}({current_priority})\n"
+                                        f"   → 기존 데이터 우선 (지자체 원본 유지)"
+                                    )
+
+                                    # announcement_duplicate_log에 기록
+                                    try:
+                                        session.execute(
+                                            text("""
+                                                INSERT INTO announcement_duplicate_log (
+                                                    existing_id, new_folder_name, new_site_code, new_site_type,
+                                                    duplicate_type, url_key, url_key_hash,
+                                                    origin_url, scraping_url, created_at
+                                                ) VALUES (
+                                                    :existing_id, :new_folder_name, :new_site_code, :new_site_type,
+                                                    :duplicate_type, :url_key, :url_key_hash,
+                                                    :origin_url, :scraping_url, NOW()
+                                                )
+                                            """),
+                                            {
+                                                "existing_id": existing_by_scraping.id,
+                                                "new_folder_name": folder_name,
+                                                "new_site_code": site_code,
+                                                "new_site_type": site_type,
+                                                "duplicate_type": "scraping_url_duplicate",
+                                                "url_key": url_key,
+                                                "url_key_hash": url_key_hash,
+                                                "origin_url": origin_url,
+                                                "scraping_url": scraping_url_stripped
+                                            }
+                                        )
+                                        session.commit()
+                                        logger.debug("중복 로그 기록 완료 (scraping_url 기반)")
+                                    except Exception as log_error:
+                                        logger.warning(f"중복 로그 기록 실패 (무시): {log_error}")
+                                        session.rollback()
+
+                                    return existing_by_scraping.id  # 기존 ID 반환하고 종료
+
+                                else:
+                                    # 현재 데이터 우선순위가 더 높음 → 계속 진행 (덮어쓰기)
+                                    logger.warning(
+                                        f"⚠️ 중복 발견하지만 현재 데이터 우선순위 높음: "
+                                        f"{site_code}({current_priority}) > "
+                                        f"{existing_by_scraping.site_code}({existing_priority})\n"
+                                        f"   기존 ID={existing_by_scraping.id} 유지하고 계속 진행"
+                                    )
+                                    # 계속 진행하여 UPSERT 로직으로 처리
+
+                        except Exception as e:
+                            logger.error(f"scraping_url 기반 중복 체크 실패 (계속 진행): {e}")
+                            # 에러 발생 시 기존 로직으로 폴백
+
                 # UPSERT 실행 전에 기존 레코드 조회 (우선순위 비교 및 변경 추적을 위해)
                 # ⚠️ force 여부와 관계없이 조회 (force=False에서도 중복 로그 기록 필요)
                 existing_record_before_upsert = None

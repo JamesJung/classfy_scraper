@@ -1924,37 +1924,40 @@ class AnnouncementPreProcessor:
 
             with self.db_manager.SessionLocal() as session:
                 # ================================================
-                # 🆕 예외 케이스: smes24 + bizinfo URL 중복 체크
+                # ⚠️ DEPRECATED (2025-11-07): 구 예외 케이스 로직
                 # ================================================
-                # smes24의 origin_url이 bizInfo의 scraping_url과 일치하면 스킵
-                if site_code == 'smes24' and origin_url and 'bizinfo.go.kr' in origin_url.lower():
-                    try:
-                        existing_bizinfo = session.execute(
-                            text("""
-                                SELECT id, site_type, site_code, folder_name, url_key, created_at
-                                FROM announcement_pre_processing
-                                WHERE scraping_url = :origin_url
-                                AND site_code = 'bizInfo'
-                                LIMIT 1
-                            """),
-                            {"origin_url": origin_url}
-                        ).fetchone()
-
-                        if existing_bizinfo:
-                            logger.info(
-                                f"🚫 중복 스킵 (예외 로직): smes24 origin_url이 bizInfo scraping_url과 일치\n"
-                                f"   smes24 folder: {folder_name}\n"
-                                f"   origin_url: {origin_url[:100]}...\n"
-                                f"   기존 bizInfo: ID={existing_bizinfo.id}, folder={existing_bizinfo.folder_name}\n"
-                                f"   기존 url_key: {existing_bizinfo.url_key}\n"
-                                f"   → bizInfo 우선 (지자체 원본 데이터 유지)"
-                            )
-
-                            return existing_bizinfo.id  # 기존 ID 반환하고 종료
-
-                    except Exception as e:
-                        logger.error(f"예외 케이스 중복 체크 실패 (계속 진행): {e}")
-                        # 에러 발생 시 기존 로직으로 폴백
+                # 아래 로직은 1964라인의 통합 scraping_url 중복 체크로 대체됨
+                # 1964라인이 모든 API 사이트 간 scraping_url 중복을 포괄적으로 처리
+                # 검증 기간 후 완전 삭제 예정
+                # ================================================
+                # if site_code == 'smes24' and origin_url and 'bizinfo.go.kr' in origin_url.lower():
+                #     try:
+                #         existing_bizinfo = session.execute(
+                #             text("""
+                #                 SELECT id, site_type, site_code, folder_name, url_key, created_at
+                #                 FROM announcement_pre_processing
+                #                 WHERE scraping_url = :origin_url
+                #                 AND site_code = 'bizInfo'
+                #                 LIMIT 1
+                #             """),
+                #             {"origin_url": origin_url}
+                #         ).fetchone()
+                #
+                #         if existing_bizinfo:
+                #             logger.info(
+                #                 f"🚫 중복 스킵 (예외 로직): smes24 origin_url이 bizInfo scraping_url과 일치\n"
+                #                 f"   smes24 folder: {folder_name}\n"
+                #                 f"   origin_url: {origin_url[:100]}...\n"
+                #                 f"   기존 bizInfo: ID={existing_bizinfo.id}, folder={existing_bizinfo.folder_name}\n"
+                #                 f"   기존 url_key: {existing_bizinfo.url_key}\n"
+                #                 f"   → bizInfo 우선 (지자체 원본 데이터 유지)"
+                #             )
+                #
+                #             return existing_bizinfo.id  # 기존 ID 반환하고 종료
+                #
+                #     except Exception as e:
+                #         logger.error(f"예외 케이스 중복 체크 실패 (계속 진행): {e}")
+                #         # 에러 발생 시 기존 로직으로 폴백
 
                 # ================================================
                 # 🆕 API 사이트: scraping_url 기반 중복 체크
@@ -2021,25 +2024,32 @@ class AnnouncementPreProcessor:
                                         session.execute(
                                             text("""
                                                 INSERT INTO announcement_duplicate_log (
-                                                    existing_id, new_folder_name, new_site_code, new_site_type,
-                                                    duplicate_type, url_key, url_key_hash,
-                                                    origin_url, scraping_url, created_at
+                                                    preprocessing_id, existing_preprocessing_id,
+                                                    duplicate_type, url_key_hash,
+                                                    new_site_type, new_site_code,
+                                                    existing_site_type, existing_site_code,
+                                                    new_folder_name, existing_folder_name,
+                                                    duplicate_detail, created_at
                                                 ) VALUES (
-                                                    :existing_id, :new_folder_name, :new_site_code, :new_site_type,
-                                                    :duplicate_type, :url_key, :url_key_hash,
-                                                    :origin_url, :scraping_url, NOW()
+                                                    NULL, :existing_preprocessing_id,
+                                                    :duplicate_type, :url_key_hash,
+                                                    :new_site_type, :new_site_code,
+                                                    :existing_site_type, :existing_site_code,
+                                                    :new_folder_name, :existing_folder_name,
+                                                    :duplicate_detail, NOW()
                                                 )
                                             """),
                                             {
-                                                "existing_id": existing_by_scraping.id,
-                                                "new_folder_name": folder_name,
-                                                "new_site_code": site_code,
-                                                "new_site_type": site_type,
+                                                "existing_preprocessing_id": existing_by_scraping.id,
                                                 "duplicate_type": "scraping_url_duplicate",
-                                                "url_key": url_key,
                                                 "url_key_hash": url_key_hash,
-                                                "origin_url": origin_url,
-                                                "scraping_url": scraping_url_stripped
+                                                "new_site_type": site_type,
+                                                "new_site_code": site_code,
+                                                "existing_site_type": existing_by_scraping.site_type,
+                                                "existing_site_code": existing_by_scraping.site_code,
+                                                "new_folder_name": folder_name,
+                                                "existing_folder_name": existing_by_scraping.folder_name,
+                                                "duplicate_detail": f"scraping_url 중복: {scraping_url_stripped[:100]}"
                                             }
                                         )
                                         session.commit()

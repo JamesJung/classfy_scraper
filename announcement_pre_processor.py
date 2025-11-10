@@ -597,31 +597,25 @@ class AnnouncementPreProcessor:
                     announcement_date = self._convert_to_yyyymmdd(announcement_date_raw)
 
             # 3.5. origin_url에서 url_key 추출 (URL 정규화)
-            # 우선순위 1: domain_key_config 사용
-            # 우선순위 2: 폴백 정규화 (쿼리 파라미터 정렬)
+            # ⚠️ domain_key_config에 있는 도메인만 url_key 생성
+            # domain_key_config에 없는 도메인은 url_key = None으로 유지하여 중복 체크 생략
             url_key = None
             if origin_url:
                 try:
-                    # 1순위: domain_key_config에서 도메인 설정 조회
+                    # domain_key_config에서 도메인 설정 조회
                     url_key = self.url_key_extractor.extract_url_key(origin_url, site_code)
                     if url_key:
                         logger.debug(f"✓ URL 정규화 완료 (domain_key_config 사용): {origin_url[:80]}... → {url_key}")
                     else:
-                        # 2순위: domain_key_config에 도메인 없음 → 폴백 정규화
-                        logger.warning(
-                            f"⚠️  도메인 설정 없음 (domain_key_config), 폴백 정규화 수행: {origin_url[:80]}..."
+                        # domain_key_config에 도메인 없음 → url_key = None 유지 (fallback 비활성화)
+                        logger.debug(
+                            f"ℹ️  domain_key_config에 도메인 설정 없음, url_key = None: {origin_url[:80]}..."
                         )
-                        url_key = self._fallback_normalize_url(origin_url)
-                        logger.info(f"✓ 폴백 정규화 적용: {url_key}")
                 except Exception as e:
                     logger.error(f"❌ URL 정규화 중 오류: {e}")
-                    # 예외 발생 시에도 폴백 정규화 시도
-                    if origin_url:
-                        url_key = self._fallback_normalize_url(origin_url)
-                        logger.info(f"✓ 예외 후 폴백 정규화: {url_key}")
-                    else:
-                        logger.warning("origin_url이 없어 URL 정규화 불가")
-                        url_key = None
+                    # 예외 발생 시 url_key = None으로 설정 (fallback 비활성화)
+                    url_key = None
+                    logger.warning("URL 정규화 실패, url_key = None으로 설정")
 
             # 4. 첨부파일 처리 (content.md와 분리)
             combined_content = ""
@@ -1239,6 +1233,13 @@ class AnnouncementPreProcessor:
 
     def _fallback_normalize_url(self, url: str | None) -> str | None:
         """
+        ⚠️ DEPRECATED (2025-11-10): 이 함수는 더 이상 사용되지 않습니다.
+
+        domain_key_config에 없는 도메인은 url_key = None으로 설정하여 중복 체크를 생략합니다.
+        부정확한 fallback url_key 생성을 방지하기 위해 비활성화되었습니다.
+
+        ---
+
         도메인 설정이 없을 때 최소한의 URL 정규화를 수행합니다.
 
         ⚠️ 주의: domain_key_config에 도메인이 있으면 이 메서드는 사용되지 않습니다.
@@ -1685,6 +1686,52 @@ class AnnouncementPreProcessor:
             logger.warning(f"API URL 처리 로그 기록 실패 (무시하고 계속): {e}")
             return False
 
+    def _is_llm_processing(self, session, preprocessing_id: int) -> bool:
+        """
+        announcement_pre_processing 레코드가 LLM 배치 처리 중인지 확인합니다.
+
+        Args:
+            session: SQLAlchemy 세션
+            preprocessing_id: 확인할 레코드 ID (announcement_pre_processing.id)
+
+        Returns:
+            LLM 처리 중이면 True, 아니면 False
+        """
+        try:
+            from sqlalchemy import text
+
+            # LLM_BATCH_ITEM에서 ap_id가 preprocessing_id이고,
+            # STATUS가 처리 중인 상태('pending', 'retrying')인지 확인
+            # 실제 DB에 존재하는 상태만 체크 (in_progress, validating, finalizing는 즉시 동기화되지 않음)
+            result = session.execute(
+                text("""
+                    SELECT COUNT(*) as processing_count
+                    FROM LLM_BATCH_ITEM
+                    WHERE ap_id = :ap_id
+                      AND STATUS IN ('pending', 'retrying')
+                """),
+                {"ap_id": preprocessing_id}
+            ).fetchone()
+
+            processing_count = result.processing_count if result else 0
+
+            if processing_count > 0:
+                logger.debug(
+                    f"LLM 처리 중인 아이템 발견: preprocessing_id={preprocessing_id}, "
+                    f"processing_count={processing_count}"
+                )
+                return True
+
+            return False
+
+        except Exception as e:
+            # 테이블이 없거나 오류 발생 시 안전하게 False 반환 (처리 계속 진행)
+            logger.warning(
+                f"LLM 처리 상태 확인 실패 (계속 진행): preprocessing_id={preprocessing_id}, "
+                f"error={e}"
+            )
+            return False
+
     def _log_announcement_duplicate(
         self,
         session,
@@ -2020,43 +2067,45 @@ class AnnouncementPreProcessor:
                                     )
 
                                     # announcement_duplicate_log에 기록
+                                    # 🔧 트랜잭션 경계 개선: 부분 커밋 제거 (독립 세션 사용)
                                     try:
-                                        session.execute(
-                                            text("""
-                                                INSERT INTO announcement_duplicate_log (
-                                                    preprocessing_id, existing_preprocessing_id,
-                                                    duplicate_type, url_key_hash,
-                                                    new_site_type, new_site_code,
-                                                    existing_site_type, existing_site_code,
-                                                    new_folder_name, existing_folder_name,
-                                                    duplicate_detail, created_at
-                                                ) VALUES (
-                                                    NULL, :existing_preprocessing_id,
-                                                    :duplicate_type, :url_key_hash,
-                                                    :new_site_type, :new_site_code,
-                                                    :existing_site_type, :existing_site_code,
-                                                    :new_folder_name, :existing_folder_name,
-                                                    :duplicate_detail, NOW()
-                                                )
-                                            """),
-                                            {
-                                                "existing_preprocessing_id": existing_by_scraping.id,
-                                                "duplicate_type": "scraping_url_duplicate",
-                                                "url_key_hash": url_key_hash,
-                                                "new_site_type": site_type,
-                                                "new_site_code": site_code,
-                                                "existing_site_type": existing_by_scraping.site_type,
-                                                "existing_site_code": existing_by_scraping.site_code,
-                                                "new_folder_name": folder_name,
-                                                "existing_folder_name": existing_by_scraping.folder_name,
-                                                "duplicate_detail": f"scraping_url 중복: {scraping_url_stripped[:100]}"
-                                            }
-                                        )
-                                        session.commit()
-                                        logger.debug("중복 로그 기록 완료 (scraping_url 기반)")
+                                        # 독립적인 세션에서 로그 기록 (메인 트랜잭션과 분리)
+                                        with self.db_manager.SessionLocal() as log_session:
+                                            log_session.execute(
+                                                text("""
+                                                    INSERT INTO announcement_duplicate_log (
+                                                        preprocessing_id, existing_preprocessing_id,
+                                                        duplicate_type, url_key_hash,
+                                                        new_site_type, new_site_code,
+                                                        existing_site_type, existing_site_code,
+                                                        new_folder_name, existing_folder_name,
+                                                        duplicate_detail, created_at
+                                                    ) VALUES (
+                                                        NULL, :existing_preprocessing_id,
+                                                        :duplicate_type, :url_key_hash,
+                                                        :new_site_type, :new_site_code,
+                                                        :existing_site_type, :existing_site_code,
+                                                        :new_folder_name, :existing_folder_name,
+                                                        :duplicate_detail, NOW()
+                                                    )
+                                                """),
+                                                {
+                                                    "existing_preprocessing_id": existing_by_scraping.id,
+                                                    "duplicate_type": "scraping_url_duplicate",
+                                                    "url_key_hash": url_key_hash,
+                                                    "new_site_type": site_type,
+                                                    "new_site_code": site_code,
+                                                    "existing_site_type": existing_by_scraping.site_type,
+                                                    "existing_site_code": existing_by_scraping.site_code,
+                                                    "new_folder_name": folder_name,
+                                                    "existing_folder_name": existing_by_scraping.folder_name,
+                                                    "duplicate_detail": f"scraping_url 중복: {scraping_url_stripped[:100]}"
+                                                }
+                                            )
+                                            log_session.commit()
+                                            logger.debug("중복 로그 기록 완료 (scraping_url 기반)")
                                     except Exception as log_error:
                                         logger.warning(f"중복 로그 기록 실패 (무시): {log_error}")
-                                        session.rollback()
 
                                     return existing_by_scraping.id  # 기존 ID 반환하고 종료
 
@@ -2076,6 +2125,7 @@ class AnnouncementPreProcessor:
 
                 # UPSERT 실행 전에 기존 레코드 조회 (우선순위 비교 및 변경 추적을 위해)
                 # ⚠️ force 여부와 관계없이 조회 (force=False에서도 중복 로그 기록 필요)
+                # 🔒 FOR UPDATE: LLM 처리 체크와 UPSERT 사이의 Race Condition 방지
                 existing_record_before_upsert = None
                 if url_key:
                     try:
@@ -2087,6 +2137,7 @@ class AnnouncementPreProcessor:
                                        processing_status, announcement_date
                                 FROM announcement_pre_processing
                                 WHERE url_key = :url_key
+                                FOR UPDATE
                                 LIMIT 1
                             """),
                             {"url_key": url_key}
@@ -2098,6 +2149,64 @@ class AnnouncementPreProcessor:
                                 f"site_type={existing_record_before_upsert.site_type}, "
                                 f"site_code={existing_record_before_upsert.site_code}"
                             )
+
+                            # ================================================
+                            # 🆕 LLM 처리 중인지 확인 (중복 UPSERT 방지)
+                            # ================================================
+                            if self._is_llm_processing(session, existing_record_before_upsert.id):
+                                logger.warning(
+                                    f"⚠️ LLM 처리 중인 데이터 발견, UPSERT 스킵: "
+                                    f"ID={existing_record_before_upsert.id}, "
+                                    f"url_key={url_key[:50]}...\n"
+                                    f"   → LLM 처리 완료 후 재시도 필요"
+                                )
+
+                                # announcement_duplicate_log에 기록
+                                # 🔧 트랜잭션 경계 개선: 부분 커밋 제거 (독립 세션 사용)
+                                try:
+                                    # 독립적인 세션에서 로그 기록 (메인 트랜잭션과 분리)
+                                    with self.db_manager.SessionLocal() as log_session:
+                                        log_session.execute(
+                                            text("""
+                                                INSERT INTO announcement_duplicate_log (
+                                                    preprocessing_id, existing_preprocessing_id,
+                                                    duplicate_type, url_key_hash,
+                                                    new_site_type, new_site_code,
+                                                    existing_site_type, existing_site_code,
+                                                    new_folder_name, existing_folder_name,
+                                                    duplicate_detail, created_at
+                                                ) VALUES (
+                                                    NULL, :existing_preprocessing_id,
+                                                    'llm_processing_skip', :url_key_hash,
+                                                    :new_site_type, :new_site_code,
+                                                    :existing_site_type, :existing_site_code,
+                                                    :new_folder_name, :existing_folder_name,
+                                                    :duplicate_detail, NOW()
+                                                )
+                                            """),
+                                            {
+                                                "existing_preprocessing_id": existing_record_before_upsert.id,
+                                                "url_key_hash": hashlib.md5(url_key.encode()).hexdigest() if url_key else None,
+                                                "new_site_type": self.site_type,
+                                                "new_site_code": site_code,
+                                                "existing_site_type": existing_record_before_upsert.site_type,
+                                                "existing_site_code": existing_record_before_upsert.site_code,
+                                                "new_folder_name": folder_name,
+                                                "existing_folder_name": existing_record_before_upsert.folder_name,
+                                                "duplicate_detail": json.dumps({
+                                                    "reason": "LLM 처리 중인 데이터로 UPSERT 스킵",
+                                                    "url_key": url_key[:100],
+                                                    "timestamp": datetime.now().isoformat()
+                                                }, ensure_ascii=False)
+                                            }
+                                        )
+                                        log_session.commit()
+                                        logger.debug("LLM 처리 중 스킵 로그 기록 완료")
+                                except Exception as log_error:
+                                    logger.warning(f"LLM 처리 중 스킵 로그 기록 실패 (무시): {log_error}")
+
+                                return existing_record_before_upsert.id  # 기존 ID 반환하고 종료
+
                     except Exception as e:
                         logger.warning(f"UPSERT 전 기존 레코드 조회 실패 (무시하고 계속): {e}")
 

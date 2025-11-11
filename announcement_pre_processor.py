@@ -885,16 +885,17 @@ class AnnouncementPreProcessor:
 
         # 작성일 패턴 찾기 (마크다운 형식)
         # 콜론(:) 뒤의 날짜만 정확히 캡처
+        # 중요: \s* 대신 [ \t]*를 사용 (\s는 개행도 포함해서 여러 줄을 건너뛰는 문제 발생)
         date_patterns = [
-            r"\*\*작성일\*\*:\s*([^\n]+)",  # **작성일**: 날짜
-            r"\*\*작성일\*\*:\*\*\s*([^\n]+)",  # **작성일:**: 날짜
-            r"작성일:\s*([^\n]+)",  # 작성일: 날짜
-            r"\*\*등록일\*\*:\s*([^\n]+)",  # **등록일**: 날짜
-            r"\*\*등록일\*\*:\*\*\s*([^\n]+)",  # **등록일:**: 날짜
-            r"등록일:\s*([^\n]+)",  # 등록일: 날짜
-            r"\*\*공고일\*\*:\s*([^\n]+)",  # **공고일**: 날짜
-            r"\*\*공고일\*\*:\*\*\s*([^\n]+)",  # **공고일:**: 날짜
-            r"공고일:\s*([^\n]+)",  # 공고일: 날짜
+            r"\*\*작성일\*\*:[ \t]*([^\n]+)",  # **작성일**: 날짜 (같은 줄만)
+            r"\*\*작성일\*\*:\*\*[ \t]*([^\n]+)",  # **작성일:**: 날짜
+            r"작성일:[ \t]*([^\n]+)",  # 작성일: 날짜
+            r"\*\*등록일\*\*:[ \t]*([^\n]+)",  # **등록일**: 날짜
+            r"\*\*등록일\*\*:\*\*[ \t]*([^\n]+)",  # **등록일:**: 날짜
+            r"등록일:[ \t]*([^\n]+)",  # 등록일: 날짜
+            r"\*\*공고일\*\*:[ \t]*([^\n]+)",  # **공고일**: 날짜
+            r"\*\*공고일\*\*:\*\*[ \t]*([^\n]+)",  # **공고일:**: 날짜
+            r"공고일:[ \t]*([^\n]+)",  # 공고일: 날짜
         ]
 
         for pattern in date_patterns:
@@ -1201,6 +1202,9 @@ class AnnouncementPreProcessor:
 
     def _convert_to_yyyymmdd(self, date_str: str) -> str:
         """날짜 문자열을 YYYYMMDD 포맷으로 변환합니다."""
+        if not date_str:
+            return None
+
         try:
             # 다양한 날짜 포맷 시도
             from datetime import datetime
@@ -1223,13 +1227,18 @@ class AnnouncementPreProcessor:
                 except ValueError:
                     continue
 
-            # 모든 포맷 실패시 원본 반환
-            logger.warning(f"날짜 변환 실패, 원본 반환: {date_str}")
-            return date_str
+            # 모든 포맷 실패시 원본 반환 (최대 50자로 제한)
+            # DB 컬럼 정의: announcement_date VARCHAR(50)
+            truncated = date_str[:50]
+            if len(date_str) > 50:
+                logger.warning(f"날짜 변환 실패, 원본을 50자로 자름: {date_str[:60]}...")
+            else:
+                logger.warning(f"날짜 변환 실패, 원본 반환: {date_str}")
+            return truncated
 
         except Exception as e:
             logger.error(f"날짜 변환 중 오류: {e}")
-            return date_str
+            return date_str[:50] if date_str else None
 
     def _fallback_normalize_url(self, url: str | None) -> str | None:
         """

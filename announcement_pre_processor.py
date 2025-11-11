@@ -1591,6 +1591,10 @@ class AnnouncementPreProcessor:
         folder_name: str = None,
     ) -> bool:
         """
+        ⚠️ DEPRECATED: 이 함수는 더 이상 사용되지 않습니다.
+        api_url_processing_log 테이블은 사용하지 않으며,
+        announcement_duplicate_log로 대체되었습니다.
+
         API URL 처리 시도를 로그에 기록합니다.
 
         Args:
@@ -1616,6 +1620,11 @@ class AnnouncementPreProcessor:
 
         Returns:
             로그 기록 성공 여부
+        """
+        # 테이블이 존재하지 않으므로 아무 작업도 하지 않음
+        return True
+
+        # 아래 코드는 비활성화됨 (삭제 예정)
         """
         try:
             from sqlalchemy import text
@@ -1694,6 +1703,7 @@ class AnnouncementPreProcessor:
         except Exception as e:
             logger.warning(f"API URL 처리 로그 기록 실패 (무시하고 계속): {e}")
             return False
+        """
 
     def _is_llm_processing(self, session, preprocessing_id: int) -> bool:
         """
@@ -2146,8 +2156,8 @@ class AnnouncementPreProcessor:
                                        processing_status, announcement_date
                                 FROM announcement_pre_processing
                                 WHERE url_key = :url_key
-                                FOR UPDATE
                                 LIMIT 1
+                                FOR UPDATE
                             """),
                             {"url_key": url_key}
                         ).fetchone()

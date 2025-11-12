@@ -26,6 +26,7 @@ langchain-community
 # HWP 파일 처리 (기존 프로젝트에서 사용)
 pyhwp==0.1b15
 olefile
+gethwp
 
 # 추가 유틸리티
 pathlib

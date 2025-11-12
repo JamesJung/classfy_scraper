@@ -181,3 +181,6 @@ data_dir
 api_dir
 AGENTS.md
 server_logs
+incremental
+node/scraper/backups_*
+node/scraper_backup

@@ -337,19 +337,52 @@ class DomainKeyExtractor:
 
         Returns:
             URL 키 또는 None
+
+        Note:
+            경로와 쿼리 파라미터를 결합하되, domain이 중복되지 않도록 처리
+            예: ccei.creativekorea.or.kr|chungnam&no=100
         """
-        # 경로에서 추출
-        path_key = self._extract_by_path_pattern(domain, parsed.path, config['path_pattern'])
+        # 경로에서 값만 추출 (domain 제외)
+        path_value = None
+        if config.get('path_pattern'):
+            match = re.search(config['path_pattern'], parsed.path)
+            if match and match.groups():
+                path_value = '_'.join(str(g) for g in match.groups())
 
-        # 쿼리에서 추출
-        query_key = self._extract_by_query_params(domain, query_params, config['key_params'])
+        # 쿼리 파라미터에서 값만 추출 (domain 제외)
+        query_parts = []
+        excluded_count = 0
+        for param in config.get('key_params', []):
+            # 페이지네이션/검색 파라미터 제외
+            if param in self.EXCLUDED_PARAMS:
+                excluded_count += 1
+                continue
 
-        if path_key and query_key:
-            return f"{path_key}_{query_key}"
-        elif path_key:
-            return path_key
-        elif query_key:
-            return query_key
+            if param in query_params:
+                if query_params[param]:
+                    value = query_params[param][0]
+                    query_parts.append(f"{param}={value}")
+                else:
+                    query_parts.append(f"{param}=")
+            else:
+                # 필수 파라미터 누락
+                print(f"⚠️  필수 파라미터 누락 (mixed): {domain} - {param}")
+                return None
+
+        # 모든 key_params가 EXCLUDED_PARAMS인 경우
+        if not query_parts and excluded_count > 0 and not path_value:
+            print(f"⚠️  유효한 key_params 없음 (mixed): {domain}")
+            return None
+
+        # 경로 + 쿼리 결합
+        parts = []
+        if path_value:
+            parts.append(path_value)
+        if query_parts:
+            parts.extend(query_parts)
+
+        if parts:
+            return f"{domain}|{'&'.join(parts)}"
 
         return None
 

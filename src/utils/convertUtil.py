@@ -2056,13 +2056,124 @@ def format_as_markdown_table(text: str) -> str:
         return text
 
 
-def convert_hwp_to_html(hwp_file_path: Path, output_dir: Path) -> bool:
+def _convert_hwp_with_gethwp(hwp_file_path: Path, output_dir: Path) -> bool:
     """
-    HWP 파일을 HTML, CSS 및 바이너리 데이터를 포함한 전체 웹 페이지 형태로 변환합니다.
-    이 함수는 .hwp 파일만 처리하며, .hwpx 파일은 처리하지 않습니다.
+    gethwp.read_hwp()를 사용하여 HWP 파일을 HTML로 변환하는 내부 헬퍼 함수.
+    구형 HWP 포맷(HWP 3.0, HWP 96 등)을 처리합니다.
 
     Args:
-        hwp_file_path (Path): 변환할 HWP 파일의 경로. pathlib.Path 객체여야 합니다.
+        hwp_file_path: HWP 파일 경로
+        output_dir: 출력 디렉토리
+
+    Returns:
+        bool: 변환 성공 시 True, 실패 시 False
+    """
+    try:
+        # HWP 라이브러리 지연 로딩
+        hwp_libs = get_hwp_libraries()
+        hwp_custom = hwp_libs["hwp_custom"]
+
+        # hwp_custom.read_hwp() 호출 (gethwp.read_hwp()를 래핑)
+        hwp_text = hwp_custom.read_hwp(str(hwp_file_path))
+
+        if hwp_text and hwp_text.strip():
+            # 추출된 텍스트를 HTML 형태로 저장
+            import html
+
+            html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{hwp_file_path.stem}</title>
+</head>
+<body>
+    <pre>{html.escape(hwp_text)}</pre>
+</body>
+</html>"""
+            # output_dir 생성 및 index.xhtml 저장
+            output_dir.mkdir(parents=True, exist_ok=True)
+            html_file = output_dir / "index.xhtml"
+            with open(html_file, "w", encoding="utf-8") as f:
+                f.write(html_content)
+            logger.info(
+                f"gethwp.read_hwp() 변환 성공: {hwp_file_path.name} → {html_file}"
+            )
+            return True
+        else:
+            logger.debug(
+                f"gethwp.read_hwp() 텍스트 추출 실패: {hwp_file_path.name}"
+            )
+            return False
+    except Exception as e:
+        logger.debug(
+            f"gethwp.read_hwp() 실패: {hwp_file_path.name} - {e}"
+        )
+        return False
+
+
+def _convert_hwpx_file_to_html(hwpx_file_path: Path, output_dir: Path) -> bool:
+    """
+    HWPX 파일을 HTML로 변환하는 내부 헬퍼 함수.
+
+    Args:
+        hwpx_file_path: HWPX 파일 경로
+        output_dir: 출력 디렉토리
+
+    Returns:
+        bool: 변환 성공 시 True, 실패 시 False
+    """
+    try:
+        hwpx_text = convert_hwpx_to_text(hwpx_file_path)
+        if hwpx_text and hwpx_text.strip():
+            # 추출된 텍스트를 HTML 형태로 저장
+            import html
+
+            html_content = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>{hwpx_file_path.stem}</title>
+</head>
+<body>
+    <pre>{html.escape(hwpx_text)}</pre>
+</body>
+</html>"""
+            # output_dir 생성 및 index.xhtml 저장
+            output_dir.mkdir(parents=True, exist_ok=True)
+            html_file = output_dir / "index.xhtml"
+            with open(html_file, "w", encoding="utf-8") as f:
+                f.write(html_content)
+            logger.info(
+                f"HWPX 파일 변환 성공: {hwpx_file_path.name} → {html_file}"
+            )
+            return True
+        else:
+            logger.warning(
+                f"HWPX 텍스트 추출 실패: {hwpx_file_path.name}"
+            )
+            return False
+    except Exception as e:
+        logger.warning(
+            f"HWPX 변환 실패: {hwpx_file_path.name} - {e}"
+        )
+        return False
+
+
+def convert_hwp_to_html(hwp_file_path: Path, output_dir: Path) -> bool:
+    """
+    HWP/HWPX 파일을 HTML 형태로 변환합니다.
+    확장자에 따라 적절한 처리 방법을 선택합니다:
+
+    .hwpx 파일:
+        → HWPX 처리 (hwp_custom.read_hwpx)
+
+    .hwp 파일 (3단계 fallback):
+        1단계: HWP5 (hwp5 라이브러리) 시도
+        2단계: gethwp.read_hwp() 시도 (구형 HWP)
+        3단계: HWPX fallback (잘못된 확장자 처리)
+
+    Args:
+        hwp_file_path (Path): 변환할 HWP/HWPX 파일의 경로. pathlib.Path 객체여야 합니다.
         output_dir (Path): 변환된 파일들이 저장될 출력 디렉토리. pathlib.Path 객체여야 합니다.
 
     Returns:
@@ -2082,10 +2193,11 @@ def convert_hwp_to_html(hwp_file_path: Path, output_dir: Path) -> bool:
         logger.error(f"오류: '{hwp_file_path}'은(는) 파일이 아닙니다.")
         return False
 
-    # 파일 확장자 확인 - .hwp 파일만 처리
-    if hwp_file_path.suffix.lower() != ".hwp":
+    # 파일 확장자 확인
+    file_ext = hwp_file_path.suffix.lower()
+    if file_ext not in [".hwp", ".hwpx"]:
         logger.error(
-            f"오류: convert_hwp_to_html은 .hwp 파일만 처리할 수 있습니다: {hwp_file_path.name} (확장자: {hwp_file_path.suffix})"
+            f"오류: 지원하지 않는 파일 확장자: {hwp_file_path.name} (확장자: {file_ext})"
         )
         return False
 
@@ -2128,71 +2240,51 @@ def convert_hwp_to_html(hwp_file_path: Path, output_dir: Path) -> bool:
             output_dir.mkdir(parents=True, exist_ok=True)
             logger.debug(f"새 출력 디렉토리 '{output_dir}'을(를) 생성했습니다.")
 
-            # HWP5 파일 유효성 검사
-            try:
-                with closing(Hwp5File(str(hwp_file_path))) as hwp5file:
-                    # 파일이 정상적으로 열리는지 확인
-                    if not hasattr(hwp5file, "header"):
-                        logger.error(f"유효하지 않은 HWP5 파일 구조: {hwp_file_path}")
-                        return False
+            # 확장자에 따른 처리 분기
+            if file_ext == ".hwpx":
+                # HWPX 파일 처리
+                logger.debug(f"HWPX 파일 처리: {hwp_file_path.name}")
+                return _convert_hwpx_file_to_html(hwp_file_path, output_dir)
+            else:
+                # .hwp 파일 처리: HWP5 → gethwp.read_hwp → HWPX fallback (3단계)
+                logger.debug(f"HWP 파일 처리: {hwp_file_path.name}")
 
-                    logger.debug(f"'{hwp_file_path.name}' 파일 읽기 시작...")
-
-                    # HTMLTransform 객체 생성 및 변환
-                    html_transform = HTMLTransform()
-                    html_transform.transform_hwp5_to_dir(hwp5file, str(output_dir))
-
-                    # 변환 결과 확인
-                    index_file = output_dir / "index.xhtml"
-                    if index_file.exists() and index_file.stat().st_size > 0:
-                        logger.info(f"HWP 파일 '{hwp_file_path.name}' 변환 성공")
-                        return True
-                    else:
-                        logger.error(
-                            f"변환된 파일이 생성되지 않았거나 비어있습니다: {index_file}"
-                        )
-                        return False
-
-            except (ParseError, InvalidHwp5FileError) as e:
-                logger.error(f"HWP5 파일 형식 오류: {hwp_file_path.name} - {e}")
-
-                # HWPX fallback 시도 (HWP 확장자지만 실제로는 HWPX일 가능성)
-                logger.info(f"HWPX fallback 시도: {hwp_file_path.name}")
+                # 1단계: HWP5 (OLE2) 포맷 시도
                 try:
-                    hwpx_text = convert_hwpx_to_text(hwp_file_path)
-                    if hwpx_text and hwpx_text.strip():
-                        # 추출된 텍스트를 HTML 형태로 저장
-                        import html
+                    with closing(Hwp5File(str(hwp_file_path))) as hwp5file:
+                        # 파일이 정상적으로 열리는지 확인
+                        if not hasattr(hwp5file, "header"):
+                            logger.warning(f"유효하지 않은 HWP5 파일 구조: {hwp_file_path}")
+                        else:
+                            logger.debug(f"HWP5 파일 읽기 시작: {hwp_file_path.name}")
 
-                        html_content = f"""<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>{hwp_file_path.stem}</title>
-</head>
-<body>
-    <pre>{html.escape(hwpx_text)}</pre>
-</body>
-</html>"""
-                        # output_dir 생성 및 index.xhtml 저장
-                        output_dir.mkdir(parents=True, exist_ok=True)
-                        html_file = output_dir / "index.xhtml"
-                        with open(html_file, "w", encoding="utf-8") as f:
-                            f.write(html_content)
-                        logger.info(
-                            f"HWPX fallback 성공: {hwp_file_path.name} → {html_file}"
-                        )
-                        return True
-                    else:
-                        logger.warning(
-                            f"HWPX fallback 실패 - 텍스트 추출 불가: {hwp_file_path.name}"
-                        )
-                except Exception as hwpx_error:
-                    logger.warning(
-                        f"HWPX fallback 실패: {hwp_file_path.name} - {hwpx_error}"
-                    )
+                            # HTMLTransform 객체 생성 및 변환
+                            html_transform = HTMLTransform()
+                            html_transform.transform_hwp5_to_dir(hwp5file, str(output_dir))
 
-                return False
+                            # 변환 결과 확인
+                            index_file = output_dir / "index.xhtml"
+                            if index_file.exists() and index_file.stat().st_size > 0:
+                                logger.info(f"HWP5 파일 변환 성공: {hwp_file_path.name}")
+                                return True
+                            else:
+                                logger.warning(
+                                    f"HWP5 변환 파일이 생성되지 않음: {index_file}"
+                                )
+
+                except (ParseError, InvalidHwp5FileError) as e:
+                    logger.info(f"HWP5 포맷 아님 (2단계 fallback 진행): {hwp_file_path.name}")
+                    logger.debug(f"HWP5 오류 상세: {e}")
+
+                # 2단계: gethwp.read_hwp() 시도 (구형 HWP 포맷)
+                logger.info(f"gethwp.read_hwp() 시도: {hwp_file_path.name}")
+                hwp_text_result = _convert_hwp_with_gethwp(hwp_file_path, output_dir)
+                if hwp_text_result:
+                    return True
+
+                # 3단계: HWPX fallback 시도 (.hwp 확장자지만 실제로는 HWPX일 가능성)
+                logger.info(f"HWPX fallback 시도: {hwp_file_path.name}")
+                return _convert_hwpx_file_to_html(hwp_file_path, output_dir)
             except Exception as transform_error:
                 # XML 파싱 오류 구체적 처리
                 import xml.parsers.expat

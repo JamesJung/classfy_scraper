@@ -1289,22 +1289,23 @@ function setupCLI() {
             type: 'string',
             description: '기본 URL',
             default: 'https://www.naju.go.kr/www/administration/notice/gosi_new',
+            //https://www.naju.go.kr/www/administration/notice/gosi_new?page=1
             required: true
         })
         .option('list-selector', {
             type: 'string',
             description: '리스트 선택자',
-            default: 'table.board_basic tbody tr'
+            default: 'table.table_list tbody tr'
         })
         .option('title-selector', {
             type: 'string',
             description: '제목 선택자',
-            default: 'td:nth-child(2) a'
+            default: 'td:nth-child(3) a'
         })
         .option('date-selector', {
             type: 'string',
             description: '날짜 선택자',
-            default: 'td:nth-child(4) '
+            default: 'td:nth-child(5)'
         })
         .option('force', {
             alias: 'f',

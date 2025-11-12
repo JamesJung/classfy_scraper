@@ -104,7 +104,8 @@
       "Bash(while read f)",
       "Bash(do tail -5 \"$f\")",
       "Bash(then grep -E \"^DB_\" .env)",
-      "Bash(else echo \".env 파일이 없습니다\")"
+      "Bash(else echo \".env 파일이 없습니다\")",
+      "WebFetch(domain:www.naju.go.kr)"
     ],
     "deny": [],
     "ask": []

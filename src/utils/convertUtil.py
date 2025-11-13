@@ -2276,33 +2276,34 @@ def convert_hwp_to_html(hwp_file_path: Path, output_dir: Path) -> bool:
                     logger.info(f"HWP5 포맷 아님 (2단계 fallback 진행): {hwp_file_path.name}")
                     logger.debug(f"HWP5 오류 상세: {e}")
 
-                # 2단계: gethwp.read_hwp() 시도 (구형 HWP 포맷)
-                logger.info(f"gethwp.read_hwp() 시도: {hwp_file_path.name}")
-                hwp_text_result = _convert_hwp_with_gethwp(hwp_file_path, output_dir)
-                if hwp_text_result:
-                    return True
+                try:
+                    # 2단계: gethwp.read_hwp() 시도 (구형 HWP 포맷)
+                    logger.info(f"gethwp.read_hwp() 시도: {hwp_file_path.name}")
+                    hwp_text_result = _convert_hwp_with_gethwp(hwp_file_path, output_dir)
+                    if hwp_text_result:
+                        return True
 
-                # 3단계: HWPX fallback 시도 (.hwp 확장자지만 실제로는 HWPX일 가능성)
-                logger.info(f"HWPX fallback 시도: {hwp_file_path.name}")
-                return _convert_hwpx_file_to_html(hwp_file_path, output_dir)
-            except Exception as transform_error:
-                # XML 파싱 오류 구체적 처리
-                import xml.parsers.expat
+                    # 3단계: HWPX fallback 시도 (.hwp 확장자지만 실제로는 HWPX일 가능성)
+                    logger.info(f"HWPX fallback 시도: {hwp_file_path.name}")
+                    return _convert_hwpx_file_to_html(hwp_file_path, output_dir)
+                except Exception as transform_error:
+                    # XML 파싱 오류 구체적 처리
+                    import xml.parsers.expat
 
-                if isinstance(transform_error, xml.parsers.expat.ExpatError):
-                    logger.error(f"XML 파싱 오류: {hwp_file_path.name}")
-                    logger.error(
-                        f"  오류 위치: line {getattr(transform_error, 'lineno', '?')}, column {getattr(transform_error, 'offset', '?')}"
-                    )
-                    logger.error(f"  오류 메시지: {transform_error}")
-                    logger.warning(
-                        "  → XML 속성값에 유효하지 않은 문자가 포함되어 있습니다."
-                    )
-                else:
-                    logger.error(
-                        f"HWP 변환 중 오류: {hwp_file_path.name} - {transform_error}"
-                    )
-                return False
+                    if isinstance(transform_error, xml.parsers.expat.ExpatError):
+                        logger.error(f"XML 파싱 오류: {hwp_file_path.name}")
+                        logger.error(
+                            f"  오류 위치: line {getattr(transform_error, 'lineno', '?')}, column {getattr(transform_error, 'offset', '?')}"
+                        )
+                        logger.error(f"  오류 메시지: {transform_error}")
+                        logger.warning(
+                            "  → XML 속성값에 유효하지 않은 문자가 포함되어 있습니다."
+                        )
+                    else:
+                        logger.error(
+                            f"HWP 변환 중 오류: {hwp_file_path.name} - {transform_error}"
+                        )
+                    return False
 
     except MemoryError:
         logger.error(f"HWP 파일 변환 중 메모리 부족: {hwp_file_path.name}")

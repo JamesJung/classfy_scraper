@@ -32,6 +32,7 @@ from src.config.logConfig import setup_logging
 
 from src.models.announcementPrvDatabase import AnnouncementPrvDatabaseManager
 from src.utils.domainKeyExtractor import DomainKeyExtractor
+from src.utils.convertUtil import should_exclude_file
 
 logger = setup_logging(__name__)
 
@@ -1017,38 +1018,44 @@ class AnnouncementPreProcessor:
             ".zip",  # ZIP 파일 지원 추가
         }
 
-        target_keywords = ["양식", "서류", "신청서", "동의서"]
-
-        # 파일들을 우선순위에 따라 분류
-        priority_files = []  # 지원/공고 키워드가 있는 파일들
-        normal_files = []  # 일반 파일들
-
-        # 모든 파일을 먼저 검사하여 분류
+        # 1단계: 모든 파일 목록 수집 (메타정보용)
+        all_files = []
         for file_path in attachments_dir.iterdir():
             if file_path.is_file():
                 file_extension = file_path.suffix.lower()
-                filename = file_path.stem
-                lowercase_filename = filename.lower()
-
-                # 지원하는 확장자만 처리
                 if file_extension and file_extension in supported_extensions:
-                    # 양식, 서류 등 제외 키워드 체크
-                    if any(
-                        keyword in lowercase_filename for keyword in target_keywords
-                    ):
-                        continue
+                    all_files.append(file_path)
 
-                    # 지원/공고 키워드가 있는지 확인
-                    if "지원" in lowercase_filename or "공고" in lowercase_filename:
-                        priority_files.append(file_path)
-                        logger.info(
-                            f"우선순위 파일 발견 (지원/공고 키워드): {file_path.name}"
-                        )
-                    else:
-                        normal_files.append(file_path)
+        # 2단계: 파일들을 우선순위에 따라 분류 (내용 처리용)
+        # convertUtil.should_exclude_file()을 사용하여 정교한 필터링 적용
+        files_to_process_content = []  # 내용을 처리할 파일들
+        excluded_files = []  # 제외된 파일들 (메타정보만 기록)
 
-        # 우선순위 파일들을 먼저 처리, 그 다음 일반 파일들 처리
-        all_files_ordered = priority_files + normal_files
+        # 첨부파일이 없는 경우
+        if len(all_files) == 0:
+            logger.info("첨부파일 없음 - 필터링 건너뜀")
+        # 첨부파일이 1개뿐이면 필터링 없이 무조건 처리
+        elif len(all_files) == 1:
+            files_to_process_content = all_files.copy()
+            logger.info(f"📌 첨부파일 1개만 존재 - 필터링 없이 무조건 처리: {all_files[0].name}")
+        else:
+            # 첨부파일이 2개 이상인 경우만 필터링 적용
+            for file_path in all_files:
+                # convertUtil의 should_exclude_file() 함수 사용
+                # - 정규식 패턴 매칭 (양식1, 별지2 등)
+                # - 우선순위 키워드 체크 (공고, 사업, 모집, 지원 등 29개)
+                # - 제외 키워드 체크 (양식, 서류, 신청서 등 50여개)
+                if should_exclude_file(file_path):
+                    # 제외된 파일: 메타정보만 기록, 내용은 처리하지 않음
+                    excluded_files.append(file_path)
+                    logger.info(f"⏭️  내용 처리 제외 (메타정보는 기록): {file_path.name}")
+                else:
+                    # 처리할 파일: 메타정보 + 내용 모두 처리
+                    files_to_process_content.append(file_path)
+                    logger.info(f"✅ 내용 처리 대상: {file_path.name}")
+
+        # 메타정보는 모든 파일에 대해 수집
+        all_files_ordered = all_files
 
         for file_path in all_files_ordered:
             # 이미 위에서 필터링 했으므로 바로 처리
@@ -1057,10 +1064,9 @@ class AnnouncementPreProcessor:
 
             logger.info(f"filename===={filename}{file_extension}")
 
+            # 1단계: 메타정보 수집 (모든 파일)
             attachment_filenames.append(self._normalize_korean_text(file_path.name))
-            logger.info(f"첨부파일 처리 시작: {file_path.name}")
 
-            # 파일 정보 수집 (모든 파일에 대해)
             # URL 매칭 시도 - 파일명으로 먼저 시도, 없으면 stem으로 시도
             download_url = attachment_urls.get(file_path.name, "")
             if not download_url:
@@ -1088,6 +1094,14 @@ class AnnouncementPreProcessor:
             if file_extension != ".md":
                 attachment_files_info.append(file_info)
 
+            # 2단계: 내용 처리 (제외된 파일은 건너뜀)
+            if file_path in excluded_files:
+                logger.debug(f"내용 처리 제외 파일, 메타정보만 기록됨: {file_path.name}")
+                # 제외된 파일도 file_info는 이미 추가되었으므로 내용 처리만 건너뜀
+                continue
+
+            logger.info(f"첨부파일 내용 처리 시작: {file_path.name}")
+
             # 이미 .md 파일인 경우 직접 읽기
             if file_extension == ".md":
                 try:
@@ -1098,7 +1112,7 @@ class AnnouncementPreProcessor:
                         logger.info(
                             f"첨부파일 .md 직접 읽기 성공: {file_path.name} ({len(content)} 문자)"
                         )
-                        file_info["conversion_success"] = True
+                        # .md 파일은 attachment_files_info에 추가되지 않으므로 file_info 업데이트 불필요
                     else:
                         logger.warning(
                             f"첨부파일 .md 내용이 비어있음: {file_path.name}"

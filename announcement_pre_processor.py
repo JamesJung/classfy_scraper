@@ -32,7 +32,7 @@ from src.config.logConfig import setup_logging
 
 from src.models.announcementPrvDatabase import AnnouncementPrvDatabaseManager
 from src.utils.domainKeyExtractor import DomainKeyExtractor
-from src.utils.convertUtil import should_exclude_file
+# should_exclude_file, calculate_file_score는 더 이상 사용하지 않음 (규칙 기반 시스템으로 대체됨)
 
 logger = setup_logging(__name__)
 
@@ -626,7 +626,7 @@ class AnnouncementPreProcessor:
 
             try:
                 combined_content, attachment_filenames, attachment_files_info = (
-                    self._process_attachments_separately(directory_path)
+                    self._process_attachments_separately(directory_path, title)
                 )
                 logger.info(
                     f"첨부파일 내용 처리 완료: {len(combined_content)} 문자, 파일 {len(attachment_filenames)}개"
@@ -986,9 +986,18 @@ class AnnouncementPreProcessor:
             return (float("inf"), folder_name)
 
     def _process_attachments_separately(
-        self, directory_path: Path
+        self, directory_path: Path, announcement_title: str = ""
     ) -> tuple[str, List[str], List[Dict[str, Any]]]:
-        """첨부파일들을 처리하여 내용을 결합하고 파일명 목록을 반휘합니다."""
+        """
+        첨부파일들을 처리하여 내용을 결합하고 파일명 목록을 반환합니다.
+
+        Args:
+            directory_path: 처리할 디렉토리 경로
+            announcement_title: 공고 제목 (파일 우선순위 계산에 사용)
+
+        Returns:
+            tuple: (combined_content, attachment_filenames, attachment_files_info)
+        """
         attachments_dir = directory_path / "attachments"
 
         if not attachments_dir.exists():
@@ -1027,32 +1036,34 @@ class AnnouncementPreProcessor:
                     all_files.append(file_path)
 
         # 2단계: 파일들을 우선순위에 따라 분류 (내용 처리용)
-        # convertUtil.should_exclude_file()을 사용하여 정교한 필터링 적용
+        # 점수 기반 필터링 시스템으로 개선
         files_to_process_content = []  # 내용을 처리할 파일들
         excluded_files = []  # 제외된 파일들 (메타정보만 기록)
 
         # 첨부파일이 없는 경우
         if len(all_files) == 0:
             logger.info("첨부파일 없음 - 필터링 건너뜀")
-        # 첨부파일이 1개뿐이면 필터링 없이 무조건 처리
-        elif len(all_files) == 1:
-            files_to_process_content = all_files.copy()
-            logger.info(f"📌 첨부파일 1개만 존재 - 필터링 없이 무조건 처리: {all_files[0].name}")
         else:
-            # 첨부파일이 2개 이상인 경우만 필터링 적용
-            for file_path in all_files:
-                # convertUtil의 should_exclude_file() 함수 사용
-                # - 정규식 패턴 매칭 (양식1, 별지2 등)
-                # - 우선순위 키워드 체크 (공고, 사업, 모집, 지원 등 29개)
-                # - 제외 키워드 체크 (양식, 서류, 신청서 등 50여개)
-                if should_exclude_file(file_path):
-                    # 제외된 파일: 메타정보만 기록, 내용은 처리하지 않음
-                    excluded_files.append(file_path)
-                    logger.info(f"⏭️  내용 처리 제외 (메타정보는 기록): {file_path.name}")
-                else:
-                    # 처리할 파일: 메타정보 + 내용 모두 처리
-                    files_to_process_content.append(file_path)
-                    logger.info(f"✅ 내용 처리 대상: {file_path.name}")
+            # 규칙 기반 파일 선별 시스템 적용
+            logger.info(f"📁 첨부파일 {len(all_files)}개 발견 - 규칙 기반 필터링 시작")
+            logger.info(f"공고 제목: {announcement_title[:50]}..." if announcement_title else "공고 제목: (없음)")
+
+            # 규칙 기반 파일 선별
+            from src.utils.convertUtil import rule_based_file_selection
+
+            files_to_process_content = rule_based_file_selection(all_files, announcement_title)
+
+            # 제외된 파일 계산
+            excluded_files = [f for f in all_files if f not in files_to_process_content]
+
+            logger.info(f"\n✅ 선택된 파일: {len(files_to_process_content)}개")
+            for idx, file_path in enumerate(files_to_process_content, 1):
+                logger.info(f"  {idx}. {file_path.name}")
+
+            if excluded_files:
+                logger.info(f"⏭️  제외된 파일: {len(excluded_files)}개")
+                for idx, file_path in enumerate(excluded_files, 1):
+                    logger.debug(f"  {idx}. {file_path.name}")
 
         # 메타정보는 모든 파일에 대해 수집
         all_files_ordered = all_files

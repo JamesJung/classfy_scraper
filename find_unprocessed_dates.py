@@ -126,28 +126,53 @@ class UnprocessedDataFinder:
         return total, site_counts
 
     def count_db_announcements(self, date_str, site_code=None):
-        """DB에 등록된 공고 개수 계산"""
+        """
+        DB에 등록된 공고 개수 계산
+
+        content_md IS NOT NULL 조건을 사용하여 실제로 처리 완료된 공고만 카운트합니다.
+        created_at 날짜 기준은 재처리 시 부정확할 수 있으므로,
+        추가로 folder_name 패턴도 확인합니다.
+
+        Args:
+            date_str: 날짜 문자열 (YYYY-MM-DD 또는 YYYYMMDD)
+            site_code: 사이트 코드 (None이면 모든 사이트)
+
+        Returns:
+            DB에 등록된 공고 개수
+        """
         # 날짜 형식 변환 (YYYYMMDD -> YYYY-MM-DD)
         if '-' in date_str:
             db_date = date_str
+            folder_date = date_str.replace('-', '')  # YYYYMMDD for folder pattern
         else:
             db_date = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:]}"
+            folder_date = date_str
 
         if site_code:
+            # content_md가 있는 공고만 카운트 (실제 처리 완료)
+            # created_at 날짜 기준 OR folder_name 패턴 기준 (재처리 대응)
             query = """
                 SELECT COUNT(*) as count
                 FROM announcement_pre_processing
-                WHERE DATE(created_at) = %s
+                WHERE content_md IS NOT NULL
                     AND site_code = %s
+                    AND (
+                        DATE(created_at) = %s
+                        OR folder_name LIKE CONCAT(%s, '_%')
+                    )
             """
-            self.cursor.execute(query, (db_date, site_code))
+            self.cursor.execute(query, (site_code, db_date, folder_date))
         else:
             query = """
                 SELECT COUNT(*) as count
                 FROM announcement_pre_processing
-                WHERE DATE(created_at) = %s
+                WHERE content_md IS NOT NULL
+                    AND (
+                        DATE(created_at) = %s
+                        OR folder_name LIKE CONCAT(%s, '_%')
+                    )
             """
-            self.cursor.execute(query, (db_date,))
+            self.cursor.execute(query, (db_date, folder_date))
 
         result = self.cursor.fetchone()
         return result['count'] if result else 0

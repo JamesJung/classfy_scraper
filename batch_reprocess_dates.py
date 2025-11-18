@@ -84,11 +84,15 @@ class BatchReprocessor:
         else:
             formatted_date = date_str
 
+        # 소스 이름 매핑 (btp -> scraper)
+        # batch_scraper_to_pre_processor.py는 'scraper'를 사용
+        mapped_source = 'scraper' if source_name == 'btp' else source_name
+
         # batch_scraper_to_pre_processor.py 명령어 구성
         cmd = [
             'python3',
             str(self.batch_processor),
-            '--source', source_name,
+            '--source', mapped_source,
             '--date', formatted_date
         ]
 

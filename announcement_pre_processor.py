@@ -32,6 +32,7 @@ from src.config.logConfig import setup_logging
 
 from src.models.announcementPrvDatabase import AnnouncementPrvDatabaseManager
 from src.utils.domainKeyExtractor import DomainKeyExtractor
+# should_exclude_file, calculate_file_score는 더 이상 사용하지 않음 (규칙 기반 시스템으로 대체됨)
 
 logger = setup_logging(__name__)
 
@@ -625,7 +626,7 @@ class AnnouncementPreProcessor:
 
             try:
                 combined_content, attachment_filenames, attachment_files_info = (
-                    self._process_attachments_separately(directory_path)
+                    self._process_attachments_separately(directory_path, title)
                 )
                 logger.info(
                     f"첨부파일 내용 처리 완료: {len(combined_content)} 문자, 파일 {len(attachment_filenames)}개"
@@ -985,9 +986,18 @@ class AnnouncementPreProcessor:
             return (float("inf"), folder_name)
 
     def _process_attachments_separately(
-        self, directory_path: Path
+        self, directory_path: Path, announcement_title: str = ""
     ) -> tuple[str, List[str], List[Dict[str, Any]]]:
-        """첨부파일들을 처리하여 내용을 결합하고 파일명 목록을 반휘합니다."""
+        """
+        첨부파일들을 처리하여 내용을 결합하고 파일명 목록을 반환합니다.
+
+        Args:
+            directory_path: 처리할 디렉토리 경로
+            announcement_title: 공고 제목 (파일 우선순위 계산에 사용)
+
+        Returns:
+            tuple: (combined_content, attachment_filenames, attachment_files_info)
+        """
         attachments_dir = directory_path / "attachments"
 
         if not attachments_dir.exists():
@@ -1017,38 +1027,46 @@ class AnnouncementPreProcessor:
             ".zip",  # ZIP 파일 지원 추가
         }
 
-        target_keywords = ["양식", "서류", "신청서", "동의서"]
-
-        # 파일들을 우선순위에 따라 분류
-        priority_files = []  # 지원/공고 키워드가 있는 파일들
-        normal_files = []  # 일반 파일들
-
-        # 모든 파일을 먼저 검사하여 분류
+        # 1단계: 모든 파일 목록 수집 (메타정보용)
+        all_files = []
         for file_path in attachments_dir.iterdir():
             if file_path.is_file():
                 file_extension = file_path.suffix.lower()
-                filename = file_path.stem
-                lowercase_filename = filename.lower()
-
-                # 지원하는 확장자만 처리
                 if file_extension and file_extension in supported_extensions:
-                    # 양식, 서류 등 제외 키워드 체크
-                    if any(
-                        keyword in lowercase_filename for keyword in target_keywords
-                    ):
-                        continue
+                    all_files.append(file_path)
 
-                    # 지원/공고 키워드가 있는지 확인
-                    if "지원" in lowercase_filename or "공고" in lowercase_filename:
-                        priority_files.append(file_path)
-                        logger.info(
-                            f"우선순위 파일 발견 (지원/공고 키워드): {file_path.name}"
-                        )
-                    else:
-                        normal_files.append(file_path)
+        # 2단계: 파일들을 우선순위에 따라 분류 (내용 처리용)
+        # 점수 기반 필터링 시스템으로 개선
+        files_to_process_content = []  # 내용을 처리할 파일들
+        excluded_files = []  # 제외된 파일들 (메타정보만 기록)
 
-        # 우선순위 파일들을 먼저 처리, 그 다음 일반 파일들 처리
-        all_files_ordered = priority_files + normal_files
+        # 첨부파일이 없는 경우
+        if len(all_files) == 0:
+            logger.info("첨부파일 없음 - 필터링 건너뜀")
+        else:
+            # 규칙 기반 파일 선별 시스템 적용
+            logger.info(f"📁 첨부파일 {len(all_files)}개 발견 - 규칙 기반 필터링 시작")
+            logger.info(f"공고 제목: {announcement_title[:50]}..." if announcement_title else "공고 제목: (없음)")
+
+            # 규칙 기반 파일 선별
+            from src.utils.convertUtil import rule_based_file_selection
+
+            files_to_process_content = rule_based_file_selection(all_files, announcement_title)
+
+            # 제외된 파일 계산
+            excluded_files = [f for f in all_files if f not in files_to_process_content]
+
+            logger.info(f"\n✅ 선택된 파일: {len(files_to_process_content)}개")
+            for idx, file_path in enumerate(files_to_process_content, 1):
+                logger.info(f"  {idx}. {file_path.name}")
+
+            if excluded_files:
+                logger.info(f"⏭️  제외된 파일: {len(excluded_files)}개")
+                for idx, file_path in enumerate(excluded_files, 1):
+                    logger.debug(f"  {idx}. {file_path.name}")
+
+        # 메타정보는 모든 파일에 대해 수집
+        all_files_ordered = all_files
 
         for file_path in all_files_ordered:
             # 이미 위에서 필터링 했으므로 바로 처리
@@ -1057,10 +1075,9 @@ class AnnouncementPreProcessor:
 
             logger.info(f"filename===={filename}{file_extension}")
 
+            # 1단계: 메타정보 수집 (모든 파일)
             attachment_filenames.append(self._normalize_korean_text(file_path.name))
-            logger.info(f"첨부파일 처리 시작: {file_path.name}")
 
-            # 파일 정보 수집 (모든 파일에 대해)
             # URL 매칭 시도 - 파일명으로 먼저 시도, 없으면 stem으로 시도
             download_url = attachment_urls.get(file_path.name, "")
             if not download_url:
@@ -1088,6 +1105,14 @@ class AnnouncementPreProcessor:
             if file_extension != ".md":
                 attachment_files_info.append(file_info)
 
+            # 2단계: 내용 처리 (제외된 파일은 건너뜀)
+            if file_path in excluded_files:
+                logger.debug(f"내용 처리 제외 파일, 메타정보만 기록됨: {file_path.name}")
+                # 제외된 파일도 file_info는 이미 추가되었으므로 내용 처리만 건너뜀
+                continue
+
+            logger.info(f"첨부파일 내용 처리 시작: {file_path.name}")
+
             # 이미 .md 파일인 경우 직접 읽기
             if file_extension == ".md":
                 try:
@@ -1098,7 +1123,7 @@ class AnnouncementPreProcessor:
                         logger.info(
                             f"첨부파일 .md 직접 읽기 성공: {file_path.name} ({len(content)} 문자)"
                         )
-                        file_info["conversion_success"] = True
+                        # .md 파일은 attachment_files_info에 추가되지 않으므로 file_info 업데이트 불필요
                     else:
                         logger.warning(
                             f"첨부파일 .md 내용이 비어있음: {file_path.name}"
@@ -1623,87 +1648,6 @@ class AnnouncementPreProcessor:
         """
         # 테이블이 존재하지 않으므로 아무 작업도 하지 않음
         return True
-
-        # 아래 코드는 비활성화됨 (삭제 예정)
-        """
-        try:
-            from sqlalchemy import text
-            import json
-
-            # duplicate_reason을 JSON으로 변환
-            duplicate_reason_json = None
-            if duplicate_reason:
-                duplicate_reason_json = json.dumps(duplicate_reason, ensure_ascii=False)
-
-            sql = text("""
-                INSERT INTO api_url_processing_log (
-                    site_code,
-                    announcement_id,
-                    announcement_url,
-                    scraping_url,
-                    url_key,
-                    url_key_hash,
-                    processing_status,
-                    preprocessing_id,
-                    existing_preprocessing_id,
-                    api_url_registry_id,
-                    existing_site_type,
-                    existing_site_code,
-                    duplicate_reason,
-                    error_message,
-                    title,
-                    folder_name,
-                    created_at
-                ) VALUES (
-                    :site_code,
-                    :announcement_id,
-                    :announcement_url,
-                    :scraping_url,
-                    :url_key,
-                    :url_key_hash,
-                    :processing_status,
-                    :preprocessing_id,
-                    :existing_preprocessing_id,
-                    :api_url_registry_id,
-                    :existing_site_type,
-                    :existing_site_code,
-                    :duplicate_reason,
-                    :error_message,
-                    :title,
-                    :folder_name,
-                    NOW()
-                )
-            """)
-
-            session.execute(sql, {
-                "site_code": site_code,
-                "announcement_id": announcement_id,
-                "announcement_url": announcement_url,
-                "scraping_url": scraping_url,
-                "url_key": url_key,
-                "url_key_hash": url_key_hash,
-                "processing_status": processing_status,
-                "preprocessing_id": preprocessing_id,
-                "existing_preprocessing_id": existing_preprocessing_id,
-                "api_url_registry_id": api_url_registry_id,
-                "existing_site_type": existing_site_type,
-                "existing_site_code": existing_site_code,
-                "duplicate_reason": duplicate_reason_json,
-                "error_message": error_message,
-                "title": title,
-                "folder_name": folder_name,
-            })
-
-            logger.debug(
-                f"API URL 처리 로그 기록: site_code={site_code}, "
-                f"status={processing_status}, url_key_hash={url_key_hash[:16] if url_key_hash else 'None'}..."
-            )
-            return True
-
-        except Exception as e:
-            logger.warning(f"API URL 처리 로그 기록 실패 (무시하고 계속): {e}")
-            return False
-        """
 
     def _is_llm_processing(self, session, preprocessing_id: int) -> bool:
         """

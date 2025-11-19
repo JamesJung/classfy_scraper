@@ -757,6 +757,15 @@ def _recover_from_cyrillic(text: str) -> str:
 
 def should_exclude_file(file_path: Path) -> bool:
     """
+    ⚠️ DEPRECATED (2025-11-14): 이 함수는 더 이상 사용되지 않습니다.
+
+    규칙 기반 파일 선별 시스템(rule_based_file_selection)으로 대체되었습니다.
+    기존 테스트 파일과의 호환성을 위해 남겨두었으나, 새로운 코드에서는 사용하지 마세요.
+
+    대신 사용: rule_based_file_selection(all_files, announcement_title)
+
+    ---
+
     파일명에 제외 키워드가 포함되어 있는지 확인합니다.
 
     Args:
@@ -770,12 +779,49 @@ def should_exclude_file(file_path: Path) -> bool:
     filename = file_path.name
     filename_lower = filename.lower()
 
-    # 공고 관련 파일은 항상 포함 (우선순위 최상위)
-    if "공고" in filename_lower:
-        logger.info(f"공고 파일 포함: {filename}")
-        return False
+    # 1. 우선순위 키워드 시스템 (중요한 파일은 제외하지 않음)
+    # 가장 먼저 체크하여 중요 파일이 제외되지 않도록 보호
+    # 구체적인 키워드부터 먼저 체크하여 정확한 매칭 정보 확보
+    priority_keywords = [
+        # 공고 관련 (최우선) - 구체적인 것부터
+        "모집공고",
+        "선정공고",
+        "발표공고",
+        "공고문",
+        "공고",
+        "공문",
+        # 사업 관련 - 구체적인 것부터
+        "사업계획",
+        "지원사업",
+        "보조사업",
+        "사업",
+        # 보조금 관련
+        "보조금",
+        # 신청/모집/지원 관련 - 복합어만 포함 (단독 "신청"은 제외)
+        "지원신청",
+        "참가신청",
+        "입주신청",
+        "접수신청",
+        "모집",
+        "지원",
+        "참여",
+        "접수",
+        # 계획/제안 관련
+        "사업계획서",
+        "추진계획서",
+        "계획서",
+        "제안서",
+        "추진계획",
+    ]
 
-    # 1. 정규식 패턴으로 복잡한 패턴 검사
+    # 우선순위 키워드가 있으면 제외하지 않음
+    for priority in priority_keywords:
+        if priority in filename_lower:
+            logger.info(f"파일 포함 - 우선순위 키워드 발견: {filename} -> [{priority}]")
+            return False
+
+    # 2. 정규식 패턴으로 복잡한 패턴 검사
+    # 우선순위 키워드가 없는 경우에만 정규식 패턴으로 제외 검사
     regex_patterns = [
         # r"붙임\s*\d+",  # 붙임1, 붙임 1, 붙임2 등
         # r"별첨\s*\d+",  # 별첨1, 별첨 1, 별첨2 등
@@ -800,59 +846,10 @@ def should_exclude_file(file_path: Path) -> bool:
         logger.info(f"파일 제외 - 패턴 매칭: {filename} -> {found_patterns}")
         return True
 
-    # 2. 우선순위 키워드 시스템 (중요한 파일은 제외하지 않음)
-    priority_keywords = [
-        # 공고 관련 (최우선)
-        "공고문",
-        "공고",
-        "공문",
-        "모집공고",
-        "선정공고",
-        "발표공고",
-        # 사업 관련
-        "사업",
-        "지원사업",
-        "보조사업",
-        "지원",
-        "보조금",
-        "보조",
-        # 신청/모집 관련
-        "모집",
-        "신청",
-        "참여",
-        "접수",
-        # 계획/제안 관련
-        "계획서",
-        "제안서",
-        "사업계획",
-        "추진계획",
-    ]
-
-    # 우선순위 키워드가 있으면 제외하지 않음
-    for priority in priority_keywords:
-        if priority in filename_lower:
-            logger.info(f"파일 포함 - 우선순위 키워드 발견: {filename} -> [{priority}]")
-            return False
-
     # 3. 기본 키워드 검사 (우선순위 키워드가 없는 경우만)
+    # 구체적인 키워드부터 먼저 체크하여 정확한 매칭 정보 확보
     exclude_keywords = [
-        # 기본 서식/양식 관련
-        "서식",
-        "양식",
-        "form",
-        "template",
-        "템플릿",
-        # 첨부/별첨 관련
-        "별첨",
-        "첨부",
-        "별표",
-        "참고자료",
-        "참조",
-        "별지",
-        "부록",
-        # 신청서 관련 (확장)
-        "신청서",
-        "신청양식",
+        # 신청서 관련 - 구체적인 것부터 (우선순위에서 제외된 단독 신청서 포함)
         "신청서양식",
         "입주신청서",
         "참가신청서",
@@ -861,31 +858,48 @@ def should_exclude_file(file_path: Path) -> bool:
         "등록신청서",
         "회원신청서",
         "가입신청서",
-        # 첨부 관련 확장
+        "신청양식",
+        "신청서",
+        # 첨부 관련 - 구체적인 것부터
         "첨부문서",
         "첨부서류",
         "첨부자료",
-        # 기타 제외 대상
-        "예시",
-        "샘플",
-        "sample",
-        "example",
-        "안내서",
-        "가이드",
-        "guide",
-        "manual",
-        "매뉴얼",
-        "체크리스트",
-        "checklist",
-        "점검표",
+        "첨부",
+        # 템플릿 관련 - 구체적인 것부터
         "계획서템플릿",
         "제안서템플릿",
         "보고서템플릿",
+        "템플릿",
+        "template",
+        # 기본 서식/양식 관련
+        "서식",
+        "양식",
+        "form",
+        # 첨부/별첨 관련
+        "별첨",
+        "별표",
+        "참고자료",
+        "참조",
+        "별지",
+        "부록",
+        # 기타 제외 대상
+        "체크리스트",
+        "checklist",
+        "점검표",
+        "안내서",
+        "가이드",
+        "guide",
+        "매뉴얼",
+        "manual",
+        "샘플",
+        "sample",
+        "예시",
+        "example",
         # FAQ는 더 구체적으로 (단독 FAQ 파일만)
+        "자주묻는질문",
         "faq.",
         "_faq",
         "faq_",
-        "자주묻는질문",
     ]
 
     found_exclude_keywords = []
@@ -922,6 +936,280 @@ def normalize_text(text: str) -> str:
     normalized = "".join(c for c in normalized if c.isalnum() or c in "가-힣")
 
     return normalized
+
+
+def calculate_title_similarity(filename: str, announcement_title: str) -> float:
+    """
+    파일명과 공고 제목의 유사도를 계산합니다.
+
+    Args:
+        filename: 비교할 파일명 (확장자 포함 가능)
+        announcement_title: 공고 제목
+
+    Returns:
+        float: 유사도 점수 (0.0 ~ 1.0)
+    """
+    from difflib import SequenceMatcher
+
+    if not filename or not announcement_title:
+        return 0.0
+
+    # 파일명에서 확장자 제거
+    filename_stem = Path(filename).stem
+
+    # 텍스트 정규화
+    normalized_filename = normalize_text(filename_stem)
+    normalized_title = normalize_text(announcement_title)
+
+    if not normalized_filename or not normalized_title:
+        return 0.0
+
+    # difflib를 사용한 유사도 계산
+    matcher = SequenceMatcher(None, normalized_filename, normalized_title)
+    similarity = matcher.ratio()
+
+    logger.debug(
+        f"제목 유사도: {similarity:.3f} | 파일명: {filename_stem[:30]} | 제목: {announcement_title[:30]}"
+    )
+
+    return similarity
+
+
+def calculate_file_score(file_path: Path, announcement_title: str = "", apply_image_penalty: bool = True) -> dict:
+    """
+    ⚠️ DEPRECATED (2025-11-14): 이 함수는 더 이상 사용되지 않습니다.
+
+    규칙 기반 파일 선별 시스템(rule_based_file_selection)으로 대체되었습니다.
+    기존 테스트 파일과의 호환성을 위해 남겨두었으나, 새로운 코드에서는 사용하지 마세요.
+
+    대신 사용: rule_based_file_selection(all_files, announcement_title)
+
+    ---
+
+    파일의 우선순위 점수를 계산합니다.
+    우선순위 키워드와 제외 키워드를 모두 고려하여 최종 점수를 산출합니다.
+
+    Args:
+        file_path: 점수를 계산할 파일 경로
+        announcement_title: 공고 제목 (선택사항, 제목 유사도 계산에 사용)
+
+    Returns:
+        dict: {
+            'priority_score': int,         # 우선순위 키워드 점수
+            'exclude_score': int,          # 제외 키워드 패널티
+            'pattern_penalty': int,        # 정규식 패턴 패널티
+            'title_similarity': float,     # 제목 유사도 (0.0-1.0)
+            'base_score': float,           # 기본 점수 (우선순위 - 제외 - 패턴)
+            'final_score': float,          # 최종 점수 (기본 점수 × 제목 가중치)
+            'matched_priority': list,      # 매칭된 우선순위 키워드
+            'matched_exclude': list,       # 매칭된 제외 키워드
+            'matched_patterns': list       # 매칭된 정규식 패턴
+        }
+    """
+    import re
+    from difflib import SequenceMatcher
+
+    filename = file_path.name
+    filename_lower = filename.lower()
+    filename_stem = file_path.stem  # 확장자 제외
+
+    # 🆕 제목과 파일명이 일치하면 최우선 선택 (유사도 > 0.95)
+    if announcement_title and filename_stem:
+        # 제목 유사도 먼저 계산
+        title_similarity_check = calculate_title_similarity(filename, announcement_title)
+
+        if title_similarity_check > 0.95:
+            logger.info(
+                f"📌 제목-파일명 일치 감지 (유사도: {title_similarity_check:.3f}) → 최우선 선택: {filename[:60]}"
+            )
+            return {
+                'priority_score': 1000,
+                'exclude_score': 0,
+                'pattern_penalty': 0,
+                'extension_penalty': 0,
+                'title_similarity': 1.0,
+                'base_score': 1000.0,
+                'final_score': 2000.0,  # 무조건 최고 점수
+                'matched_priority': ['제목일치(+1000)'],
+                'matched_exclude': [],
+                'matched_patterns': []
+            }
+
+    # 기존 로직 계속...
+
+    # 1. 우선순위 키워드 점수 계산 (구체적일수록 높은 점수)
+    priority_keywords = {
+        # 공고 관련 (최우선) - 구체적인 것부터
+        "모집공고": 20,
+        "선정공고": 20,
+        "발표공고": 20,
+        "공고문": 15,
+        "공고": 10,
+        "공문": 10,
+        # 사업 관련 - 구체적인 것부터
+        "사업계획": 15,
+        "지원사업": 15,
+        "보조사업": 15,
+        "사업": 5,
+        # 보조금 관련
+        "보조금": 10,
+        # 신청/모집/지원 관련 - 복합어만 포함
+        "지원신청": 8,
+        "참가신청": 8,
+        "입주신청": 8,
+        "접수신청": 8,
+        "모집": 8,
+        "지원": 5,
+        "참여": 5,
+        "접수": 5,
+        # 계획/제안 관련
+        "사업계획서": 12,
+        "추진계획서": 12,
+        "계획서": 8,
+        "제안서": 8,
+        "추진계획": 8,
+    }
+
+    priority_score = 0
+    matched_priority = []
+
+    for keyword, score in priority_keywords.items():
+        if keyword in filename_lower:
+            priority_score += score
+            matched_priority.append(f"{keyword}(+{score})")
+
+    # 2. 정규식 패턴 패널티 (-30점/패턴)
+    regex_patterns = [
+        r"별지\s*\d+",
+        r"부록\s*\d+",
+        r"양식\s*\d+[-\d]*",
+        r"첨부\s*문서",
+        r"첨부\s*서류",
+        r"첨부\s*자료",
+        r"매뉴얼\s*\d+",
+    ]
+
+    pattern_penalty = 0
+    matched_patterns = []
+
+    for pattern in regex_patterns:
+        if re.search(pattern, filename, re.IGNORECASE):
+            pattern_penalty += 30
+            matched_patterns.append(pattern)
+
+    # 3. 제외 키워드 패널티 (구체적일수록 높은 패널티)
+    exclude_keywords = {
+        # 신청서 관련 - 구체적인 것부터
+        "신청서양식": 35,
+        "입주신청서": 30,
+        "참가신청서": 30,
+        "지원신청서": 30,
+        "접수신청서": 30,
+        "등록신청서": 30,
+        "회원신청서": 30,
+        "가입신청서": 30,
+        "신청양식": 30,
+        "신청서": 25,
+        # 첨부 관련
+        "첨부문서": 25,
+        "첨부서류": 25,
+        "첨부자료": 25,
+        "첨부": 20,
+        # 템플릿 관련
+        "계획서템플릿": 30,
+        "제안서템플릿": 30,
+        "보고서템플릿": 30,
+        "템플릿": 25,
+        "template": 25,
+        # 기본 서식/양식 관련
+        "서식": 25,
+        "양식": 25,
+        "form": 20,
+        # 첨부/별첨 관련
+        "별첨": 20,
+        "별표": 20,
+        "참고자료": 20,
+        "참조": 15,
+        "별지": 20,
+        "부록": 20,
+        "붙임": 15,
+        # 기타 제외 대상
+        "체크리스트": 20,
+        "checklist": 20,
+        "점검표": 20,
+        "안내서": 15,
+        "가이드": 15,
+        "guide": 15,
+        "매뉴얼": 15,
+        "manual": 15,
+        "샘플": 20,
+        "sample": 20,
+        "예시": 20,
+        "example": 20,
+        # FAQ
+        "자주묻는질문": 15,
+        "faq.": 15,
+        "_faq": 15,
+        "faq_": 15,
+        # 🆕 이미지 관련 제외 키워드
+        "공고이미지": 15,
+        "포스터": 10,
+        "이미지": 10,
+    }
+
+    exclude_score = 0
+    matched_exclude = []
+
+    for keyword, penalty in exclude_keywords.items():
+        if keyword in filename_lower:
+            exclude_score += penalty
+            matched_exclude.append(f"{keyword}(-{penalty})")
+
+    # 4. 제목 유사도 계산
+    title_similarity = 0.0
+    if announcement_title:
+        title_similarity = calculate_title_similarity(filename, announcement_title)
+
+    # 5. 🆕 확장자별 패널티 (이미지 파일 우선순위 낮춤)
+    # 단, 문서 파일이 없고 이미지만 있는 경우에는 패널티 미적용
+    file_extension = file_path.suffix.lower()
+    extension_penalty = 0
+
+    if file_extension in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']:
+        if apply_image_penalty:
+            extension_penalty = 20  # 이미지 파일 패널티 (문서가 있을 때만)
+            logger.debug(f"이미지 파일 패널티 적용: {filename} (-{extension_penalty})")
+        else:
+            logger.debug(f"이미지만 있음 - 패널티 미적용: {filename}")
+
+    # 6. 최종 점수 계산
+    # base_score = 우선순위 점수 - 제외 패널티 - 패턴 패널티 - 확장자 패널티
+    base_score = priority_score - exclude_score - pattern_penalty - extension_penalty
+
+    # final_score = base_score × (1.0 + title_similarity)
+    # 제목 유사도가 높을수록 가중치 증가 (최대 2배)
+    final_score = base_score * (1.0 + title_similarity)
+
+    result = {
+        "priority_score": priority_score,
+        "exclude_score": exclude_score,
+        "pattern_penalty": pattern_penalty,
+        "extension_penalty": extension_penalty,
+        "title_similarity": title_similarity,
+        "base_score": base_score,
+        "final_score": final_score,
+        "matched_priority": matched_priority,
+        "matched_exclude": matched_exclude,
+        "matched_patterns": matched_patterns,
+    }
+
+    logger.debug(
+        f"파일 점수 계산: {filename} | "
+        f"우선순위={priority_score} 제외={exclude_score} 패턴={pattern_penalty} | "
+        f"유사도={title_similarity:.3f} | base={base_score:.1f} final={final_score:.1f}"
+    )
+
+    return result
 
 
 def convert_code_info():
@@ -2276,33 +2564,34 @@ def convert_hwp_to_html(hwp_file_path: Path, output_dir: Path) -> bool:
                     logger.info(f"HWP5 포맷 아님 (2단계 fallback 진행): {hwp_file_path.name}")
                     logger.debug(f"HWP5 오류 상세: {e}")
 
-                # 2단계: gethwp.read_hwp() 시도 (구형 HWP 포맷)
-                logger.info(f"gethwp.read_hwp() 시도: {hwp_file_path.name}")
-                hwp_text_result = _convert_hwp_with_gethwp(hwp_file_path, output_dir)
-                if hwp_text_result:
-                    return True
+                try:
+                    # 2단계: gethwp.read_hwp() 시도 (구형 HWP 포맷)
+                    logger.info(f"gethwp.read_hwp() 시도: {hwp_file_path.name}")
+                    hwp_text_result = _convert_hwp_with_gethwp(hwp_file_path, output_dir)
+                    if hwp_text_result:
+                        return True
 
-                # 3단계: HWPX fallback 시도 (.hwp 확장자지만 실제로는 HWPX일 가능성)
-                logger.info(f"HWPX fallback 시도: {hwp_file_path.name}")
-                return _convert_hwpx_file_to_html(hwp_file_path, output_dir)
-            except Exception as transform_error:
-                # XML 파싱 오류 구체적 처리
-                import xml.parsers.expat
+                    # 3단계: HWPX fallback 시도 (.hwp 확장자지만 실제로는 HWPX일 가능성)
+                    logger.info(f"HWPX fallback 시도: {hwp_file_path.name}")
+                    return _convert_hwpx_file_to_html(hwp_file_path, output_dir)
+                except Exception as transform_error:
+                    # XML 파싱 오류 구체적 처리
+                    import xml.parsers.expat
 
-                if isinstance(transform_error, xml.parsers.expat.ExpatError):
-                    logger.error(f"XML 파싱 오류: {hwp_file_path.name}")
-                    logger.error(
-                        f"  오류 위치: line {getattr(transform_error, 'lineno', '?')}, column {getattr(transform_error, 'offset', '?')}"
-                    )
-                    logger.error(f"  오류 메시지: {transform_error}")
-                    logger.warning(
-                        "  → XML 속성값에 유효하지 않은 문자가 포함되어 있습니다."
-                    )
-                else:
-                    logger.error(
-                        f"HWP 변환 중 오류: {hwp_file_path.name} - {transform_error}"
-                    )
-                return False
+                    if isinstance(transform_error, xml.parsers.expat.ExpatError):
+                        logger.error(f"XML 파싱 오류: {hwp_file_path.name}")
+                        logger.error(
+                            f"  오류 위치: line {getattr(transform_error, 'lineno', '?')}, column {getattr(transform_error, 'offset', '?')}"
+                        )
+                        logger.error(f"  오류 메시지: {transform_error}")
+                        logger.warning(
+                            "  → XML 속성값에 유효하지 않은 문자가 포함되어 있습니다."
+                        )
+                    else:
+                        logger.error(
+                            f"HWP 변환 중 오류: {hwp_file_path.name} - {transform_error}"
+                        )
+                    return False
 
     except MemoryError:
         logger.error(f"HWP 파일 변환 중 메모리 부족: {hwp_file_path.name}")
@@ -2497,17 +2786,23 @@ def convert_hwp_to_markdown(hwp_file_path: Path, output_path: Path) -> bool:
                                                 return True
                                             else:
                                                 logger.warning(
-                                                    f"hwp5txt 재변환에도 키릴 문자 발견: {message_retry}, HTML 결과 사용"
+                                                    f"hwp5txt 재변환에도 키릴 문자 발견: {message_retry}, 다음 방법으로 fallback"
                                                 )
+                                                # hwp5txt도 실패 - 다음 변환 방법 시도
+                                                raise Exception(f"hwp5txt도 키릴 문자 문제: {message_retry}")
                                 except Exception as retry_error:
-                                    logger.warning(f"hwp5txt 재변환 실패: {retry_error}, HTML 결과 사용")
-
-                            with open(output_path, "w", encoding="utf-8") as f:
-                                f.write(content)
-                            logger.info(
-                                f"HWP HTML 변환 성공: {hwp_file_path.name} -> {output_path.name} ->{output_path}"
-                            )
-                            return True
+                                    logger.warning(f"hwp5txt 재변환 실패: {retry_error}, 다음 방법으로 fallback")
+                                    # HTML 변환도 실패, hwp5txt도 실패 - 다음 변환 방법(MarkItDown, gethwp)으로 넘어감
+                                    # HTML 결과를 사용하지 않고 예외 발생시켜 다음 방법 시도
+                                    raise
+                            else:
+                                # 키릴 문자 문제 없음 - HTML 결과 사용
+                                with open(output_path, "w", encoding="utf-8") as f:
+                                    f.write(content)
+                                logger.info(
+                                    f"HWP HTML 변환 성공: {hwp_file_path.name} -> {output_path.name} ->{output_path}"
+                                )
+                                return True
         except Exception as e:
             logger.info(f"HTML 변환 실패: {e}")
 
@@ -2710,8 +3005,10 @@ def has_cyrillic_encoding_issue(text: str, threshold: float = 0.01) -> tuple[boo
     if not text or len(text) == 0:
         return False, "Empty text"
 
-    # 키릴 문자 (러시아어) 패턴
-    cyrillic_pattern = r'[А-Яа-яЁё]'
+    # 키릴 문자 패턴 (전체 Cyrillic 블록 포함: U+0400-04FF)
+    # 기본 Cyrillic (U+0400-04FF) + Cyrillic Supplement (U+0500-052F)
+    # 한글 HWP 인코딩 오류 시 Cyrillic Extended 문자로 깨짐
+    cyrillic_pattern = r'[\u0400-\u052F]'
     cyrillic_matches = re.findall(cyrillic_pattern, text)
     cyrillic_count = len(cyrillic_matches)
 
@@ -2807,3 +3104,207 @@ def extract_hwp_text_fallback(hwp_file_path: Path) -> str | None:
     except Exception as e:
         logger.error(f"HWP 파일 대체 텍스트 추출 중 오류: {hwp_file_path.name} - {e}")
         return None
+
+
+# ====================================================================================
+# 규칙 기반 파일 선별 시스템 (Rule-Based File Selection)
+# ====================================================================================
+
+# 확장자 우선순위 (낮은 숫자 = 높은 우선순위)
+EXTENSION_PRIORITY = {
+    '.md': 1,      # 이미 변환된 마크다운 (최우선)
+    '.hwp': 2,     # 한글 원본
+    '.hwpx': 3,    # 한글 XML
+    '.pdf': 4,     # PDF
+    '.docx': 5,    # MS Word
+    '.pptx': 10,   # PowerPoint
+    '.jpg': 20,    # 이미지
+    '.jpeg': 20,
+    '.png': 20,
+    '.gif': 20,
+    '.bmp': 20,
+    '.webp': 20,
+    '.zip': 30     # 압축 파일 (최하위)
+}
+
+# 필수 포함 키워드 (하나라도 포함되면 선별)
+REQUIRED_KEYWORDS = [
+    # 공고 관련
+    "모집공고", "선정공고", "발표공고", "공고문", "공고", "공문",
+    # 사업 관련
+    "사업계획", "지원사업", "보조사업", "사업", "보조금",
+    # 신청/모집 관련
+    "지원신청", "참가신청", "입주신청", "접수신청", "모집", "지원", "참여", "접수",
+    # 계획/제안 관련
+    "사업계획서", "추진계획서", "계획서", "제안서", "추진계획",
+]
+
+# 제외 키워드 (하나라도 포함되면 제외)
+EXCLUDE_KEYWORDS = [
+    # 신청서 관련
+    "신청서양식", "입주신청서", "참가신청서", "지원신청서", "신청서", "신청양식",
+    # 첨부/참고
+    "첨부문서", "첨부서류", "첨부자료", "첨부", "참고자료", "참조",
+    # 양식/템플릿
+    "양식", "서식", "템플릿", "template", "form",
+    # 기타
+    "별지", "별첨", "붙임", "부록", "샘플", "예시", "안내서", "가이드", "매뉴얼",
+    "체크리스트", "checklist", "faq", "공고이미지", "포스터", "이미지",
+]
+
+
+def find_title_matched_files(files: list, title: str) -> list:
+    """
+    제목과 일치하는 파일들 찾기 (유사도 > 0.95)
+
+    Args:
+        files: 파일 경로 리스트 (Path 객체)
+        title: 공고 제목
+
+    Returns:
+        list: 제목과 일치하는 파일 리스트
+    """
+    logger = setup_logging(__name__)
+    matched = []
+
+    for file_path in files:
+        similarity = calculate_title_similarity(file_path.stem, title)
+        if similarity > 0.95:
+            matched.append(file_path)
+            logger.info(f"📌 제목 일치 발견: {file_path.name} (유사도: {similarity:.3f})")
+
+    return matched
+
+
+def select_by_extension_priority(files: list) -> Path:
+    """
+    확장자 우선순위로 1개 선택
+
+    Args:
+        files: 파일 경로 리스트 (Path 객체)
+
+    Returns:
+        Path: 우선순위가 가장 높은 파일
+    """
+    logger = setup_logging(__name__)
+
+    best_file = min(files, key=lambda f: EXTENSION_PRIORITY.get(f.suffix.lower(), 99))
+    logger.info(f"🏆 확장자 우선순위 선택: {best_file.name} ({best_file.suffix})")
+
+    return best_file
+
+
+def filter_by_required_keywords(files: list) -> list:
+    """
+    필수 포함 키워드로 선별
+
+    Args:
+        files: 파일 경로 리스트 (Path 객체)
+
+    Returns:
+        list: 필수 키워드가 포함된 파일 리스트
+    """
+    logger = setup_logging(__name__)
+    selected = []
+
+    for file_path in files:
+        filename = file_path.stem.lower()
+        matched_keywords = [kw for kw in REQUIRED_KEYWORDS if kw.lower() in filename]
+
+        if matched_keywords:
+            selected.append(file_path)
+            logger.debug(f"✅ 필수 키워드 매칭: {file_path.name} - {matched_keywords}")
+
+    logger.info(f"📋 필수 키워드 선별: {len(selected)}/{len(files)}개")
+    return selected
+
+
+def filter_by_exclude_keywords(files: list) -> list:
+    """
+    제외 키워드로 필터링
+
+    Args:
+        files: 파일 경로 리스트 (Path 객체)
+
+    Returns:
+        list: 제외 키워드가 없는 파일 리스트
+    """
+    logger = setup_logging(__name__)
+    filtered = []
+
+    for file_path in files:
+        filename = file_path.stem.lower()
+        matched_exclude = [kw for kw in EXCLUDE_KEYWORDS if kw.lower() in filename]
+
+        if not matched_exclude:
+            filtered.append(file_path)
+        else:
+            logger.debug(f"❌ 제외 키워드 매칭: {file_path.name} - {matched_exclude}")
+
+    logger.info(f"🔍 제외 키워드 필터링: {len(filtered)}/{len(files)}개 남음")
+    return filtered
+
+
+def rule_based_file_selection(all_files: list, announcement_title: str) -> list:
+    """
+    규칙 기반 파일 선별 시스템
+
+    단계:
+    1. 압축 파일 해제 (이미 완료됨, 확인만)
+    2. 제목-파일명 완전 일치? → 선택 (확장자 우선순위)
+    3. 첨부파일 1개? → 선택
+    4. 필수 포함 키워드로 선별 (없으면 모든 파일)
+    5. 제외 키워드로 필터링 (없으면 제외 전 파일)
+
+    Args:
+        all_files: 모든 파일 리스트 (Path 객체)
+        announcement_title: 공고 제목
+
+    Returns:
+        list: 처리할 파일 리스트 (1개 이상)
+    """
+    logger = setup_logging(__name__)
+
+    # Step 1: 압축 파일 해제 확인 (이미 attachmentProcessor에서 처리됨)
+    logger.info(f"📁 규칙 기반 파일 선별 시작: 총 {len(all_files)}개 파일")
+
+    # Step 2: 제목-파일명 완전 일치 확인
+    if announcement_title:
+        title_matched = find_title_matched_files(all_files, announcement_title)
+        if title_matched:
+            logger.info(f"✅ [Step 2] 제목 일치 파일 발견: {len(title_matched)}개")
+            # 여러개면 확장자 우선순위로 1개 선택
+            selected = select_by_extension_priority(title_matched)
+            return [selected]
+
+    # Step 3: 첨부파일 1개?
+    if len(all_files) == 1:
+        logger.info(f"✅ [Step 3] 첨부파일 1개만 존재 → 무조건 처리: {all_files[0].name}")
+        return all_files
+
+    # Step 4: 필수 포함 키워드로 선별
+    logger.info(f"🔍 [Step 4] 필수 포함 키워드 선별 시작")
+    selected = filter_by_required_keywords(all_files)
+
+    if not selected:
+        logger.info(f"⚠️  필수 키워드 선별 없음 → 모든 파일 선택")
+        selected = all_files.copy()
+    else:
+        logger.info(f"✅ 필수 키워드 선별 완료: {len(selected)}개")
+
+    # Step 5: 제외 키워드로 필터링
+    logger.info(f"🔍 [Step 5] 제외 키워드 필터링 시작")
+    filtered = filter_by_exclude_keywords(selected)
+
+    if not filtered:
+        logger.warning(f"⚠️  제외 후 남는 파일 없음 → 제외 전 파일 사용")
+        filtered = selected.copy()
+    else:
+        logger.info(f"✅ 제외 키워드 필터링 완료: {len(filtered)}개")
+
+    # Step 6: 최종 파일들 반환
+    logger.info(f"🎯 [최종] 처리할 파일: {len(filtered)}개")
+    for idx, file_path in enumerate(filtered, 1):
+        logger.info(f"  {idx}. {file_path.name}")
+
+    return filtered

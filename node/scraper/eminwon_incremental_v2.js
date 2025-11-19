@@ -26,7 +26,12 @@ class EminwonListCollector {
         const hostUrl = eminwonHosts[this.region];
         this.baseUrl = `https://${hostUrl}`;
         // this.listUrl = `https://${hostUrl}/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05&cpath=`;
-        this.listUrl = `https://${hostUrl}/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05&list_gubun=A`;
+
+        /* 2025-11-12에 확인 결과 not_ancmt_se_code=01,02,03,04,05,06으로 진행되는 부분이 있다. */
+        //this.listUrl = `https://${hostUrl}/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05&list_gubun=A`;
+
+        this.listUrl = `https://${hostUrl}/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A`;
+
         this.actionUrl = `https://${hostUrl}/emwp/gov/mogaha/ntis/web/ofr/action/OfrAction.do`;
 
         this.browser = null;

@@ -2705,6 +2705,26 @@ class AnnouncementPreProcessor:
                             f"site_code={db_site_code}, origin_url={origin_url[:80]}..."
                         )
 
+                # ================================================
+                # 🆕 EXCLUSION_COUNT 업데이트
+                # ================================================
+                # processing_status가 '제외'인 경우 EXCLUSION_KEYWORDS 테이블의 EXCLUSION_COUNT 증가
+                if status == "제외" and exclusion_keywords:
+                    for keyword in exclusion_keywords:
+                        try:
+                            session.execute(
+                                text("""
+                                    UPDATE EXCLUSION_KEYWORDS
+                                    SET EXCLUSION_COUNT = EXCLUSION_COUNT + 1
+                                    WHERE KEYWORD = :keyword
+                                    AND IS_ACTIVE = 1
+                                """),
+                                {"keyword": keyword}
+                            )
+                            logger.debug(f"EXCLUSION_COUNT 업데이트 완료: keyword='{keyword}'")
+                        except Exception as e:
+                            logger.warning(f"EXCLUSION_COUNT 업데이트 실패 (계속 진행): keyword='{keyword}', error={e}")
+
                 # 모든 변경사항을 한 번에 커밋
                 session.commit()
                 logger.info(f"처리 결과 저장 완료: ID {record_id}, 상태: {status}")

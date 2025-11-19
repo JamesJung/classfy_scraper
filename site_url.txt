@@ -1,0 +1,607 @@
+site_code|site_url|scraper_path|scraper_name
+------------------------------------------------------------------------------------------------------------------------
+andong|https://www.andong.go.kr/portal/saeol/gosi/list.do?seCode=04&mId=0401020300|node/scraper/andong_scraper.js|andong_scraper.js
+anseong|https://www.anseong.go.kr/portal/saeol/gosiList.do?mId=0501040000&token=1757576243955|node/scraper/anseong_scraper.js|anseong_scraper.js
+anyang|https://www.anyang.go.kr/main/emwsWebList.do?key=4101&searchGosiSe=01,04|node/scraper/anyang_scraper.js|anyang_scraper.js
+boeun|https://www.boeun.go.kr/www/selectBbsNttList.do?bbsNo=66&key=194|node/scraper/boeun_scraper.js|boeun_scraper.js
+boseong|https://www.boseong.go.kr/www/open_administration/city_news/notification|node/scraper/boseong_scraper.js|boseong_scraper.js
+buan|https://www.buan.go.kr/board/list.buan?boardId=BBS_0000054&menuCd=DOM_000000103001003000&paging=ok&startPage=1|node/scraper/buan_scraper.js|buan_scraper.js
+busan|https://www.busan.go.kr/nbgosi?curPage=1&conGosiGbn=|node/scraper/busan_scraper.js|busan_scraper.js
+changwon|https://www.changwon.go.kr/cwportal/10310/10438/10439.web|node/scraper/changwon_scraper.js|changwon_scraper.js
+cheongdo|https://www.cheongdo.go.kr/portal/saeol/gosi/list.do?mid=0301020000&token=1757579444532|node/scraper/cheongdo_scraper.js|cheongdo_scraper.js
+cheongju|https://www.cheongju.go.kr/www/selectEminwonNoticeList.do?key=281&nowDongGn=&notAncmtSeCd=04|node/scraper/cheongju_scraper.js|cheongju_scraper.js
+chilgok|https://www.chilgok.go.kr/portal/saeol/gosi/list.do?mId=0201030000|node/scraper/chilgok_scraper.js|chilgok_scraper.js
+chungbuk|https://www.chungbuk.go.kr/www/selectGosiPblancList.do?key=422|node/scraper/chungbuk_scraper.js|chungbuk_scraper.js
+chungju|https://www.chungju.go.kr/www/selectEminwonList.do?key=510&ofr_pageSize=10&ancmt_se_code=01,02,04,05&pageIndex=1|node/scraper/chungju_scraper.js|chungju_scraper.js
+chungnam|https://www.chungnam.go.kr/cnportal/province/province/list.do?menuNo=500487|node/scraper/chungnam_scraper.js|chungnam_scraper.js
+cng|https://www.cng.go.kr/03517/01553.web|node/scraper/cng_scraper.js|cng_scraper.js
+cs|https://www.cs.go.kr/news/00002679/00006203.web|node/scraper/cs_scraper.js|cs_scraper.js
+cwg|https://www.cwg.go.kr/www/selectBbsNttList.do?bbsNo=25&key=1226|node/scraper/announcement_scraper.js|announcement_scraper.js
+cwg|https://www.cwg.go.kr/www/selectBbsNttList.do?bbsNo=25&key=1226|node/scraper/cwg_scraper.js|cwg_scraper.js
+ddc|https://www.ddc.go.kr/ddc/selectGosiList.do?key=340&not_ancmt_se_code=04|node/scraper/ddc_scraper.js|ddc_scraper.js
+ddm|https://www.ddm.go.kr/www/selectEminwonWebList.do?key=3291&searchNotAncmtSeCode=01,02,04,05,06,07|node/scraper/ddm_scraper.js|ddm_scraper.js
+dh|https://www.dh.go.kr/www/selectBbsNttList.do?bbsNo=87&key=478|node/scraper/dh_scraper.js|dh_scraper.js
+djjunggu|https://www.djjunggu.go.kr/prog/saeolGosi/GOSI/sub03_06/list.do|node/scraper/djjunggu_scraper.js|djjunggu_scraper.js
+ep|https://www.ep.go.kr/www/selectEminwonList.do?key=754&notAncmtSeCode=01|node/scraper/ep_scraper.js|ep_scraper.js
+eumseong|https://www.eumseong.go.kr/www/selectEminwonList.do?pageUnit=10&searchCnd=all&key=352&ofr_pageSize=10&pageIndex=1|node/scraper/eumseong_scraper.js|eumseong_scraper.js
+gangbuk|https://www.gangbuk.go.kr/portal/bbs/B0000245/list.do?menuNo=200082|node/scraper/gangbuk_scraper.js|gangbuk_scraper.js
+ganghwa|https://www.ganghwa.go.kr/open_content/main/ganghwa/news/announce.jsp|node/scraper/ganghwa_scraper.js|ganghwa_scraper.js
+gangjin|https://www.gangjin.go.kr/www/government/notice/gosi|node/scraper/gangjin_scraper.js|gangjin_scraper.js
+gangnam|https://www.gangnam.go.kr/notice/list.do?mid=ID05_040201|node/scraper/gangnam_scraper.js|gangnam_scraper.js
+gb|https://www.gb.go.kr/Main/page.do?mnu_uid=6789&LARGE_CODE=720&MEDIUM_CODE=50&SMALL_CODE=10&SMALL_CODE2=30&|node/scraper/gb_scraper.js|gb_scraper.js
+gbgs|https://www.gbgs.go.kr/open_content/ko/page.do?mnu_uid=2160&|node/scraper/gbgs_scraper.js|gbgs_scraper.js
+gbmg|https://www.gbmg.go.kr/portal/saeol/gosi/list.do?mId=0301060000|node/scraper/gbmg_scraper.js|gbmg_scraper.js
+gc|https://www.gc.go.kr/portal/saeol/gosi/list.do?seCode=01&mId=1202180100|node/scraper/gc_scraper.js|gc_scraper.js
+geochang|https://www.geochang.go.kr/00445/00451.web?&cpage=1|node/scraper/geochang_scraper.js|geochang_scraper.js
+geoje|https://www.geoje.go.kr/index.geoje?menuCd=DOM_000008902001002001&startPage=1|node/scraper/geoje_scraper.js|geoje_scraper.js
+geumsan|https://www.geumsan.go.kr/kr/html/sub03/030302.html|node/scraper/geumsan_scraper.js|geumsan_scraper.js
+gg|https://www.gg.go.kr/bbs/board.do?bsIdx=469&menuId=1547#page=1|node/scraper/gg_scraper.js|gg_scraper.js
+gimhae|https://www.gimhae.go.kr/03360/00023/00029.web|node/scraper/gimhae_scraper.js|gimhae_scraper.js
+gimje|https://www.gimje.go.kr/board/list.gimje?boardId=BBS_0000044&menuCd=DOM_000000104003000000&contentsSid=196&cpath=|node/scraper/gimje_scraper.js|gimje_scraper.js
+gimpo|https://www.gimpo.go.kr/portal/ntfcPblancList.do?key=1004&cate_cd=1&searchCnd=40900000000|node/scraper/gimpo_scraper.js|gimpo_scraper.js
+gm|https://www.gm.go.kr/pt/user/nftcBbs/BD_selectNftcBbsList.do?q_nftcBbsCode=1001|node/scraper/gm_scraper.js|gm_scraper.js
+gn|https://www.gn.go.kr/www/selectGosiNttList.do?pageUnit=10&searchCnd=all&key=263&searchGosiSe=01,04,06&pageIndex=1|node/scraper/gn_scraper.js|gn_scraper.js
+gochang|https://www.gochang.go.kr/board/list.gochang?boardId=BBS_0000180&menuCd=DOM_000000102003007000&contentsSid=2682&cpath=|node/scraper/gochang_scraper.js|gochang_scraper.js
+gokseong|https://www.gokseong.go.kr/board/GosiList.do?menuNo=102001003000|node/scraper/gokseong_scraper.js|gokseong_scraper.js
+goryeong|https://www.goryeong.go.kr/kor/boardList.do?IDX=154&BRD_ID=1023|node/scraper/goryeong_scraper.js|goryeong_scraper.js
+goseong|https://www.goseong.go.kr/board/list.goseong?boardId=BBS_0000015&menuCd=DOM_000000103001014000&contentsSid=29&cpath=|node/scraper/goseong_scraper.js|goseong_scraper.js
+gp|https://www.gp.go.kr/portal/selectGosiList.do?key=2148&not_ancmt_se_code=01|node/scraper/gp_scraper.js|gp_scraper.js
+gumi|https://www.gumi.go.kr/portal/saeol/gosi/list.do?seCode=01&mid=0401040000&token=1757578906660|node/scraper/gumi_scraper.js|gumi_scraper.js
+gunwi|https://www.gunwi.go.kr/ko/page.do?mnu_uid=666&boardType=notice|node/scraper/gunwi_scraper.js|gunwi_scraper.js
+guri|https://www.guri.go.kr/www/selectGosiNttList.do?key=387&searchGosiSe=01,04,06|node/scraper/guri_scraper.js|guri_scraper.js
+guro|https://www.guro.go.kr/www/selectBbsNttList.do?bbsNo=663&key=1791&|node/scraper/guro_scraper.js|guro_scraper.js
+gurye|https://www.gurye.go.kr/board/GosiList.do?not_ancmt_se_code=01,04,06,07&menuNo=115004002001&pageIndex=1|node/scraper/gurye_scraper.js|gurye_scraper.js
+gwanak|https://www.gwanak.go.kr/site/gwanak/ex/bbsNew/List.do?typeCode=1|node/scraper/gwanak_scraper.js|gwanak_scraper.js
+gwangjin|https://www.gwangjin.go.kr/portal/bbs/B0000378/list.do?menuNo=200192|node/scraper/gwangjin_scraper.js|gwangjin_scraper.js
+gwangsan|https://www.gwangsan.go.kr/notList.do?pageId=www12&searchNotSe=01|node/scraper/gwangsan_scraper.js|gwangsan_scraper.js
+gwangyang|https://gwangyang.go.kr/saeol/gosi.es?mid=a11005020000&type_code=02,04|node/scraper/gwangyang_scraper.js|gwangyang_scraper.js
+gwd|https://state.gwd.go.kr/portal/bulletin/notification|node/scraper/gwd_scraper.js|gwd_scraper.js
+gwgs|https://www.gwgs.go.kr/prog/saeolGosi/GOSI/kor/sub04_030401/list.do?pageIndex=1|node/scraper/gwgs_scraper.js|gwgs_scraper.js
+gyeongju|https://www.gyeongju.go.kr/open_content/ko/page.do?mnu_uid=423&|node/scraper/gyeongju_scraper.js|gyeongju_scraper.js
+gyeongnam|https://www.gyeongnam.go.kr/index.gyeong?menuCd=DOM_000000135003009000|node/scraper/gyeongnam_scraper.js|gyeongnam_scraper.js
+gyeryong|https://gyeryong.go.kr/kr/html/sub03/030102.html|node/scraper/gyeryong_scraper.js|gyeryong_scraper.js
+gyeyang|https://www.gyeyang.go.kr/open_content/main/open_info/admin/gosi.jsp|node/scraper/gyeyang_scraper.js|gyeyang_scraper.js
+hadong|https://www.hadong.go.kr/media/00012.web|node/scraper/hadong_scraper.js|hadong_scraper.js
+haenam|https://www.haenam.go.kr/index.9is?contentUid=18e3368f7913117f017915ea3b971122&nowPageNum=1&recordCountPerPage=10&searchType=&keyword=|node/scraper/haenam_scraper.js|haenam_scraper.js
+haman|https://www.haman.go.kr/00059/06642/06644.web|node/scraper/haman_scraper.js|haman_scraper.js
+hampyeong|https://www.hampyeong.go.kr/pg/GosiList.do?pageId=www273|node/scraper/hampyeong_scraper.js|hampyeong_scraper.js
+hc|https://www.hc.go.kr/04923/04924/04948.web|node/scraper/hc_scraper.js|hc_scraper.js
+hongcheon|https://www.hongcheon.go.kr/www/selectEminwonList.do?key=278|node/scraper/hongcheon_scraper.js|hongcheon_scraper.js
+hongseong|https://www.hongseong.go.kr/prog/saeolGosi/kor/sub03_0204/all/list.do|node/scraper/hongseong_scraper.js|hongseong_scraper.js
+hsg|https://www.hsg.go.kr/www/selectBbsNttList.do?bbsNo=65&key=821&|node/scraper/hsg_scraper.js|hsg_scraper.js
+icbp|https://www.icbp.go.kr/main/participation/news/announce.jsp|node/scraper/icbp_scraper.js|icbp_scraper.js
+icdonggu|https://www.icdonggu.go.kr/main/information/news/announce.jsp|node/scraper/icdonggu_scraper.js|icdonggu_scraper.js
+icheon|https://www.icheon.go.kr/portal/saeol/gosi/list.do?seCode=04&mid=0402020000&token=1757576221168|node/scraper/icheon_scraper.js|icheon_scraper.js
+inje|https://www.inje.go.kr/portal/adm/bulletin/notify|node/scraper/inje_scraper.js|inje_scraper.js
+jangheung|https://www.jangheung.go.kr/www/organization/news/notification|node/scraper/jangheung_scraper.js|jangheung_scraper.js
+jangseong|https://www.jangseong.go.kr/home/www/news/jangseong/announcement|node/scraper/jangseong_scraper.js|jangseong_scraper.js
+jecheon|https://www.jecheon.go.kr/www/selectBbsNttList.do?bbsNo=18&key=5233|node/scraper/jecheon_scraper.js|jecheon_scraper.js
+jecheon|https://www.jecheon.go.kr/www/selectBbsNttList.do?bbsNo=18&key=5233|node/scraper/jp_scraper.js|jp_scraper.js
+jeju|http://sido.jeju.go.kr/citynet/jsp/sap/SAPGosiBizProcess.do?command=searchList&flag=gosiGL&svp=Y&sido=&conIfmStdt=2025-01-01&conIfmEnddt=2025-12-31|node/scraper/jeju_scraper.js|jeju_scraper.js
+jeonbuk|https://www.jeonbuk.go.kr/board/list.jeonbuk?boardId=BBS_0000129&menuCd=DOM_000000102002005000&contentsSid=1379&cpath=|node/scraper/jeonbuk_scraper.js|jeonbuk_scraper.js
+jeonnam|https://www.jeonnam.go.kr/J0203/boardList.do?menuId=jeonnam0203000000|node/scraper/jeonnam_scraper.js|jeonnam_scraper.js
+jindo|https://www.jindo.go.kr/home/gosi/general.cs?m=878|node/scraper/jindo_scraper.js|jindo_scraper.js
+jongno|https://www.jongno.go.kr/portal/bbs/selectBoardList.do?bbsId=BBSMSTR_000000000271&menuId=1756&menuNo=1756|node/scraper/jongno_scraper.js|jongno_scraper.js
+junggu|https://www.junggu.seoul.kr/content.do?cmsid=14232|node/scraper/junggu_scraper.js|junggu_scraper.js
+jungnang|https://www.jungnang.go.kr/portal/bbs/list/B0000117.do?menuNo=200475|node/scraper/jungnang_scraper.js|jungnang_scraper.js
+mapo|https://www.mapo.go.kr/site/main/nPortal/list|node/scraper/mapo_scraper.js|mapo_scraper.js
+michuhol|https://www.michuhol.go.kr/main/board/list.do?board_code=board_13|node/scraper/michuhol_scraper.js|michuhol_scraper.js
+mokpo|https://www.mokpo.go.kr/www/mokpo_news/notification/public_notice|node/scraper/mokpo_scraper.js|mokpo_scraper.js
+muan|https://www.muan.go.kr/www/openmuan/new/announcement|node/scraper/muan_scraper.js|muan_scraper.js
+naju|https://www.naju.go.kr/www/administration/notice/gosi_new|node/scraper/naju_scraper.js|naju_scraper.js
+namdong|https://www.namdong.go.kr/main/eminwon/eminwonAnnounceList.do?pgno=1|node/scraper/namdong_scraper.js|namdong_scraper.js
+namhae|https://www.namhae.go.kr/modules/saeol/gosi.do?&pageCd=SM010110000&siteGubun=socialm&_csrf_parameterName=CSRFToken&_csrf_token=952e47cb-a1d1-4abf-882c-4eb16efe2afd|node/scraper/namhae_scraper.js|namhae_scraper.js
+namwon|https://www.namwon.go.kr/board/post/list.do?boardUid=ff8080818ea1fec5018ea24137680031&menuUid=ff8080818e3beff0018e4077131b007a&sort=registerDt,desc|node/scraper/namwon_scraper.js|namwon_scraper.js
+nowon|https://www.nowon.kr/www/user/bbs/BD_selectBbsList.do?q_bbsCode=1003&q_clCode=0&q_estnColumn1=11&q_ntceSiteCode=11|node/scraper/nowon_scraper.js|nowon_scraper.js
+nyj|https://www.nyj.go.kr/www/selectEminwonWebList.do?key=2492&sa1=01&sa1=02&sa1=04&sa1=05&sc4=2024|node/scraper/nyj_scraper.js|nyj_scraper.js
+oc|https://www.oc.go.kr/www/selectBbsNttList.do?key=236&bbsNo=40&searchCtgry=&searchCnd=all&searchKrwd=&integrDeptCode=&pageIndex=2|node/scraper/oc_scraper.js|oc_scraper.js
+ongjin|https://www.ongjin.go.kr/open_content/main/community/board/announce.jsp|node/scraper/ongjin_scraper.js|ongjin_scraper.js
+pocheon|https://www.pocheon.go.kr/www/selectEminwonList.do?key=12563&notAncmtSeCode=01|node/scraper/pocheon_scraper.js|pocheon_scraper.js
+pohang|https://www.pohang.go.kr/portal/saeol/gosi/list.do?mid=0202010000|node/scraper/pohang_scraper.js|pohang_scraper.js
+sacheon|https://www.sacheon.go.kr/news/00009/00014.web|node/scraper/sacheon_scraper.js|sacheon_scraper.js
+samcheok|https://www.samcheok.go.kr/media/00084/00095.web|node/scraper/samcheok_scraper.js|samcheok_scraper.js
+sancheong|https://www.sancheong.go.kr/www/selectBbsNttList.do?key=158&bbsNo=118&integrDeptCode=&searchCtgry=%EC%9D%BC%EB%B0%98%EA%B3%B5%EA%B3%A0|node/scraper/sancheong_scraper.js|sancheong_scraper.js
+sb|https://www.sb.go.kr/www/selectEminwonList.do?key=6977|node/scraper/sb_scraper.js|sb_scraper.js
+sd|https://www.sd.go.kr/main/selectBbsNttList.do?bbsNo=184&key=1473&|node/scraper/sd_scraper.js|sd_scraper.js
+sdm|https://www.sdm.go.kr/news/notice/notice.do|node/scraper/sdm_scraper.js|sdm_scraper.js
+sejong|https://www.sejong.go.kr/prog/publicNotice/kor/sub02_0303/C1/list.do?pageIndex=1|node/scraper/sejong_scraper.js|sejong_scraper.js
+seo|https://www.seo.incheon.kr/open_content/main/community/news/gosi.jsp|node/scraper/seo_scraper.js|seo_scraper.js
+seogu|https://www.seogu.gwangju.kr/menu.es?mid=a10807010000|node/scraper/seogu_scraper.js|seogu_scraper.js
+seosan|https://www.seosan.go.kr/common/program/eminwonView.jsp?jndinm=OfrNotAncmtEJB&context=NTIS&method=selectListOfrNotAncmt&methodnm=selectListOfrNotAncmtHomepage&not_ancmt_sj=&pageIndex=1&ofr_pageSize=10&homepage_pbs_yn=Y&subCheck=Y&not_ancmt_se_code=01%2C04%2C06&cha_dep_code_nm=&countYn=Y&list_gubun=&mobile_code=00|node/scraper/seosan_scraper.js|seosan_scraper.js
+shinan|https://www.shinan.go.kr/home/www/openinfo/participation_07/participation_07_04/page.wscms|node/scraper/shinan_scraper.js|shinan_scraper.js
+siheung|https://www.siheung.go.kr/main/saeol/gosi/list.do?mId=0401040100|node/scraper/siheung_scraper.js|siheung_scraper.js
+sj|https://sj.go.kr/page.do?mnu_uid=1044&|node/scraper/sj_scraper.js|sj_scraper.js
+songpa|https://www.songpa.go.kr/www/selectGosiList.do?key=2776&|node/scraper/songpa_scraper.js|songpa_scraper.js
+suncheon|http://www.suncheon.go.kr/kr/news/0004/0005/0001/|node/scraper/suncheon_scraper.js|suncheon_scraper.js
+taebaek|https://www.taebaek.go.kr/www/selectBbsNttList.do?bbsNo=25&key=352|node/scraper/taebaek_scraper.js|taebaek_scraper.js
+tongyeong|https://www.tongyeong.go.kr/00852/00853/00858.web|node/scraper/tongyeong_scraper.js|tongyeong_scraper.js
+uiryung|https://www.uiryeong.go.kr/board/list.uiryeong?boardId=BBS_0000070&menuCd=DOM_000000203003001001&contentsSid=201|node/scraper/uiryung_scraper.js|uiryung_scraper.js
+uljin|https://www.uljin.go.kr/index.uljin?menuCd=DOM_000000103002007000|node/scraper/uljin_scraper.js|uljin_scraper.js
+ulju|https://www.ulju.ulsan.kr/ulju/saeol/gosi/list.do?seCode=01&mId=0403010000&token=1757575484448|node/scraper/ulju_scraper.js|ulju_scraper.js
+ulleung|https://www.ulleung.go.kr/ko/page.do?mnu_uid=571&boardType=notice|node/scraper/ulleung_scraper.js|ulleung_scraper.js
+ulsan|https://www.ulsan.go.kr/u/rep/transfer/notice/list.ulsan?mId=001004002000000000|node/scraper/ulsan_scraper.js|ulsan_scraper.js
+usc|https://www.usc.go.kr/ko/page.do?pageNo=1&board_code=&srchSDate=&srchKwd=&srchColumn=&srchDept=&srchEDate=&mnu_uid=157&|node/scraper/usc_scraper.js|usc_scraper.js
+wando|https://www.wando.go.kr/wando/sub.cs?m=318|node/scraper/wando_scraper.js|wando_scraper.js
+wonju|https://www.wonju.go.kr/www/selectBbsNttList.do?bbsNo=140&key=216&|node/scraper/wonju_scraper.js|wonju_scraper.js
+yangcheon|https://www.yangcheon.go.kr/site/yangcheon/ex/seol/seolCollectList.do|node/scraper/yangcheon_scraper.js|yangcheon_scraper.js
+yanggu|https://www.yanggu.go.kr/user_sub?gfnc=www&mu_idx=226|node/scraper/yanggu_scraper.js|yanggu_scraper.js
+yangsan|https://www.yangsan.go.kr/portal/saeol/gosi/list.do?mid=0102010000|node/scraper/yangsan_scraper.js|yangsan_scraper.js
+yc|https://www.yc.go.kr/portal/saeol/gosi/list.do?mId=0301040000|node/scraper/yc_scraper.js|yc_scraper.js
+yd|https://www.yd.go.kr/?page_id=763|node/scraper/yd_scraper.js|yd_scraper.js
+yd21|https://www.yd21.go.kr/kr/html/sub02/020103.html?GotoPage=1|node/scraper/yd21_scraper.js|yd21_scraper.js
+ydp|https://www.ydp.go.kr/www/selectEminwonList.do?menuFlag=01&key=2851&|node/scraper/ydp_scraper.js|ydp_scraper.js
+yeoju|https://www.yeoju.go.kr/www/selectEminwonList.do?key=413|node/scraper/yeoju_scraper.js|yeoju_scraper.js
+yeongam|https://www.yeongam.go.kr/home/www/open_information/yeongam_news/announcement/yeongam.go|node/scraper/yeongam_scraper.js|yeongam_scraper.js
+yeongdo|https://www.yeongdo.go.kr/00000/00007/00013.web|node/scraper/yeongdo_scraper.js|yeongdo_scraper.js
+yeongju|https://www.yeongju.go.kr/open_content/main/page.do?mnu_uid=10619&boardType=notice|node/scraper/yeongju_scraper.js|yeongju_scraper.js
+yeonje|https://www.yeonje.go.kr/portal/saeol/gosi/list.do?mId=0206030000|node/scraper/yeonje_scraper.js|yeonje_scraper.js
+yeosu|https://www.yeosu.go.kr/www/govt/news/notify/new_notifys|node/scraper/yeosu_scraper.js|yeosu_scraper.js
+yongsan|https://www.yongsan.go.kr/portal/bbs/B0000095/list.do?optn1=01&pageUnit=&menuNo=200233&sdate=&edate=&searchWrd=&searchCnd=|node/scraper/yongsan_scraper.js|yongsan_scraper.js
+yp21|https://www.yp21.go.kr/www/selectBbsNttList.do?bbsNo=5&key=1119|node/scraper/yp21_scraper.js|yp21_scraper.js
+yw|https://www.yw.go.kr/www/selectBbsNttList.do?bbsNo=17&key=273|node/scraper/yw_scraper.js|yw_scraper.js
+yyg|https://www.yyg.go.kr/www/organization/yyg_news/notification|node/scraper/yyg_scraper.js|yyg_scraper.js
+prv_가평군|https://eminwon.gp.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|가평군
+prv_강동구|https://eminwon.gangdong.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|강동구
+prv_고양시|https://eminwon.goyang.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|고양시
+prv_고흥군|https://eminwon.goheung.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|고흥군
+prv_공주시|https://eminwon.gongju.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|공주시
+prv_광주남구|https://eminwon.namgu.gwangju.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|광주남구
+prv_광주동구|https://eminwon.donggu.gwangju.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|광주동구
+prv_광주북구|https://eminwon.bukgu.gwangju.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|광주북구
+prv_괴산군|https://eminwon.goesan.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|괴산군
+prv_구리시|https://eminwon.guri.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|구리시
+prv_군산시|https://eminwon.gunsan.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|군산시
+prv_군포시|https://eminwon.gunpo.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|군포시
+prv_금천구|https://eminwon.geumcheon.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|금천구
+prv_기장군|https://eminwon.gijang.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|기장군
+prv_남양주|https://eminwon.nyj.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|남양주
+prv_남해군|https://eminwon.namhae.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|남해군
+prv_논산시|https://eminwon.nonsan21.net/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|논산시
+prv_단양군|https://eminwon.danyang.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|단양군
+prv_달서구|https://eminwon.dalseo.daegu.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|달서구
+prv_달성군|https://eminwon.dalseong.daegu.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|달성군
+prv_담양군|https://eminwon.damyang.jeonnam.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|담양군
+prv_당진시|https://eminwon.dangjin.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|당진시
+prv_대구남구|https://eminwon.nam.daegu.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|대구남구
+prv_대구동구|https://eminwon.donggu.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|대구동구
+prv_대구북구|https://eminwon.buk.daegu.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|대구북구
+prv_대구서구|https://eminwon.dgs.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|대구서구
+prv_대구중구|https://eminwon.jung.daegu.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|대구중구
+prv_대덕구|https://eminwon.daedeok.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|대덕구
+prv_대전동구|https://eminwon.dong.daegu.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|대전동구
+prv_대전서구|https://eminwon.seogu.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|대전서구
+prv_대전중구|https://eminwon.djjunggu.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|대전중구
+prv_도봉구|https://dobong.eminwon.seoul.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|도봉구
+prv_동래구|https://eminwon.dongnae.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|동래구
+prv_동작구|https://dongjak.eminwon.seoul.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|동작구
+prv_무주군|https://eminwon.muju.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|무주군
+prv_밀양시|https://eminwon.miryang.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|밀양시
+prv_보령시|https://eminwon.brcn.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|보령시
+prv_봉화군|https://eminwon.bonghwa.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|봉화군
+prv_부산강서구|https://eminwon.bsgangseo.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|부산강서구
+prv_부산남구|https://eminwon.bsnamgu.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|부산남구
+prv_부산동구|https://eminwon.bsdonggu.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|부산동구
+prv_부산북구|https://eminwon.bsbukgu.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|부산북구
+prv_부산서구|https://eminwon.bsseogu.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|부산서구
+prv_부산중구|https://eminwon.bsjunggu.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|부산중구
+prv_부산진구|https://eminwon.busanjin.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|부산진구
+prv_부여군|https://eminwon.buyeo.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|부여군
+prv_부천시|https://eminwon.bucheon.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|부천시
+prv_사상구|https://eminwon.sasang.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|사상구
+prv_사하구|https://eminwon.sasang.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|사하구
+prv_상주시|https://eminwon.sangju.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|상주시
+prv_서울강서구|https://eminwon.gangseo.seoul.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|서울강서구
+prv_서천군|https://eminwon.seocheon.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|서천군
+prv_서초구|https://seocho.eminwon.seoul.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|서초구
+prv_성남시|https://eminwon.seongnam.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|성남시
+prv_속초시|https://eminwon.sokcho.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|속초시
+prv_수성구|https://eminwon.suseong.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|수성구
+prv_수영구|https://eminwon.suyeong.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|수영구
+prv_수원시|https://eminwon.suwon.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|수원시
+prv_순창군|https://eminwon.sunchang.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|순창군
+prv_아산시|https://eminwon.asan.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|아산시
+prv_안산시|https://eminwon.ansan.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|안산시
+prv_양양군|https://eminwon.yangyang.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|양양군
+prv_양주시|https://eminwon.yangju.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|양주시
+prv_연수구|https://eminwon.yeonsu.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|연수구
+prv_연천군|https://eminwon.yeoncheon.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|연천군
+prv_영광군|https://eminwon.yeonggwang.jeonnam.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|영광군
+prv_예산군|https://eminwon.yesan.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|예산군
+prv_예천군|https://eminwon.ycg.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|예천군
+prv_완주군|https://eminwon.wanju.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|완주군
+prv_용인시|https://eminwon.yongin.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|용인시
+prv_울산남구|https://eminwon.ulsannamgu.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|울산남구
+prv_울산동구|https://eminwon.donggu.ulsan.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|울산동구
+prv_울산북구|https://eminwon.bukgu.ulsan.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|울산북구
+prv_울산중구|https://eminwon.junggu.ulsan.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|울산중구
+prv_유성구|https://eminwon.yuseong.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|유성구
+prv_의왕시|https://eminwon.uiwang.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|의왕시
+prv_익산시|https://eminwon.iksan.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|익산시
+prv_인천중구|https://eminwon.icjg.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|인천중구
+prv_임실군|https://eminwon.imsil.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|임실군
+prv_장수군|https://eminwon.jangsu.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|장수군
+prv_전주시|https://eminwon.jeonju.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|전주시
+prv_정선군|https://eminwon.jeongseon.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|정선군
+prv_정읍시|https://eminwon.jeongeup.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|정읍시
+prv_증평군|https://eminwon.jp.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|증평군
+prv_진안군|https://eminwon.jinan.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|진안군
+prv_진주시|https://eminwon.jinju.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|진주시
+prv_진천군|https://eminwon.jincheon.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|진천군
+prv_천안시|https://eminwon.cheonan.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|천안시
+prv_청양군|https://eminwon.cheongyang.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|청양군
+prv_청주시|https://eminwon.cheongju.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|청주시
+prv_춘천시|https://eminwon.chuncheon.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|춘천시
+prv_태안군|https://eminwon.taean.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|태안군
+prv_평창군|https://eminwon.pc.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|평창군
+prv_하남시|https://eminwon.hanam.gyeonggi.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|하남시
+prv_함양군|https://eminwon.hygn.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|함양군
+prv_합천군|https://eminwon.hc.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|합천군
+prv_해운대구|https://eminwon.haeundae.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|해운대구
+prv_화성시|https://eminwon.hscity.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|화성시
+prv_화순군|https://eminwon.hwasun.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|화순군
+prv_화천군|https://eminwon.ihc.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A|node/scraper/eminwon_scraper.js|화천군
+yemi	https://mybiz.yipa.or.kr/yipa/bbs_list.do?code=sub01b&keyvalue=sub01	/Users/jin/zium_scraper/scraper/advanced/advanced_yemi.py	advanced/yemi
+seoulsbdc	https://www.seoulsbdc.or.kr/Notice/list.do	/Users/jin/zium_scraper/scraper/advanced/advanced_seoulsbdc.py	advanced/seoulsbdc
+pusan	https://www.pusan.ac.kr/kor/CMS/Board/Board.do?robot=Y&mCode=MN095&mgr_seq=3	/Users/jin/zium_scraper/scraper/advanced/advanced_pusan.py	advanced/pusan
+sjria	https://sj.riia.or.kr/board/businessAnnouncement	/Users/jin/zium_scraper/scraper/advanced/advanced_sjria.py	advanced/sjria
+mcst	https://www.mcst.go.kr/site/s_notice/notice/noticeList.jsp	/Users/jin/zium_scraper/scraper/advanced/advanced_mcst.py	advanced/mcst
+gimb	http://mire.re.kr/sub4_4.php	/Users/jin/zium_scraper/scraper/advanced/advanced_gimb.py	advanced/gimb
+cbsinbo	https://www.cbsinbo.or.kr/sub.php?code=123	/Users/jin/zium_scraper/scraper/advanced/advanced_cbsinbo.py	advanced/cbsinbo
+ijnto	https://ijnto.or.kr/plaza/notice/lists/	/Users/jin/zium_scraper/scraper/advanced/advanced_ijnto.py	advanced/ijnto
+bacf	https://www.bacf.or.kr/base/board/list?boardManagementNo=2&menuLevel=2&menuNo=18	/Users/jin/zium_scraper/scraper/advanced/advanced_bacf.py	advanced/bacf
+jexport	https://www.jexport.or.kr/user/reg_biz	/Users/jin/zium_scraper/scraper/advanced/advanced_jexport.py	advanced/jexport
+kpx	https://edu.kpx.or.kr/usr/alim/UsrAlimBasc0201.do	/Users/jin/zium_scraper/scraper/advanced/advanced_kpx.py	advanced/kpx
+pass1	https://daejeon.pass.or.kr/board.es?mid=a10201000000&bid=0003	/Users/jin/zium_scraper/scraper/advanced/advanced_pass1.py	advanced/pass1
+gycci	http://www.gycci.or.kr/front/board/boardContentsListPage.do?boardId=10767&menuId=1980	/Users/jin/zium_scraper/scraper/advanced/advanced_gycci.py	advanced/gycci
+mafra	https://www.mafra.go.kr/home/5108/subview.do	/Users/jin/zium_scraper/scraper/advanced/advanced_mafra.py	advanced/mafra
+pass	https://incheon.pass.or.kr/participation/bid_announcement_list.php?group=basic&code=B14&abmode=list&bsort=desc&category=12&field=all&search=&bfsort=	/Users/jin/zium_scraper/scraper/advanced/advanced_pass.py	advanced/pass
+rechallenge	https://www.rechallenge.or.kr/planweb/board/list.9is?contentUid=402880955861e980015861fbf1aa0040&boardUid=40288095586a64e001586c59efce00f7&contentUid=402880955861e980015861fbf1aa0040&subPath=	/Users/jin/zium_scraper/scraper/advanced/advanced_rechallenge.py	advanced/rechallenge
+kait	https://www.kait.or.kr/user/MainBoardList.do?cateSeq=13&bId=101	/Users/jin/zium_scraper/scraper/advanced/advanced_kait.py	advanced/kait
+win	https://www.win-win.or.kr/kr/board/notice/boardList.do	/Users/jin/zium_scraper/scraper/advanced/advanced_win.py	advanced/win
+knrec	https://www.knrec.or.kr/biz/pds/businoti/list.do	/Users/jin/zium_scraper/scraper/advanced/advanced_knrec.py	advanced/knrec
+kofpi1	https://www.kofpi.or.kr/notice/notice_01.do	/Users/jin/zium_scraper/scraper/advanced/advanced_kofpi1.py	advanced/kofpi1
+gnwomenwork	https://www.gnwomenwork.or.kr/bri/board.php?bo_table=notice&menu=10	/Users/jin/zium_scraper/scraper/advanced/advanced_gnwomenwork.py	advanced/gnwomenwork
+moel	https://www.moel.go.kr	/Users/jin/zium_scraper/scraper/advanced/advanced_moel.py	advanced/moel
+nyjwf	https://nyjwf.or.kr/Home/23	/Users/jin/zium_scraper/scraper/advanced/advanced_nyjwf.py	advanced/nyjwf
+gwto	https://www.gwto.or.kr/www/selectBbsNttList.do?bbsNo=3&key=23	/Users/jin/zium_scraper/scraper/advanced/advanced_gwto.py	advanced/gwto
+suhyup	https://www.suhyup.co.kr/suhyup/223/subview.do	/Users/jin/zium_scraper/scraper/advanced/advanced_suhyup.py	advanced/suhyup
+kodit	https://www.kodit.co.kr/kodit/na/ntt/selectNttList.do?mi=2638&bbsId=148	/Users/jin/zium_scraper/scraper/advanced/advanced_kodit.py	advanced/kodit
+gafi	https://www.gafi.or.kr/web/board/boardContentsList.do?board_id=42&menu_id=9d7a4fa3cd784b2ea1ab192315847444&miv_pageNo=	/Users/jin/zium_scraper/scraper/advanced/advanced_gafi.py	advanced/gafi
+icsinbo	https://www.icsinbo.or.kr/home/board/brdList.do?menu_cd=000096	/Users/jin/zium_scraper/scraper/advanced/advanced_icsinbo.py	advanced/icsinbo
+gsff	https://www.gsff.or.kr/bbs/board.php?bo_table=sub03_01	/Users/jin/zium_scraper/scraper/advanced/advanced_gsff.py	advanced/gsff
+gepa	https://www.gepa.kr/?page_id=36	/Users/jin/zium_scraper/scraper/advanced/advanced_gepa.py	advanced/gepa
+gjf	https://www.gjf.or.kr/main/pst/list.do?pst_id=notice_ap	/Users/jin/zium_scraper/scraper/advanced/advanced_gjf.py	advanced/gjf
+geea	http://www.geea.or.kr/bbs/notice	/Users/jin/zium_scraper/scraper/advanced/advanced_geea.py	advanced/geea
+kea	https://www.kea.kr/sub_news/notice.php	/Users/jin/zium_scraper/scraper/advanced/advanced_kea.py	advanced/kea
+gsfez	https://www.gsfez.go.kr/gsfez/news/bulletin	/Users/jin/zium_scraper/scraper/advanced/advanced_gsfez.py	advanced/gsfez
+at	https://global.at.or.kr/front/bizReq/brList.do?_mtype=C&_dept1=3	/Users/jin/zium_scraper/scraper/advanced/advanced_at.py	advanced/at
+cbist	https://www.cbist.or.kr/home/sub.do	/Users/jin/zium_scraper/scraper/advanced/advanced_cbist.py	advanced/cbist
+gari	https://www.gari.or.kr/boardList.do?boardId=40&sub=10_01	/Users/jin/zium_scraper/scraper/advanced/advanced_gari.py	advanced/gari
+seis	https://www.seis.or.kr	/Users/jin/zium_scraper/scraper/advanced/advanced_seis.py	advanced/seis
+dgtp	https://dgtp.or.kr/bbs/BoardControll.do	/Users/jin/zium_scraper/scraper/advanced/advanced_dgtp.py	advanced/dgtp
+gtextopia	https://www.gtextopia.or.kr/corporate/corporate02.html	/Users/jin/zium_scraper/scraper/advanced/advanced_gtextopia.py	advanced/gtextopia
+mof	https://www.mof.go.kr/doc/ko/selectDocList.do?menuSeq=375&bbsSeq=9&listUpdtDt=2025-04-07++10%3A00	/Users/jin/zium_scraper/scraper/advanced/advanced_mof.py	advanced/mof
+gbse	http://www.gbse.or.kr/HOME/gbse/sub.htm?nav_code=gbs1566979318	/Users/jin/zium_scraper/scraper/advanced/advanced_gbse.py	advanced/gbse
+krit	https://krit.re.kr/krit/bbs/notice_list.do?gotoMenuNo=05010000	/Users/jin/zium_scraper/scraper/advanced/advanced_krit.py	advanced/krit
+kamco	https://www.kamco.or.kr/portal/bbs/list.do?ptIdx=380&mId=0701010000	/Users/jin/zium_scraper/scraper/advanced/advanced_kamco.py	advanced/kamco
+kict	https://www.kict.re.kr/board.es?mid=a10501010000&bid=ntfct	/Users/jin/zium_scraper/scraper/advanced/advanced_kict.py	advanced/kict
+gwse	https://gwse.or.kr/bbs/board.php?bo_table=sub41&sca=%EC%82%AC%EC%97%85%EA%B3%B5%EA%B3%A0	/Users/jin/zium_scraper/scraper/advanced/advanced_gwse.py	advanced/gwse
+shcca	https://www.shcca.com/notice	/Users/jin/zium_scraper/scraper/advanced/advanced_shcca.py	advanced/shcca
+liquorfest	https://www.liquorfesta.com/bbs/board.php?bo_table=notice	/Users/jin/zium_scraper/scraper/advanced/advanced_liquorfest.py	advanced/liquorfest
+socialenterprise	https://www.socialenterprise.or.kr/homepage/bbs/board.do?bsIdx=10006&menuId=866	/Users/jin/zium_scraper/scraper/advanced/advanced_socialenterprise.py	advanced/socialenterprise
+gbsa	https://www.gbsa.or.kr/board/notice.do	/Users/jin/zium_scraper/scraper/advanced/advanced_gbsa.py	advanced/gbsa
+guroartsvalley	https://guroartsvalley.or.kr/user/board/mn011801.do	/Users/jin/zium_scraper/scraper/advanced/advanced_guroartsvalley.py	advanced/guroartsvalley
+gibamoney	https://www.gibamoney.or.kr/00402/00415.web	/Users/jin/zium_scraper/scraper/advanced/advanced_gibamoney.py	advanced/gibamoney
+seoul	https://agro.seoul.go.kr/archives/category/institution_c1/institution_news_c1/institution_news_gosi-n2	/Users/jin/zium_scraper/scraper/advanced/advanced_seoul.py	advanced/seoul
+jbio	https://www.jbio.or.kr/boardList.do?boardId=5&sub=02_02	/Users/jin/zium_scraper/scraper/advanced/advanced_jbio.py	advanced/jbio
+gjcity	https://lib.gjcity.go.kr/lay1/bbs/S1T82C3521/H/1/list.do	/Users/jin/zium_scraper/scraper/advanced/advanced_gjcity.py	advanced/gjcity
+changwon	https://www.changwon.go.kr/cwportal/10310/10429/10430.web	/Users/jin/zium_scraper/scraper/advanced/advanced_changwon.py	advanced/changwon
+kims	https://www.kims.re.kr/v17/bbx/board.php?bx_table=05_02	/Users/jin/zium_scraper/scraper/advanced/advanced_kims.py	advanced/kims
+busan	https://www.busan.go.kr/nongup/agricommunity11	/Users/jin/zium_scraper/scraper/advanced/advanced_busan.py	advanced/busan
+kmi	https://www.kmi.re.kr/web/board/list.do?rbsIdx=68	/Users/jin/zium_scraper/scraper/advanced/advanced_kmi.py	advanced/kmi
+kist	https://www.kist.re.kr/ko/notice/general-notice.do	/Users/jin/zium_scraper/scraper/advanced/advanced_kist.py	advanced/kist
+ggbaro	https://ggbaro.kr/board/1/articles?pageSize=10	/Users/jin/zium_scraper/scraper/advanced/advanced_ggbaro.py	advanced/ggbaro
+dgdc	https://dgdp.or.kr/notice/public	/Users/jin/zium_scraper/scraper/advanced/advanced_dgdc.py	advanced/dgdc
+gg	https://fish.gg.go.kr/noti/27	/Users/jin/zium_scraper/scraper/advanced/advanced_gg.py	advanced/gg
+koita	https://www.koita.or.kr/board/commBoardGovRnDList.do	/Users/jin/zium_scraper/scraper/advanced/advanced_koita.py	advanced/koita
+jntp	https://www.jntp.or.kr/base/apiAnnouncement/List?menuLevel=2&menuNo=45	/Users/jin/zium_scraper/scraper/advanced/advanced_jntp.py	advanced/jntp
+me	https://www.me.go.kr/home/web/board/list.do?menuId=10524&boardMasterId=39&boardCategoryId=55	/Users/jin/zium_scraper/scraper/advanced/advanced_me.py	advanced/me
+sinbo	https://www.sinbo.or.kr/sub04_01_01	/Users/jin/zium_scraper/scraper/advanced/advanced_sinbo.py	advanced/sinbo
+sbizsup	https://www.semas.or.kr/web/board/webBoardList.kmdc	/Users/jin/zium_scraper/scraper/advanced/advanced_sbizsup.py	advanced/sbizsup
+chungnam	https://cnnongup.chungnam.go.kr/board/B0013.cs?m=315	/Users/jin/zium_scraper/scraper/advanced/advanced_chungnam.py	advanced/chungnam
+dtmsa	https://www.dtmsa.or.kr/announcements	/Users/jin/zium_scraper/scraper/advanced/advanced_dtmsa.py	advanced/dtmsa
+jiuc	http://www.jiuc.or.kr/main/menu?gc=605XOAS&sca=	/Users/jin/zium_scraper/scraper/advanced/advanced_jiuc.py	advanced/jiuc
+fira	https://www.fira.or.kr/fira/fira_010101_1.jsp	/Users/jin/zium_scraper/scraper/advanced/advanced_fira.py	advanced/fira
+motie	https://www.motie.go.kr/ftz/yulchon/notification/notice/bbs/bbsList.do?bbs_cd_n=117	/Users/jin/zium_scraper/scraper/advanced/advanced_motie.py	advanced/motie
+gjep	https://www.gjep.or.kr/cms/bbs/cms.php?dk_cms=comm_01	/Users/jin/zium_scraper/scraper/advanced/advanced_gjep.py	advanced/gjep
+jbsecoop	http://www.jbsecoop.or.kr/bbs/board.php?bo_id=notice03	/Users/jin/zium_scraper/scraper/advanced/advanced_jbsecoop.py	advanced/jbsecoop
+keti	https://www.keti.re.kr/notice/notice.php	/Users/jin/zium_scraper/scraper/advanced/advanced_keti.py	advanced/keti
+keci	https://www.keci.or.kr/common/bbs/selectPageListBbs.do?bbs_code=A1004	/Users/jin/zium_scraper/scraper/advanced/advanced_keci.py	advanced/keci
+wmit	http://wmit.or.kr/announce/businessAnnounceList.do	/Users/jin/zium_scraper/scraper/advanced/advanced_wmit.py	advanced/wmit
+ekr	https://www.ekr.or.kr/planweb/board/list.krc?contentUid=402880317cc0644a017cc0c9da9f0120&boardUid=402880317cc0644a017cc5e8000f06b7&categoryUid2=8a8bb3529665d71401996fb4d2f475e9	/Users/jin/zium_scraper/scraper/advanced/advanced_ekr.py	advanced/ekr
+seoulRndb	https://seoul.rnbd.kr/client/c030100/c030100_00.jsp	/Users/jin/zium_scraper/scraper/advanced/advanced_seoulRndb.py	advanced/seoulRndb
+gwba	https://gw.riia.or.kr/board/businessAnnouncement	/Users/jin/zium_scraper/scraper/advanced/advanced_gwba.py	advanced/gwba
+cngec	http://www.cngec.or.kr/bbs/board.php?bo_table=notice	/Users/jin/zium_scraper/scraper/advanced/advanced_cngec.py	advanced/cngec
+kcacoffee	https://www.kca-coffee.org/cms/FrCon/index.do?MENU_ID=160&CONTENTS_NO=2	/Users/jin/zium_scraper/scraper/advanced/advanced_kcacoffee.py	advanced/kcacoffee
+gwcf	http://www.gwcf.or.kr/ko/culture-business/business-top/business.html?no=1	/Users/jin/zium_scraper/scraper/advanced/advanced_gwcf.py	advanced/gwcf
+ce	https://pms.ce.or.kr/sub.php?code=02_bscm02	/Users/jin/zium_scraper/scraper/advanced/advanced_ce.py	advanced/ce
+kosa	https://www.kosa.or.kr/news/sIssue_list_2013.jsp?page=&category=&keyword=	/Users/jin/zium_scraper/scraper/advanced/advanced_kosa.py	advanced/kosa
+jeipi	https://www.jeipi.or.kr/rainboard/rain.php?rBoard=notice	/Users/jin/zium_scraper/scraper/advanced/advanced_jeipi.py	advanced/jeipi
+gidp	https://www.gidp.kr/gidp/notice/notification	/Users/jin/zium_scraper/scraper/advanced/advanced_gidp.py	advanced/gidp
+hsef	https://www.hsef.or.kr/M000046/S001/fw/bbs/board/00007/list.do	/Users/jin/zium_scraper/scraper/advanced/advanced_hsef.py	advanced/hsef
+cctf	https://www.cctf.or.kr/coding/sub5/sub1.asp	/Users/jin/zium_scraper/scraper/advanced/advanced_cctf.py	advanced/cctf
+gigca	https://gama.or.kr/bbs/?b_id=green_notice&site=basic&mn=1136	/Users/jin/zium_scraper/scraper/advanced/advanced_gigca.py	advanced/gigca
+cpri	https://www.cpri.re.kr/bbs/board.php?bo_table=sub1_1_1	/Users/jin/zium_scraper/scraper/advanced/advanced_cpri.py	advanced/cpri
+ucf	https://www.ucf.or.kr:478/bd/list.html?b_code=notice	/Users/jin/zium_scraper/scraper/advanced/advanced_ucf.py	advanced/ucf
+epis4	https://www.epis.or.kr/home/kor/M373320876/board.do?	/Users/jin/zium_scraper/scraper/advanced/advanced_epis4.py	advanced/epis4
+jmbic	http://www.jmbic.or.kr/bbs/board.php?code=open_08&bo_table=open_08	/Users/jin/zium_scraper/scraper/advanced/advanced_jmbic.py	advanced/jmbic
+energy	https://www.energy.or.kr/front/board/List2.do	/Users/jin/zium_scraper/scraper/advanced/advanced_energy.py	advanced/energy
+gfund	https://www.gfund.kr/hp/info/M04_L01.do	/Users/jin/zium_scraper/scraper/advanced/advanced_gfund.py	advanced/gfund
+ggeea	https://www.ggeea.or.kr/notice	/Users/jin/zium_scraper/scraper/advanced/advanced_ggeea.py	advanced/ggeea
+geri	https://geri.re.kr/html/board_list.asp?board_id=business	/Users/jin/zium_scraper/scraper/advanced/advanced_geri.py	advanced/geri
+jejutp	https://www.jejutp.or.kr/board/business	/Users/jin/zium_scraper/scraper/advanced/advanced_jejutp.py	advanced/jejutp
+iris	https://www.iris.go.kr/contents/retrieveBsnsAncmBtinSituListView.do	/Users/jin/zium_scraper/scraper/advanced/advanced_iris.py	advanced/iris
+seoulshinbo	https://www.seoulshinbo.co.kr/wbase/contents/bbs/list.do?mng_cd=STRY9788	/Users/jin/zium_scraper/scraper/advanced/advanced_seoulshinbo.py	advanced/seoulshinbo
+gcaf	https://www.gcaf.or.kr/bbs/board.php?bo_table=sub3_7	/Users/jin/zium_scraper/scraper/advanced/advanced_gcaf.py	advanced/gcaf
+jares	https://www.jares.go.kr/main/board/19	/Users/jin/zium_scraper/scraper/advanced/advanced_jares.py	advanced/jares
+kwpa	http://www.kwpa.co.kr/html/s0401.php	/Users/jin/zium_scraper/scraper/advanced/advanced_kwpa.py	advanced/kwpa
+gei	http://www.gei.re.kr/bbs/board.php?bo_table=bbs7_01	/Users/jin/zium_scraper/scraper/advanced/advanced_gei.py	advanced/gei
+daejeontp	https://www.djtp.or.kr/pbanc?mid=a20101000000	/Users/jin/zium_scraper/scraper/advanced/advanced_daejeontp.py	advanced/daejeontp
+keco	https://www.keco.or.kr/web/lay1/bbs/S1T10C108/A/18/list.do	/Users/jin/zium_scraper/scraper/advanced/advanced_keco.py	advanced/keco
+dgmif	https://www.kmedihub.re.kr/index.do?menu_link=/icms/bbs/selectBoardList.do	/Users/jin/zium_scraper/scraper/advanced/advanced_dgmif.py	advanced/dgmif
+injeart	http://www.injeart.or.kr/?p=19&page=1	/Users/jin/zium_scraper/scraper/advanced/advanced_injeart.py	advanced/injeart
+jnsec	http://www.jnsec.kr/bbs/board.php?bo_table=notice	/Users/jin/zium_scraper/scraper/advanced/advanced_jnsec.py	advanced/jnsec
+gbtpinfo	https://gbtp.or.kr/user/board.do?bbsId=BBSMSTR_000000000023	/Users/jin/zium_scraper/scraper/advanced/advanced_gbtpinfo.py	advanced/gbtpinfo
+kbiz	https://www.kbiz.or.kr/ko/contents/bbs/list.do?mnSeq=211	/Users/jin/zium_scraper/scraper/advanced/advanced_kbiz.py	advanced/kbiz
+forest	https://www.forest.go.kr/kfsweb/cop/bbs/selectBoardList.do?bbsId=BBSMSTR_1032&mn=NKFS_04_01_02	/Users/jin/zium_scraper/scraper/advanced/advanced_forest.py	advanced/forest
+ekape	https://www.ekape.or.kr/board/list.do?menuId=menu149208	/Users/jin/zium_scraper/scraper/advanced/advanced_ekape.py	advanced/ekape
+utp	https://www.utp.or.kr/include/contents.php?mnuno=M0000018&menu_group=1&sno=0102	/Users/jin/zium_scraper/scraper/advanced/advanced_utp.py	advanced/utp
+haccp	https://www.haccp.or.kr/user/board.do?board=743	/Users/jin/zium_scraper/scraper/advanced/advanced_haccp.py	advanced/haccp
+wbiz	https://wbiz.or.kr/notice/biz.do	/Users/jin/zium_scraper/scraper/advanced/advanced_wbiz.py	advanced/wbiz
+reb	https://www.reb.or.kr/reb/na/ntt/selectNttList.do?mi=9564&bbsId=1134	/Users/jin/zium_scraper/scraper/advanced/advanced_reb.py	advanced/reb
+kead	https://www.kead.or.kr/bbs/deptgongji/bbsPage.do?menuId=MENU0895	/Users/jin/zium_scraper/scraper/advanced/advanced_kead.py	advanced/kead
+gitc	https://www.gitc.or.kr/main/page?x=53	/Users/jin/zium_scraper/scraper/advanced/advanced_gitc.py	advanced/gitc
+ekta	http://www.ekta.kr/?act=board&bbs_code=sub4_2	/Users/jin/zium_scraper/scraper/advanced/advanced_ekta.py	advanced/ekta
+gtc	https://www.gtc.co.kr/page/10059/10007.tc	/Users/jin/zium_scraper/scraper/advanced/advanced_gtc.py	advanced/gtc
+jepa1	https://www.jepa.kr/bbs/	/Users/jin/zium_scraper/scraper/advanced/advanced_jepa1.py	advanced/jepa1
+gangwon6	https://api.gangwon6.co.kr/api/notices	/Users/jin/zium_scraper/scraper/advanced/advanced_gangwon6.py	advanced/gangwon6
+hamkke	https://hamkke.org/business	/Users/jin/zium_scraper/scraper/advanced/advanced_hamkke.py	advanced/hamkke
+gwtp	https://www.gwtp.or.kr/gwtp/bbsNew_list.php?code=sub01b&keyvalue=sub01	/Users/jin/zium_scraper/scraper/advanced/advanced_gwtp.py	advanced/gwtp
+cceiseoul	https://ccei.creativekorea.or.kr/seoul/custom/notice_list.do	/Users/jin/zium_scraper/scraper/advanced/advanced_cceiseoul.py	advanced/cceiseoul
+kfme	https://www.kfme.or.kr/kr/board/notice.php?cate=1	/Users/jin/zium_scraper/scraper/advanced/advanced_kfme.py	advanced/kfme
+seeot	https://seeot.or.kr/alarm/notice/	/Users/jin/zium_scraper/scraper/advanced/advanced_seeot.py	advanced/seeot
+jejufc	https://jejufc.onlinekoreahrd.kr/studyCenter/bbs.php?boardCode=1	/Users/jin/zium_scraper/scraper/advanced/advanced_jejufc.py	advanced/jejufc
+seosancf	http://seosancf.or.kr/index.php?MenuID=17	/Users/jin/zium_scraper/scraper/advanced/advanced_seosancf.py	advanced/seosancf
+cnsinbo	https://www.cnsinbo.co.kr/boardCnts/list.do?boardID=134&m=030101&s=cnsinbo	/Users/jin/zium_scraper/scraper/advanced/advanced_cnsinbo.py	advanced/cnsinbo
+sw	https://www.sw.or.kr/site/sw/ex/board/List.do?cbIdx=292	/Users/jin/zium_scraper/scraper/advanced/advanced_sw.py	advanced/sw
+jeonnam	https://ofsi.jeonnam.go.kr/ofsi/177/subview.do	/Users/jin/zium_scraper/scraper/advanced/advanced_jeonnam.py	advanced/jeonnam
+lemi	https://www.lemi.or.kr/board.do?boardno=24&menuno=71	/Users/jin/zium_scraper/scraper/advanced/advanced_lemi.py	advanced/lemi
+kohi	https://www.kohi.or.kr/user/bbs/BD_selectBbsList.do?q_bbsCode=1013	/Users/jin/zium_scraper/scraper/advanced/advanced_kohi.py	advanced/kohi
+heemangfdn	https://www.heemangfdn.or.kr/layout/res/home.php?go=pds.list&pds_type=1	/Users/jin/zium_scraper/scraper/advanced/advanced_heemangfdn.py	advanced/heemangfdn
+gncci	http://www.gncci.or.kr/front/board/boardContentsList.do	/Users/jin/zium_scraper/scraper/advanced/advanced_gncci.py	advanced/gncci
+itech	https://srome.keit.re.kr/srome/biz/perform/opnnPrpsl/retrieveTaskAnncmListView.do?prgmId=XPG201040000&rcveStatus=A	/Users/jin/zium_scraper/scraper/advanced/advanced_itech.py	advanced/itech
+cbtp	https://www.cbtp.or.kr/index.php?control=bbs&board_id=saup_notice&lm_uid=387	/Users/jin/zium_scraper/scraper/advanced/advanced_cbtp.py	advanced/cbtp
+gtrans	https://www.gtrans.or.kr/web/lay1/bbs/S1T392C310/A/1/list.do	/Users/jin/zium_scraper/scraper/advanced/advanced_gtrans.py	advanced/gtrans
+fintech	https://fintech.or.kr/web/board/boardContentsList.do?board_id=3&miv_pageNo=	/Users/jin/zium_scraper/scraper/advanced/advanced_fintech.py	advanced/fintech
+cnfund	https://www.cnfund.kr/info/list.do?menuSeq=notice	/Users/jin/zium_scraper/scraper/advanced/advanced_cnfund.py	advanced/cnfund
+djbaAnnc	https://www.djbea.or.kr/pms/st/st_0205/list	/Users/jin/zium_scraper/scraper/advanced/advanced_djbaAnnc.py	advanced/djbaAnnc
+gepagwangju	https://www.gjbizinfo.or.kr/online.do?pageId=www63	/Users/jin/zium_scraper/scraper/advanced/advanced_gepagwangju.py	advanced/gepagwangju
+exportvoucher	https://www.exportvoucher.com/portal/board/boardList?bbs_id=1	/Users/jin/zium_scraper/scraper/advanced/advanced_exportvoucher.py	advanced/exportvoucher
+losims	https://www.losims.go.kr/sp/pbcnBizSrch	/Users/jin/zium_scraper/scraper/advanced/advanced_losims.py	advanced/losims
+jnse	http://www.jn-se.kr/bbs/board.php?bo_table=nco4_1	/Users/jin/zium_scraper/scraper/advanced/advanced_jnse.py	advanced/jnse
+sebiz	https://www.sebiz.or.kr/sub/board.html?bid=k1news	/Users/jin/zium_scraper/scraper/advanced/advanced_sebiz.py	advanced/sebiz
+kofpi2	https://www.kofpi.or.kr/notice/notice_02.do	/Users/jin/zium_scraper/scraper/advanced/advanced_kofpi2.py	advanced/kofpi2
+dctf	https://dctf.or.kr/bbs/board.php?bo_table=3_sub1	/Users/jin/zium_scraper/scraper/advanced/advanced_dctf.py	advanced/dctf
+busansinbo	https://www.busansinbo.or.kr/portal/board/post/list.do?bcIdx=565&mid=0301010000	/Users/jin/zium_scraper/scraper/advanced/advanced_busansinbo.py	advanced/busansinbo
+kepco	https://home.kepco.co.kr/kepco/CY/K/ntcob/list.do?boardSeq=21069447&parnScrpSeq=21069447&depth=0&boardNo=0&boardCd=BRD_000039&replyRole=&searchKeyword=&searchCondition=&menuCd=FN02070501	/Users/jin/zium_scraper/scraper/advanced/advanced_kepco.py	advanced/kepco
+kpc	https://www.kpc.or.kr/PTWCC002_board_index2.do?type_cd=02	/Users/jin/zium_scraper/scraper/advanced/advanced_kpc.py	advanced/kpc
+kma	https://www.kma.or.kr/kr/usrs/eduRegMgnt/eduRegMgntForm.do?mkey=24&cateNm=abtNews	/Users/jin/zium_scraper/scraper/advanced/advanced_kma.py	advanced/kma
+blog	https://blog.naver.com/PostList.naver?blogId=sdm_ysc&categoryNo=38&skinType=&skinId=&from=menu&userSelectMenu=true	/Users/jin/zium_scraper/scraper/advanced/advanced_blog.py	advanced/blog
+osancci	https://osancci.korcham.net/front/board/boardContentsListPage.do?boardId=10795&menuId=5224	/Users/jin/zium_scraper/scraper/enhanced/enhanced_osancci_scraper.py	enhanced/osancci
+gangneungcci	https://gangneungcci.korcham.net/front/board/boardContentsListPage.do?boardId=10559&menuId=9986	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gangneungcci_scraper.py	enhanced/gangneungcci
+gipa	https://www.gipa.or.kr/apply/01.php?cate=1	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gipa_scraper.py	enhanced/gipa
+gnlife	http://gnlife5064.kr/bbs/board.php?bo_table=notice	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gnlife_scraper.py	enhanced/gnlife
+cceiGyeongnam	https://ccei.creativekorea.or.kr/gyeongnam/allim/allim_list.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_cceiGyeongnam_scraper.py	enhanced/cceiGyeongnam
+gjcci	http://www.gjcci.or.kr/user/board/lists/board_cd/3010	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gjcci_scraper.py	enhanced/gjcci
+smtech	https://www.smtech.go.kr/front/ifg/no/notice02_list.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_smtech_scraper.py	enhanced/smtech
+bokji1	https://www.bokji.net/not/biz/01.bokji	/Users/jin/zium_scraper/scraper/enhanced/enhanced_bokji1_scraper.py	enhanced/bokji1
+bokji	https://www.bokji.net/not/nti/01.bokji	/Users/jin/zium_scraper/scraper/enhanced/enhanced_bokji_scraper.py	enhanced/bokji
+cheongjucci	https://cheongjucci.korcham.net/front/board/boardContentsListPage.do?boardId=10701&menuId=1561	/Users/jin/zium_scraper/scraper/enhanced/enhanced_cheongjucci_scraper.py	enhanced/cheongjucci
+mss1	https://www.mss.go.kr/site/seoul/ex/bbs/List.do?cbIdx=146	/Users/jin/zium_scraper/scraper/enhanced/enhanced_mss1_scraper.py	enhanced/mss1
+atcenter	https://www.at.or.kr/article/apko364000/list.action	/Users/jin/zium_scraper/scraper/enhanced/enhanced_atcenter_scraper.py	enhanced/atcenter
+jindo	https://jindo.go.kr/atc/board/B0146.cs?m=43	/Users/jin/zium_scraper/scraper/enhanced/enhanced_jindo_scraper.py	enhanced/jindo
+pajucci	http://pajucci.korcham.net/notice	/Users/jin/zium_scraper/scraper/enhanced/enhanced_pajucci_scraper.py	enhanced/pajucci
+anseongcci	https://anseongcci.korcham.net/front/board/boardContentsListPage.do?boardId=10123&menuId=2962	/Users/jin/zium_scraper/scraper/enhanced/enhanced_anseongcci_scraper.py	enhanced/anseongcci
+gunsancci	https://gunsancci.korcham.net/front/board/boardContentsListPage.do?boardId=10573&menuId=5135	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gunsancci_scraper.py	enhanced/gunsancci
+gwjob5	https://job.gwd.go.kr/gwjob/support_policy/enterprises_policy/growing_support	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gwjob5_scraper.py	enhanced/gwjob5
+kicox	https://www.kicox.or.kr/user/bbs/BD_selectBbsList.do?q_bbsCode=1016	/Users/jin/zium_scraper/scraper/enhanced/enhanced_kicox_scraper.py	enhanced/kicox
+gnsinbo	https://www.gnsinbo.or.kr/bbs/board.php?bo_table=6_2_1	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gnsinbo_scraper.py	enhanced/gnsinbo
+keiti	https://www.keiti.re.kr/site/keiti/ex/board/List.do?cbIdx=277&searchExt1=24000100	/Users/jin/zium_scraper/scraper/enhanced/enhanced_keiti_scraper.py	enhanced/keiti
+gib	https://gib.re.kr/module/bbs/list.php?mid=/news/notice	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gib_scraper.py	enhanced/gib
+mss12	https://www.mss.go.kr/site/chungnam/ex/bbs/List.do?cbIdx=315	/Users/jin/zium_scraper/scraper/enhanced/enhanced_mss12_scraper.py	enhanced/mss12
+gntp_sm	https://www.gntp.or.kr/biz/smartFactory	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gntp_sm_scraper.py	enhanced/gntp_sm
+gnagp	http://www.gnagp.com/bbs/board.php?bo_table=sub4_1	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gnagp_scraper.py	enhanced/gnagp
+gwangyangcci	https://gwangyangcci.korcham.net/front/board/boardContentsListPage.do?boardId=10836&menuId=2059	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gwangyangcci_scraper.py	enhanced/gwangyangcci
+jepa	https://www.jepa.kr/bbs/?b_id=notice&site=new_jepa&mn=426	/Users/jin/zium_scraper/scraper/enhanced/enhanced_jepa_scraper.py	enhanced/jepa
+cceiJeju	https://ccei.creativekorea.or.kr/jeju/custom/notice_list.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_cceiJeju_scraper.py	enhanced/cceiJeju
+ywbic	https://ywbic.kr/ywbic/bbs_list.php?code=sub01a&keyvalue=sub01	/Users/jin/zium_scraper/scraper/enhanced/enhanced_ywbic_scraper.py	enhanced/ywbic
+cnsp	https://www.cnsp.or.kr/project/list.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_cnsp_scraper.py	enhanced/cnsp
+ccon	https://ccon.kr/bbs/board.php?bo_table=bsnt	/Users/jin/zium_scraper/scraper/enhanced/enhanced_ccon_scraper.py	enhanced/ccon
+biz	https://biz.k-seafoodtrade.kr/apply/export_list.php	/Users/jin/zium_scraper/scraper/enhanced/enhanced_biz_scraper.py	enhanced/biz
+kidp	https://kidp.or.kr/?menuno=1202	/Users/jin/zium_scraper/scraper/enhanced/enhanced_kidp_scraper.py	enhanced/kidp
+andongcci	https://andongcci.korcham.net/front/board/boardContentsListPage.do?boardId=10260&menuId=2883	/Users/jin/zium_scraper/scraper/enhanced/enhanced_andongcci_scraper.py	enhanced/andongcci
+ttp	http://www.technopark.kr/businessboard	/Users/jin/zium_scraper/scraper/enhanced/enhanced_ttp_scraper.py	enhanced/ttp
+yeongjucci	https://yeongjucci.korcham.net/front/board/boardContentsListPage.do?boardId=10298&menuId=3106	/Users/jin/zium_scraper/scraper/enhanced/enhanced_yeongjucci_scraper.py	enhanced/yeongjucci
+kita	https://www.kita.net/asocBiz/asocBiz/asocBizOngoingList.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_kita_scraper.py	enhanced/kita
+gdc	https://www.gdc.or.kr/board.do?S=S01&M=0401000000&b_code=0001	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gdc_scraper.py	enhanced/gdc
+hwaseongcc	https://hwaseongcci.korcham.net/front/board/boardContentsListPage.do?boardId=11414&menuId=4885	/Users/jin/zium_scraper/scraper/enhanced/enhanced_hwaseongcc_scraper.py	enhanced/hwaseongcc
+gcon	https://www.gcon.or.kr/gcon/business/gconNotice/list.do?menuNo=200061	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gcon_scraper.py	enhanced/gcon
+djbaInfo	https://www.djbea.or.kr/pms/an/an_0101/list	/Users/jin/zium_scraper/scraper/enhanced/enhanced_djbaInfo_scraper.py	enhanced/djbaInfo
+jbf	https://jbf.kr/index.do?contentId=048698f6c82d9d3ed439ac23a1ecadcd665dc2a00606348bb30cac1d4417ab4d&search_cate=%EC%82%AC%EC%97%85%EA%B3%B5%EA%B3%A0	/Users/jin/zium_scraper/scraper/enhanced/enhanced_jbf_scraper.py	enhanced/jbf
+mss9	https://www.mss.go.kr/site/chungbuk/ex/bbs/List.do?cbIdx=249	/Users/jin/zium_scraper/scraper/enhanced/enhanced_mss9_scraper.py	enhanced/mss9
+jcci	https://jcci.korcham.net/front/board/boardContentsListPage.do?boardId=11190&menuId=4048	/Users/jin/zium_scraper/scraper/enhanced/enhanced_jcci_scraper.py	enhanced/jcci
+cceiDaejeon	https://ccei.creativekorea.or.kr/daejeon/custom/notice_list.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_cceiDaejeon_scraper.py	enhanced/cceiDaejeon
+ulsancci	https://ulsancci.korcham.net/front/board/boardContentsListPage.do?boardId=10099&menuId=707	/Users/jin/zium_scraper/scraper/enhanced/enhanced_ulsancci_scraper.py	enhanced/ulsancci
+dicia	https://www.dicia.or.kr/sub.do?menuIdx=MENU_000000000000056	/Users/jin/zium_scraper/scraper/enhanced/enhanced_dicia_scraper.py	enhanced/dicia
+dipa	http://dipa.or.kr/information/businessnotice/	/Users/jin/zium_scraper/scraper/enhanced/enhanced_dipa_scraper.py	enhanced/dipa
+ansancci	https://ansancci.korcham.net/front/board/boardContentsListPage.do?boardId=10184&menuId=2922	/Users/jin/zium_scraper/scraper/enhanced/enhanced_ansancci_scraper.py	enhanced/ansancci
+mss4	https://www.mss.go.kr/site/gwangju/ex/bbs/List.do?cbIdx=251	/Users/jin/zium_scraper/scraper/enhanced/enhanced_mss4_scraper.py	enhanced/mss4
+mokpocci	https://mokpocci.korcham.net/front/board/boardContentsListPage.do?boardId=10704&menuId=2465	/Users/jin/zium_scraper/scraper/enhanced/enhanced_mokpocci_scraper.py	enhanced/mokpocci
+gmcci	https://gmcci.korcham.net/front/board/boardContentsListPage.do?boardId=10599&menuId=2022	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gmcci_scraper.py	enhanced/gmcci
+dcci	https://www.dcci.or.kr/content.html?md=0028	/Users/jin/zium_scraper/scraper/enhanced/enhanced_dcci_scraper.py	enhanced/dcci
+kdata	https://www.kdata.or.kr/kr/board/notice_01/boardList.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_kdata_scraper.py	enhanced/kdata
+suwoncci	https://suwoncci.korcham.net/front/board/boardContentsListPage.do?boardId=10023&menuId=47	/Users/jin/zium_scraper/scraper/enhanced/enhanced_suwoncci_scraper.py	enhanced/suwoncci
+mss3	https://www.mss.go.kr/site/daegu/ex/bbs/List.do?cbIdx=253	/Users/jin/zium_scraper/scraper/enhanced/enhanced_mss3_scraper.py	enhanced/mss3
+cceiSejong	https://ccei.creativekorea.or.kr/sejong/custom/notice_list.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_cceiSejong_scraper.py	enhanced/cceiSejong
+pms	https://pms.kca.kr:4433/board/boardList.do?sysType=KCA&bbsTc=BBS0001	/Users/jin/zium_scraper/scraper/enhanced/enhanced_pms_scraper.py	enhanced/pms
+nia	https://www.nia.or.kr/site/nia_kor/ex/bbs/List.do?cbIdx=99835	/Users/jin/zium_scraper/scraper/enhanced/enhanced_nia_scraper.py	enhanced/nia
+sacheoncci	https://sacheoncci.korcham.net/front/board/boardContentsListPage.do?boardId=10435&menuId=2623	/Users/jin/zium_scraper/scraper/enhanced/enhanced_sacheoncci_scraper.py	enhanced/sacheoncci
+nipa	https://www.nipa.kr/home/2-2	/Users/jin/zium_scraper/scraper/enhanced/enhanced_nipa_scraper.py	enhanced/nipa
+kban	https://www.kban.or.kr/jsp/ext/etc/cmm_9000.jsp?BBS_ID=1	/Users/jin/zium_scraper/scraper/enhanced/enhanced_kban_scraper.py	enhanced/kban
+chungjucci	https://chungjucci.korcham.net/front/board/boardContentsListPage.do?boardId=10259&menuId=1051	/Users/jin/zium_scraper/scraper/enhanced/enhanced_chungjucci_scraper.py	enhanced/chungjucci
+gimpocci	https://gimpocci.net/%ea%b3%b5%ec%a7%80%ec%82%ac%ed%95%ad/	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gimpocci_scraper.py	enhanced/gimpocci
+cceiGyeongbuk	https://ccei.creativekorea.or.kr/gyeongbuk/custom/notice_list.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_cceiGyeongbuk_scraper.py	enhanced/cceiGyeongbuk
+bsia	https://www.bsia.kr/notice	/Users/jin/zium_scraper/scraper/enhanced/enhanced_bsia_scraper.py	enhanced/bsia
+pyeongtaekcci	https://pyeongtaekcci.korcham.net/front/board/boardContentsListPage.do?boardId=10160&menuId=1318	/Users/jin/zium_scraper/scraper/enhanced/enhanced_pyeongtaekcci_scraper.py	enhanced/pyeongtaekcci
+gyeongsancci	https://gyeongsancci.korcham.net/front/board/boardContentsListPage.do?boardId=10334&menuId=1905	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gyeongsancci_scraper.py	enhanced/gyeongsancci
+svhc	https://svhc.or.kr/Notice/?category=P488271h88	/Users/jin/zium_scraper/scraper/enhanced/enhanced_svhc_scraper.py	enhanced/svhc
+ripc	https://pms.ripc.org/www/portal/notice/boardList.do?boardCategoryCode=BD40000	/Users/jin/zium_scraper/scraper/enhanced/enhanced_ripc_scraper.py	enhanced/ripc
+incheon	https://incheon.korcham.net/front/board/boardContentsListPage.do?boardId=51228&menuId=10130	/Users/jin/zium_scraper/scraper/enhanced/enhanced_incheon_scraper.py	enhanced/incheon
+motiego	https://www.motie.go.kr/kor/article/ATCL2826a2625	/Users/jin/zium_scraper/scraper/enhanced/enhanced_motiego_scraper.py	enhanced/motiego
+gwjob7	https://job.gwd.go.kr/gwjob/support_policy/enterprises_policy/workforce_support	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gwjob7_scraper.py	enhanced/gwjob7
+sokchocci	https://sokchocci.korcham.net/front/board/boardContentsListPage.do?boardId=10635&menuId=2750	/Users/jin/zium_scraper/scraper/enhanced/enhanced_sokchocci_scraper.py	enhanced/sokchocci
+koema	https://www.koema.or.kr/koema/report/total_notice.html	/Users/jin/zium_scraper/scraper/enhanced/enhanced_koema_scraper.py	enhanced/koema
+gyeongjucci	https://gyeongjucci.korcham.net/front/board/boardContentsListPage.do?boardId=10292&menuId=1944	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gyeongjucci_scraper.py	enhanced/gyeongjucci
+mss10	https://www.mss.go.kr/site/jeonbuk/ex/bbs/List.do?cbIdx=250	/Users/jin/zium_scraper/scraper/enhanced/enhanced_mss10_scraper.py	enhanced/mss10
+busanit	http://www.busanit.or.kr/board/list.asp?bcode=notice	/Users/jin/zium_scraper/scraper/enhanced/enhanced_busanit_scraper.py	enhanced/busanit
+gitct	https://www.gicon.or.kr/board.es?mid=a10204000000&bid=0003	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gitct_scraper.py	enhanced/gitct
+taebaekcci	https://taebaekcci.korcham.net/front/board/boardContentsListPage.do?boardId=10687&menuId=1183	/Users/jin/zium_scraper/scraper/enhanced/enhanced_taebaekcci_scraper.py	enhanced/taebaekcci
+kimst	https://www.kimst.re.kr/u/news/inform_01/pjtAnuc.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_kimst_scraper.py	enhanced/kimst
+dip	https://www.dip.or.kr/home/notice/businessbbs/boardList.ubs?fboardcd=business	/Users/jin/zium_scraper/scraper/enhanced/enhanced_dip_scraper.py	enhanced/dip
+gtp	https://pms.gtp.or.kr/web/business/webBusinessList.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gtp_scraper.py	enhanced/gtp
+seoultp	https://www.seoultp.or.kr/user/nd19746.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_seoultp_scraper.py	enhanced/seoultp
+cceiBusan	https://ccei.creativekorea.or.kr/busan/custom/notice_list.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_cceiBusan_scraper.py	enhanced/cceiBusan
+jica	https://www.jica.or.kr/2025/inner.php?sMenu=A1000	/Users/jin/zium_scraper/scraper/enhanced/enhanced_jica_scraper.py	enhanced/jica
+yangsancci	https://yangsancci.korcham.net/front/board/boardContentsListPage.do?boardId=11367&menuId=10249	/Users/jin/zium_scraper/scraper/enhanced/enhanced_yangsancci_scraper.py	enhanced/yangsancci
+jccia	https://www.jcon.or.kr/board/list.php?bbsId=BBSMSTR_000000000001&pageId=C000000016	/Users/jin/zium_scraper/scraper/enhanced/enhanced_jccia_scraper.py	enhanced/jccia
+chilgokcci	https://chilgokcci.korcham.net/front/board/boardContentsListPage.do?boardId=10358&menuId=1097	/Users/jin/zium_scraper/scraper/enhanced/enhanced_chilgokcci_scraper.py	enhanced/chilgokcci
+gmr	https://gmr.or.kr/base/board/list?boardManagementNo=1&menuLevel=2&menuNo=14	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gmr_scraper.py	enhanced/gmr
+hamancci	https://hamancci.korcham.net/front/board/boardContentsListPage.do?boardId=10521&menuId=10057	/Users/jin/zium_scraper/scraper/enhanced/enhanced_hamancci_scraper.py	enhanced/hamancci
+cceiDaeGu	https://ccei.creativekorea.or.kr/daegu/custom/notice_list.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_cceiDaeGu_scraper.py	enhanced/cceiDaeGu
+jinjucci	https://jinjucci.korcham.net/front/board/boardContentsListPage.do?boardId=10382&menuId=1499	/Users/jin/zium_scraper/scraper/enhanced/enhanced_jinjucci_scraper.py	enhanced/jinjucci
+gwjob2	https://job.gwd.go.kr/gwjob/support_policy/support_apply/career_discon_women	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gwjob2_scraper.py	enhanced/gwjob2
+egbiz	https://www.egbiz.or.kr/sp/supportPrjAreaList.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_egbiz_scraper.py	enhanced/egbiz
+cceiIncheon	https://ccei.creativekorea.or.kr/incheon/custom/notice_list.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_cceiIncheon_scraper.py	enhanced/cceiIncheon
+cceiUlsan	https://ccei.creativekorea.or.kr/ulsan/custom/notice_list.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_cceiUlsan_scraper.py	enhanced/cceiUlsan
+mss6	https://www.mss.go.kr/site/incheon/ex/bbs/List.do?cbIdx=246	/Users/jin/zium_scraper/scraper/enhanced/enhanced_mss6_scraper.py	enhanced/mss6
+innopolis	https://www.innopolis.or.kr/newBusiness?menuId=MENU01028	/Users/jin/zium_scraper/scraper/enhanced/enhanced_innopolis_scraper.py	enhanced/innopolis
+gnto	https://gnto.or.kr/sub04/sub01_01.php	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gnto_scraper.py	enhanced/gnto
+snipBottom	https://www.snip.or.kr/SNIP/contents/Business1.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_snipBottom_scraper.py	enhanced/snipBottom
+gimhaecci	https://gimhaecci.korcham.net/front/board/boardContentsListPage.do?boardId=10471&menuId=2330	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gimhaecci_scraper.py	enhanced/gimhaecci
+uepa	https://www.ubpi.or.kr/sub/?mcode=0403010000	/Users/jin/zium_scraper/scraper/enhanced/enhanced_uepa_scraper.py	enhanced/uepa
+kosmes	https://www.kosmes.or.kr/nsh/SH/NTS/SHNTS001M0.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_kosmes_scraper.py	enhanced/kosmes
+bucheoncci	https://bucheoncci.korcham.net/front/board/boardContentsListPage.do?boardId=10135&menuId=410	/Users/jin/zium_scraper/scraper/enhanced/enhanced_bucheoncci_scraper.py	enhanced/bucheoncci
+cceiGyeonggi	https://ccei.creativekorea.or.kr/gyeonggi/custom/notice_list.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_cceiGyeonggi_scraper.py	enhanced/cceiGyeonggi
+miryangcci	https://miryangcci.korcham.net/front/board/boardContentsListPage.do?boardId=10485&menuId=2505	/Users/jin/zium_scraper/scraper/enhanced/enhanced_miryangcci_scraper.py	enhanced/miryangcci
+smc	https://smc.sba.kr/Pages/Information/Notice.aspx	/Users/jin/zium_scraper/scraper/enhanced/enhanced_smc_scraper.py	enhanced/smc
+jcia	https://jcia.or.kr/cf/information/notice/business.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_jcia_scraper.py	enhanced/jcia
+gimc	https://www.gica.or.kr/Home/H40000/H40100/boardList	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gimc_scraper.py	enhanced/gimc
+jbba	https://www.jbba.kr/bbs/board.php?bo_table=sub01_09	/Users/jin/zium_scraper/scraper/enhanced/enhanced_jbba_scraper.py	enhanced/jbba
+kiat	https://www.kiat.or.kr/front/board/boardContentsListPage.do?board_id=90&MenuId=b159c9dac684471b87256f1e25404f5e	/Users/jin/zium_scraper/scraper/enhanced/enhanced_kiat_scraper.py	enhanced/kiat
+scci	https://scci.korcham.net/front/board/boardContentsListPage.do?boardId=10734&menuId=2796	/Users/jin/zium_scraper/scraper/enhanced/enhanced_scci_scraper.py	enhanced/scci
+gbmakers	https://gbmakers.or.kr/notice?category=	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gbmakers_scraper.py	enhanced/gbmakers
+semas	https://www.semas.or.kr/web/board/webBoardList.kmdc?bCd=2001&pNm=BOA0121	/Users/jin/zium_scraper/scraper/enhanced/enhanced_semas_scraper.py	enhanced/semas
+btp	https://www.btp.or.kr/kor/CMS/Board/Board.do?mCode=MN013	/Users/jin/zium_scraper/scraper/enhanced/enhanced_btp_scraper.py	enhanced/btp
+gbtp	https://www.gbtp.or.kr	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gbtp_scraper.py	enhanced/gbtp
+kitech	https://www.kitech.re.kr/research/page1-1.php	/Users/jin/zium_scraper/scraper/enhanced/enhanced_kitech_scraper.py	enhanced/kitech
+cceiChungbuk	https://ccei.creativekorea.or.kr/chungbuk/custom/notice_list.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_cceiChungbuk_scraper.py	enhanced/cceiChungbuk
+mss8	https://www.mss.go.kr/site/gangwon/ex/bbs/List.do?cbIdx=252	/Users/jin/zium_scraper/scraper/enhanced/enhanced_mss8_scraper.py	enhanced/mss8
+kiria	https://kiria.org/portal/info/portalInfoNotiList.do;jsessionid=520472C1F39076F8FF64859FDA134332	/Users/jin/zium_scraper/scraper/enhanced/enhanced_kiria_scraper.py	enhanced/kiria
+cceiGangwon	https://ccei.creativekorea.or.kr/gangwon/custom/notice_list.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_cceiGangwon_scraper.py	enhanced/cceiGangwon
+daejeoncci	https://daejeoncci.korcham.net/front/board/boardContentsListPage.do?boardId=10026&menuId=198	/Users/jin/zium_scraper/scraper/enhanced/enhanced_daejeoncci_scraper.py	enhanced/daejeoncci
+kocca	https://www.kocca.kr/kocca/pims/list.do?menuNo=204104	/Users/jin/zium_scraper/scraper/enhanced/enhanced_kocca_scraper.py	enhanced/kocca
+haenamloca	https://haenamlocalfood.kr/bbs/board.php?bo_table=lf4_1	/Users/jin/zium_scraper/scraper/enhanced/enhanced_haenamloca_scraper.py	enhanced/haenamloca
+gimcheoncci	https://gimcheoncci.korcham.net/front/board/boardContentsListPage.do?boardId=10238&menuId=2245	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gimcheoncci_scraper.py	enhanced/gimcheoncci
+baroinfo	https://www.baroinfo.com/front/M000000742/applybusiness/list.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_baroinfo_scraper.py	enhanced/baroinfo
+bcci	https://www.bcci.or.kr/kr/index.php?pCode=notice	/Users/jin/zium_scraper/scraper/enhanced/enhanced_bcci_scraper.py	enhanced/bcci
+iksancci	https://iksancci.korcham.net/front/board/boardContentsListPage.do?boardId=10543&menuId=1323	/Users/jin/zium_scraper/scraper/enhanced/enhanced_iksancci_scraper.py	enhanced/iksancci
+htdream	https://www.htdream.kr/main/pubAmt/PubAmtList.do?searchCondition=	/Users/jin/zium_scraper/scraper/enhanced/enhanced_htdream_scraper.py	enhanced/htdream
+cbf	http://www.cbf.or.kr/twb_bbs/bbs_list.php?bcd=01_05_02_00_00	/Users/jin/zium_scraper/scraper/enhanced/enhanced_cbf_scraper.py	enhanced/cbf
+gecci	https://gecci.korcham.net/front/board/boardContentsListPage.do?boardId=10756&menuId=1816	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gecci_scraper.py	enhanced/gecci
+changwoncc	https://changwoncci.korcham.net/front/board/boardContentsListPage.do?boardId=10039&menuId=3880	/Users/jin/zium_scraper/scraper/enhanced/enhanced_changwoncc_scraper.py	enhanced/changwoncc
+fact	https://www.koat.or.kr/board/business/list.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_fact_scraper.py	enhanced/fact
+shiheungcci	https://shiheungcci.korcham.net/front/board/boardContentsListPage.do?boardId=10497&menuId=2841	/Users/jin/zium_scraper/scraper/enhanced/enhanced_shiheungcci_scraper.py	enhanced/shiheungcci
+mss5	https://www.mss.go.kr/site/gyeonggi/ex/bbs/List.do?cbIdx=247	/Users/jin/zium_scraper/scraper/enhanced/enhanced_mss5_scraper.py	enhanced/mss5
+wonjucci	https://wonjucci.korcham.net/front/board/boardContentsListPage.do?boardId=10598&menuId=832	/Users/jin/zium_scraper/scraper/enhanced/enhanced_wonjucci_scraper.py	enhanced/wonjucci
+gcgf	https://www.gcgf.or.kr/user/bbs/gcgf/23/157/bbsDataList.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gcgf_scraper.py	enhanced/gcgf
+gdtp	https://www.gdtp.or.kr/board/announcement	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gdtp_scraper.py	enhanced/gdtp
+kspo	https://www.kspo.or.kr/kspo/bbs/B0000027/list.do?menuNo=200149	/Users/jin/zium_scraper/scraper/enhanced/enhanced_kspo_scraper.py	enhanced/kspo
+yeosucci	https://yeosucci.korcham.net/front/board/boardContentsListPage.do?boardId=10748&menuId=3075	/Users/jin/zium_scraper/scraper/enhanced/enhanced_yeosucci_scraper.py	enhanced/yeosucci
+chuncheoncci	http://chuncheoncci.korcham.net/front/board/boardContentsListPage.do?boardId=10518&menuId=757	/Users/jin/zium_scraper/scraper/enhanced/enhanced_chuncheoncci_scraper.py	enhanced/chuncheoncci
+ayventure	https://www.ayventure.net/bbs/board.do?id=382&menuId=855	/Users/jin/zium_scraper/scraper/enhanced/enhanced_ayventure_scraper.py	enhanced/ayventure
+acci	https://acci.korcham.net/front/board/boardContentsListPage.do?boardId=10730&menuId=9949	/Users/jin/zium_scraper/scraper/enhanced/enhanced_acci_scraper.py	enhanced/acci
+dangjincci	https://dangjincci.korcham.net/front/board/boardContentsListPage.do?boardId=10802&menuId=2377	/Users/jin/zium_scraper/scraper/enhanced/enhanced_dangjincci_scraper.py	enhanced/dangjincci
+gbsinbo	https://gbsinbo.co.kr/page/10054/10007.tc	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gbsinbo_scraper.py	enhanced/gbsinbo
+mss0	https://www.mss.go.kr/site/smba/ex/bbs/List.do?cbIdx=310	/Users/jin/zium_scraper/scraper/enhanced/enhanced_mss0_scraper.py	enhanced/mss0
+gwsinbo	https://www.gwsinbo.or.kr/board/board_list.php?board_name=notice	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gwsinbo_scraper.py	enhanced/gwsinbo
+ctp	https://ctp.or.kr/business/data.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_ctp_scraper.py	enhanced/ctp
+ttg	https://www.ttg.co.kr/board/ttg020301	/Users/jin/zium_scraper/scraper/enhanced/enhanced_ttg_scraper.py	enhanced/ttg
+mss13	https://www.mss.go.kr/site/daejeon/ex/bbs/List.do?cbIdx=248	/Users/jin/zium_scraper/scraper/enhanced/enhanced_mss13_scraper.py	enhanced/mss13
+dcb	https://www.dcb.or.kr/01_news/?mcode=0401010000	/Users/jin/zium_scraper/scraper/enhanced/enhanced_dcb_scraper.py	enhanced/dcb
+gbfood	https://www.gbfood.or.kr/bbs/board.php?bo_table=public01&sca=%EC%82%AC%EC%97%85%EA%B3%B5%EA%B3%A0	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gbfood_scraper.py	enhanced/gbfood
+gwjob4	https://job.gwd.go.kr/gwjob/support_policy/startups_policy	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gwjob4_scraper.py	enhanced/gwjob4
+ulsanshinbo	https://www.ulsanshinbo.co.kr/04_notice/?mcode=0404010000	/Users/jin/zium_scraper/scraper/enhanced/enhanced_ulsanshinbo_scraper.py	enhanced/ulsanshinbo
+cceijeonbuk	https://ccei.creativekorea.or.kr/jeonbuk/custom/notice_list.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_cceijeonbuk_scraper.py	enhanced/cceijeonbuk
+debc	https://www.debc.or.kr/bbs/board.php?bo_table=s2_2	/Users/jin/zium_scraper/scraper/enhanced/enhanced_debc_scraper.py	enhanced/debc
+bizbc	https://bizbc.or.kr/kor/contents/BC0101010000.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_bizbc_scraper.py	enhanced/bizbc
+gwbaInfo	https://www.gwep.or.kr/bbs/board.php?bo_table=gw_sub21	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gwbaInfo_scraper.py	enhanced/gwbaInfo
+kca	https://pms.kca.kr:4433/board/boardList.do?sysType=KCA&bbsTc=BBS0001	/Users/jin/zium_scraper/scraper/enhanced/enhanced_kca_scraper.py	enhanced/kca
+gwjob3	https://job.gwd.go.kr/gwjob/support_policy/support_apply/interview_activity_expense	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gwjob3_scraper.py	enhanced/gwjob3
+jbtp	https://www.jbtp.or.kr/board/list.jbtp?boardId=BBS_0000006&menuCd=DOM_000000102001000000&contentsSid=9&cpath=	/Users/jin/zium_scraper/scraper/enhanced/enhanced_jbtp_scraper.py	enhanced/jbtp
+gsif	https://mybiz.gsipa.or.kr/gsipa/bbs_list.do?code=sub03a&keyvalue=sub03	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gsif_scraper.py	enhanced/gsif
+eumseongcci	https://eumseongcci.korcham.net/front/board/boardContentsListPage.do?boardId=10585&menuId=871	/Users/jin/zium_scraper/scraper/enhanced/enhanced_eumseongcci_scraper.py	enhanced/eumseongcci
+kosha	https://www.kosha.or.kr/kosha/report/notice.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_kosha_scraper.py	enhanced/kosha
+icheoncci	https://icheoncci.korcham.net/front/board/boardContentsListPage.do?boardId=10171&menuId=5121	/Users/jin/zium_scraper/scraper/enhanced/enhanced_icheoncci_scraper.py	enhanced/icheoncci
+donghaecci	https://donghaecci.korcham.net/front/board/boardContentsListPage.do?boardId=10663&menuId=2422	/Users/jin/zium_scraper/scraper/enhanced/enhanced_donghaecci_scraper.py	enhanced/donghaecci
+cepaMarket	https://www.cepa.or.kr/notice/notice.do?pm=6&ms=32	/Users/jin/zium_scraper/scraper/enhanced/enhanced_cepaMarket_scraper.py	enhanced/cepaMarket
+mss7	https://www.mss.go.kr/site/ulsan/ex/bbs/List.do?cbIdx=254	/Users/jin/zium_scraper/scraper/enhanced/enhanced_mss7_scraper.py	enhanced/mss7
+kisa	https://www.kisa.or.kr/401	/Users/jin/zium_scraper/scraper/enhanced/enhanced_kisa_scraper.py	enhanced/kisa
+itp	https://itp.or.kr/intro.asp?tmid=13	/Users/jin/zium_scraper/scraper/enhanced/enhanced_itp_scraper.py	enhanced/itp
+korcham	https://www.korcham.net/nCham/Service/Kcci/appl/KcciNoticeList.asp	/Users/jin/zium_scraper/scraper/enhanced/enhanced_korcham_scraper.py	enhanced/korcham
+seosancci	https://seosancci.korcham.net/front/board/boardContentsListPage.do?boardId=10487&menuId=2698	/Users/jin/zium_scraper/scraper/enhanced/enhanced_seosancci_scraper.py	enhanced/seosancci
+gitp	https://www.gjtp.or.kr/home/business.cs	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gitp_scraper.py	enhanced/gitp
+jscci	https://jscci.korcham.net/front/board/boardContentsListPage.do?boardId=10673&menuId=1402	/Users/jin/zium_scraper/scraper/enhanced/enhanced_jscci_scraper.py	enhanced/jscci
+kunpocci	https://kunpocci.korcham.net/front/board/boardContentsListPage.do?boardId=10244&menuId=2201	/Users/jin/zium_scraper/scraper/enhanced/enhanced_kunpocci_scraper.py	enhanced/kunpocci
+uiwangcci	https://uiwangcci.korcham.net/front/board/boardContentsListPage.do?boardId=11096&menuId=3747	/Users/jin/zium_scraper/scraper/enhanced/enhanced_uiwangcci_scraper.py	enhanced/uiwangcci
+gntp	https://www.gntp.or.kr/biz/apply	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gntp_scraper.py	enhanced/gntp
+ghcci	https://ghcci.korcham.net/front/board/boardContentsListPage.do?boardId=10426&menuId=1584	/Users/jin/zium_scraper/scraper/enhanced/enhanced_ghcci_scraper.py	enhanced/ghcci
+cceiChungnam	https://ccei.creativekorea.or.kr/chungnam/custom/notice_list.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_cceiChungnam_scraper.py	enhanced/cceiChungnam
+mss2	https://www.mss.go.kr/site/busan/ex/bbs/List.do?cbIdx=256	/Users/jin/zium_scraper/scraper/enhanced/enhanced_mss2_scraper.py	enhanced/mss2
+sjtp	https://sjtp.or.kr/bbs/board.php?bo_table=business01	/Users/jin/zium_scraper/scraper/enhanced/enhanced_sjtp_scraper.py	enhanced/sjtp
+jincci	https://jincci.korcham.net/front/board/boardContentsListPage.do?boardId=10777&menuId=1534	/Users/jin/zium_scraper/scraper/enhanced/enhanced_jincci_scraper.py	enhanced/jincci
+cba	https://www.cba.ne.kr/home/sub.php?menukey=172	/Users/jin/zium_scraper/scraper/enhanced/enhanced_cba_scraper.py	enhanced/cba
+klf	https://klf.or.kr/category/story/notice/business-announcement/	/Users/jin/zium_scraper/scraper/enhanced/enhanced_klf_scraper.py	enhanced/klf
+gcube	https://gcube.or.kr:1021/home/sub1/sub1.asp	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gcube_scraper.py	enhanced/gcube
+ptp	https://www.ptp.or.kr/main/board/index.do?menu_idx=113&manage_idx=2	/Users/jin/zium_scraper/scraper/enhanced/enhanced_ptp_scraper.py	enhanced/ptp
+sehub	https://sehub.net/archives/category/alarm/opencat	/Users/jin/zium_scraper/scraper/enhanced/enhanced_sehub_scraper.py	enhanced/sehub
+jw1365	https://www.1365.go.kr/vols/P9420/bbs/bbs.do?bbsNo=994100	/Users/jin/zium_scraper/scraper/enhanced/enhanced_jw1365_scraper.py	enhanced/jw1365
+tongyeongc	https://tongyeongcci.korcham.net/front/board/boardContentsListPage.do?boardId=10374&menuId=1227	/Users/jin/zium_scraper/scraper/enhanced/enhanced_tongyeongc_scraper.py	enhanced/tongyeongc
+cceiBitgaram	https://ccei.creativekorea.or.kr/bitgaram/custom/notice_list.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_cceiBitgaram_scraper.py	enhanced/cceiBitgaram
+cceiJeonnam	https://ccei.creativekorea.or.kr/jeonnam/custom/notice_list.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_cceiJeonnam_scraper.py	enhanced/cceiJeonnam
+kotra	https://www.kotra.or.kr/subList/20000005958?tabid=1092	/Users/jin/zium_scraper/scraper/enhanced/enhanced_kotra_scraper.py	enhanced/kotra
+gumicci	https://gumicci.korcham.net/front/board/boardContentsListPage.do?boardId=10318&menuId=2103	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gumicci_scraper.py	enhanced/gumicci
+pccci	https://pccci.korcham.net/front/board/boardContentsListPage.do?boardId=10785&menuId=1392	/Users/jin/zium_scraper/scraper/enhanced/enhanced_pccci_scraper.py	enhanced/pccci
+pohangcci	http://pohangcci.korcham.net/front/board/boardContentsListPage.do?boardId=10275&menuId=1440	/Users/jin/zium_scraper/scraper/enhanced/enhanced_pohangcci_scraper.py	enhanced/pohangcci
+yongincci	https://yongincci.korcham.net/front/board/boardContentsListPage.do?boardId=10214&menuId=669	/Users/jin/zium_scraper/scraper/enhanced/enhanced_yongincci_scraper.py	enhanced/yongincci
+exportcenter	https://www.smes.go.kr/exportcenter/information/notice/list.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_exportcenter_scraper.py	enhanced/exportcenter
+mss11	https://www.mss.go.kr/site/gyeongnam/ex/bbs/List.do?cbIdx=255	/Users/jin/zium_scraper/scraper/enhanced/enhanced_mss11_scraper.py	enhanced/mss11
+jejucci	https://jejucci.korcham.net/front/board/boardContentsListPage.do?boardId=10088&menuId=379	/Users/jin/zium_scraper/scraper/enhanced/enhanced_jejucci_scraper.py	enhanced/jejucci
+yeongcheoncci	http://yeongcheoncci.korcham.net/front/board/boardContentsListPage.do?boardId=10342&menuId=5170	/Users/jin/zium_scraper/scraper/enhanced/enhanced_yeongcheoncci_scraper.py	enhanced/yeongcheoncci
+cceiPohang	https://ccei.creativekorea.or.kr/pohang/custom/notice_list.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_cceiPohang_scraper.py	enhanced/cceiPohang
+jbsos	https://www.jbsos.or.kr/bbs/board.php?bo_table=s_sub04_01	/Users/jin/zium_scraper/scraper/enhanced/enhanced_jbsos_scraper.py	enhanced/jbsos
+jif	https://www.jif.re.kr/board/list.do?boardUUID=53473d307cb77a53017cb7e09b8e0003&menuUUID=53473d307cb7118c017cb71940970029	/Users/jin/zium_scraper/scraper/enhanced/enhanced_jif_scraper.py	enhanced/jif
+cceiGwangju	https://ccei.creativekorea.or.kr/gwangju/custom/notice_list.do	/Users/jin/zium_scraper/scraper/enhanced/enhanced_cceiGwangju_scraper.py	enhanced/cceiGwangju
+sncci	https://www.sncci.net/new/sub01/sub0101.php	/Users/jin/zium_scraper/scraper/enhanced/enhanced_sncci_scraper.py	enhanced/sncci
+gwjob6	https://job.gwd.go.kr/gwjob/support_policy/enterprises_policy/financial_support	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gwjob6_scraper.py	enhanced/gwjob6
+cbcci	https://cbcci.korcham.net/front/board/boardContentsListPage.do?boardId=10413&menuId=3382	/Users/jin/zium_scraper/scraper/enhanced/enhanced_cbcci_scraper.py	enhanced/cbcci
+gsic	https://gsic.or.kr/home/kor/M837392473/board.do?deleteAt=N&idx=&eSearchValue3=&searchValue1=0&searchKeyword=&pageIndex=1	/Users/jin/zium_scraper/scraper/enhanced/enhanced_gsic_scraper.py	enhanced/gsic

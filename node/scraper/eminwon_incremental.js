@@ -19,19 +19,20 @@ class EminwonListCollector {
         this.region = options.region || '청주';
         this.maxPages = options.maxPages || 3;
         this.mode = options.mode || 'list';
-        
+
         // eminwon.json에서 호스트 정보 로드
         this.eminwonHosts = this.loadEminwonHosts();
         const hostUrl = this.eminwonHosts[this.region];
-        
+
         if (!hostUrl) {
             throw new Error(`지역 '${this.region}'에 대한 호스트 정보를 찾을 수 없습니다.`);
         }
-        
+
         this.baseUrl = `https://${hostUrl}`;
-        this.listUrl = `https://${hostUrl}/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05&list_gubun=A`;
+        // this.listUrl = `https://${hostUrl}/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05&list_gubun=A`;
+        this.listUrl = `https://${hostUrl}/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A`;
         this.actionUrl = `https://${hostUrl}/emwp/gov/mogaha/ntis/web/ofr/action/OfrAction.do`;
-        
+
         // 지역별 테이블 셀렉터 정보
         this.selectorInfo = {
             "울산북구": {
@@ -85,11 +86,11 @@ class EminwonListCollector {
                 "titleIndex": 1, "dateIndex": 3
             }
         };
-        
+
         this.browser = null;
         this.page = null;
     }
-    
+
     loadEminwonHosts() {
         try {
             const hostPath = path.join(__dirname, 'eminwon.json');
@@ -99,26 +100,26 @@ class EminwonListCollector {
             process.exit(1);
         }
     }
-    
+
     async init() {
         this.browser = await chromium.launch({
             headless: true,
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
-        
+
         const context = await this.browser.newContext({
             userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         });
-        
+
         this.page = await context.newPage();
-        
+
         // 네트워크 타임아웃 설정
         this.page.setDefaultTimeout(30000);
     }
-    
+
     async collectListPage(pageNum) {
         const announcements = [];
-        
+
         try {
             if (pageNum === 1) {
                 // 서블릿 URL로 바로 접근 (JSP는 리다이렉트 문제 있음)
@@ -144,24 +145,24 @@ class EminwonListCollector {
                         fn_egov_link_page(page);
                     }
                 }, pageNum);
-                
+
                 // 페이지 로드 대기
                 await this.page.waitForTimeout(2000);
             }
-            
+
             // HTML 가져오기 - 더 간단한 방식으로
             console.error(`페이지 컨텐츠 가져오기...`);
-            
+
             // 간단한 evaluate로 테이블 행만 가져오기
             const tableRows = await this.page.evaluate(() => {
                 const rows = [];
                 const allRows = document.querySelectorAll('tr[onclick]');
-                
+
                 allRows.forEach(row => {
                     const onclick = row.getAttribute('onclick') || '';
                     const cells = row.querySelectorAll('td');
                     const cellTexts = Array.from(cells).map(cell => cell.textContent.trim());
-                    
+
                     if (cellTexts.length >= 3) {
                         rows.push({
                             onclick: onclick,
@@ -169,25 +170,25 @@ class EminwonListCollector {
                         });
                     }
                 });
-                
+
                 return rows;
             }).catch(err => {
                 console.error('evaluate 실행 오류:', err.message);
                 return [];
             });
-            
+
             console.error(`발견된 행 개수: ${tableRows.length}`);
-            
+
             // 행 데이터 파싱
             for (const row of tableRows) {
                 let announcementId = '';
-                
+
                 // onclick에서 ID 추출
                 const searchDetailMatch = row.onclick.match(/searchDetail\(['"]([^'"]+)['"]\)/);
                 if (searchDetailMatch) {
                     announcementId = searchDetailMatch[1];
                 }
-                
+
                 const jfViewMatch = row.onclick.match(/jf_view\(['"]([^'"]+)['"]\)/);
                 if (jfViewMatch) {
                     const params = jfViewMatch[1];
@@ -196,12 +197,12 @@ class EminwonListCollector {
                         announcementId = idMatch[1];
                     }
                 }
-                
+
                 // 제목과 날짜 추출 (기본 인덱스)
                 const cells = row.cells;
                 let title = cells[2] || cells[1] || '';
                 let date = '';
-                
+
                 // 날짜 찾기
                 for (const cell of cells) {
                     if (/\d{4}[-.\s]\d{2}[-.\s]\d{2}/.test(cell)) {
@@ -209,7 +210,7 @@ class EminwonListCollector {
                         break;
                     }
                 }
-                
+
                 if (announcementId && title) {
                     const detailUrl = this.constructDetailUrl(announcementId);
                     announcements.push({
@@ -218,20 +219,20 @@ class EminwonListCollector {
                         date: date || '',
                         url: detailUrl
                     });
-                    
+
                     console.error(`  - ${announcementId}: ${title.substring(0, 50)}...`);
                 }
             }
-            
+
             console.error(`[Page ${pageNum}] 수집된 공고: ${announcements.length}개`);
-            
+
         } catch (error) {
             console.error(`[Page ${pageNum}] 리스트 수집 중 오류:`, error.message);
         }
-        
+
         return announcements;
     }
-    
+
     buildServletUrl(pageIndex = 1) {
         // 서블릿 URL 직접 구성
         const params = new URLSearchParams({
@@ -254,10 +255,10 @@ class EminwonListCollector {
             'pageIndex': pageIndex.toString(),
             'pageUnit': '10'
         });
-        
+
         return `${this.actionUrl}?${params.toString()}`;
     }
-    
+
     constructDetailUrl(announcementId) {
         // Eminwon 상세 페이지 URL 구성
         const params = new URLSearchParams({
@@ -285,30 +286,30 @@ class EminwonListCollector {
             'Key': 'B_Subject',
             'temp': ''
         });
-        
+
         return `${this.actionUrl}?${params.toString()}`;
     }
-    
+
     async collectAllLists() {
         const allAnnouncements = [];
-        
+
         try {
             await this.init();
-            
+
             for (let pageNum = 1; pageNum <= this.maxPages; pageNum++) {
                 console.error(`\n📄 ${this.region} - 페이지 ${pageNum}/${this.maxPages} 수집 중...`);
-                
+
                 const pageAnnouncements = await this.collectListPage(pageNum);
                 allAnnouncements.push(...pageAnnouncements);
-                
+
                 // 페이지 간 대기
                 if (pageNum < this.maxPages) {
                     await this.page.waitForTimeout(1000);
                 }
             }
-            
+
             console.error(`\n✅ ${this.region} - 총 ${allAnnouncements.length}개 공고 수집 완료`);
-            
+
         } catch (error) {
             console.error(`❌ 리스트 수집 실패:`, error);
         } finally {
@@ -316,14 +317,14 @@ class EminwonListCollector {
                 await this.browser.close();
             }
         }
-        
+
         return allAnnouncements;
     }
-    
+
     async run() {
         if (this.mode === 'list') {
             const announcements = await this.collectAllLists();
-            
+
             // JSON으로 출력 (stdout으로 Python에 전달)
             console.log(JSON.stringify({
                 status: 'success',
@@ -331,7 +332,7 @@ class EminwonListCollector {
                 count: announcements.length,
                 data: announcements
             }, null, 2));
-            
+
             return announcements;
         } else if (this.mode === 'detail') {
             // 상세 페이지 다운로드는 기존 eminwon_scraper.js 사용
@@ -364,13 +365,13 @@ if (require.main === module) {
         })
         .help()
         .argv;
-    
+
     const collector = new EminwonListCollector({
         region: argv.region,
         mode: argv.mode,
         maxPages: argv.pages
     });
-    
+
     collector.run().catch(error => {
         console.error('실행 실패:', error);
         process.exit(1);

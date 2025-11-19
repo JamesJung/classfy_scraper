@@ -47,10 +47,9 @@ class EminwonScraper {
         //https://eminwon.taean.go.kr/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05&list_gubun=A
 
         this.baseUrl = `https://${hostUrl}`;
-        this.listUrl = `https://${hostUrl}/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05&cpath=`;
+        // this.listUrl = `https://${hostUrl}/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05,06&list_gubun=A`;
 
-        //태안의 경우는 이렇게 처리된다.
-        // this.listUrl = `https://${hostUrl}/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05&list_gubun=A`
+        this.listUrl = `https://${hostUrl}/emwp/jsp/ofr/OfrNotAncmtL.jsp?not_ancmt_se_code=01,02,03,04,05&list_gubun=A`
 
         this.actionUrl = `https://${hostUrl}/emwp/gov/mogaha/ntis/web/ofr/action/OfrAction.do`;
         this.browser = null;
@@ -473,7 +472,7 @@ class EminwonScraper {
                     const servletUrl = `${this.baseUrl}/emwp/gov/mogaha/ntis/web/ofr/action/OfrAction.do?` +
                         `jndinm=OfrNotAncmtEJB&context=NTIS&method=selectListOfrNotAncmt&` +
                         `methodnm=selectListOfrNotAncmtHomepage&homepage_pbs_yn=Y&subCheck=Y&` +
-                        `ofr_pageSize=10&not_ancmt_se_code=01,02,03,04,05&title=%EA%B3%A0%EC%8B%9C%EA%B3%B5%EA%B3%A0&` +
+                        `ofr_pageSize=10&not_ancmt_se_code=01,02,03,04,05,06&title=%EA%B3%A0%EC%8B%9C%EA%B3%B5%EA%B3%A0&` +
                         `initValue=Y&countYn=Y&list_gubun=A&Key=B_Subject&pageIndex=${pageNum}`;
 
                     try {
@@ -550,7 +549,7 @@ class EminwonScraper {
                             const servletUrl = `${this.baseUrl}/emwp/gov/mogaha/ntis/web/ofr/action/OfrAction.do?` +
                                 `jndinm=OfrNotAncmtEJB&context=NTIS&method=selectListOfrNotAncmt&` +
                                 `methodnm=selectListOfrNotAncmtHomepage&homepage_pbs_yn=Y&subCheck=Y&` +
-                                `ofr_pageSize=10&not_ancmt_se_code=01,02,03,04,05&title=%EA%B3%A0%EC%8B%9C%EA%B3%B5%EA%B3%A0&` +
+                                `ofr_pageSize=10&not_ancmt_se_code=01,02,03,04,05,06&title=%EA%B3%A0%EC%8B%9C%EA%B3%B5%EA%B3%A0&` +
                                 `initValue=Y&countYn=Y&list_gubun=A&Key=B_Subject&pageIndex=${pageNum}`;
 
                             console.log('서블릿 URL로 이동:', servletUrl);

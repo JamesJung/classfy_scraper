@@ -9,6 +9,7 @@ const { chromium } = require('playwright');
 const fs = require('fs-extra');
 const path = require('path');
 const yargs = require('yargs');
+const FailureLogger = require('./failure_logger');
 
 class EminwonDetailScraper {
     constructor(options = {}) {
@@ -312,6 +313,16 @@ class EminwonDetailScraper {
             return true;
 
         } catch (error) {
+            // 실패 공고 DB 기록
+            await FailureLogger.logFailedAnnouncement({
+                site_code: this.siteCode,
+                title: announcement?.title || 'Unknown',
+                url: announcement?.link || announcement?.url,
+                detail_url: announcement?.detailUrl,
+                error_type: 'error',
+                error_message: error.message
+            }).catch(logErr => {});
+
             console.error(`상세 페이지 다운로드 실패: ${error.message}`);
             return false;
         }
@@ -393,6 +404,16 @@ class EminwonDetailScraper {
             }
 
         } catch (error) {
+            // 실패 공고 DB 기록
+            await FailureLogger.logFailedAnnouncement({
+                site_code: this.siteCode,
+                title: announcement?.title || 'Unknown',
+                url: announcement?.link || announcement?.url,
+                detail_url: announcement?.detailUrl,
+                error_type: 'error',
+                error_message: error.message
+            }).catch(logErr => {});
+
             console.error('실행 중 오류:', error);
             process.exit(1);
         } finally {

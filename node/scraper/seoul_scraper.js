@@ -13,6 +13,7 @@
 
 const AnnouncementScraper = require('./announcement_scraper');
 const moment = require('moment');
+const FailureLogger = require('./failure_logger');
 
 class SeoulScraper extends AnnouncementScraper {
     constructor(options = {}) {
@@ -139,6 +140,16 @@ class SeoulScraper extends AnnouncementScraper {
                 return announcements;
 
             } catch (error) {
+                // 실패 공고 DB 기록
+                await FailureLogger.logFailedAnnouncement({
+                    site_code: this.siteCode,
+                    title: announcement?.title || 'Unknown',
+                    url: announcement?.link || announcement?.url,
+                    detail_url: announcement?.detailUrl,
+                    error_type: 'error',
+                    error_message: error.message
+                }).catch(logErr => {});
+
                 retries++;
                 console.error(`리스트 가져오기 실패 (시도 ${retries}/${maxRetries}):`, error.message);
 
@@ -219,6 +230,16 @@ class SeoulScraper extends AnnouncementScraper {
                         response = apiResponse;
                     }
                 } catch (error) {
+                    // 실패 공고 DB 기록
+                    await FailureLogger.logFailedAnnouncement({
+                        site_code: this.siteCode,
+                        title: announcement?.title || 'Unknown',
+                        url: announcement?.link || announcement?.url,
+                        detail_url: announcement?.detailUrl,
+                        error_type: 'error',
+                        error_message: error.message
+                    }).catch(logErr => {});
+
                     console.log('API 호출 실패, DOM 추출로 전환');
                 }
 
@@ -421,6 +442,16 @@ class SeoulScraper extends AnnouncementScraper {
                 };
 
             } catch (error) {
+                // 실패 공고 DB 기록
+                await FailureLogger.logFailedAnnouncement({
+                    site_code: this.siteCode,
+                    title: announcement?.title || 'Unknown',
+                    url: announcement?.link || announcement?.url,
+                    detail_url: announcement?.detailUrl,
+                    error_type: 'error',
+                    error_message: error.message
+                }).catch(logErr => {});
+
                 retries++;
                 console.error(`상세 페이지 처리 실패 (시도 ${retries}/${maxRetries}):`, error.message);
 

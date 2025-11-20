@@ -24,6 +24,7 @@ const moment = require('moment');
 const sanitize = require('sanitize-filename');
 const yargs = require('yargs');
 const config = require('./config');
+const FailureLogger = require('./failure_logger');
 
 class AnnouncementScraper {
     constructor(options = {}) {
@@ -71,6 +72,16 @@ class AnnouncementScraper {
             
             console.log(`기존 폴더에서 ${this.processedTitles.size}개의 제목 로드`);
         } catch (error) {
+            // 실패 공고 DB 기록
+            await FailureLogger.logFailedAnnouncement({
+                site_code: this.siteCode,
+                title: announcement?.title || 'Unknown',
+                url: announcement?.link || announcement?.url,
+                detail_url: announcement?.detailUrl,
+                error_type: 'error',
+                error_message: error.message
+            }).catch(logErr => {});
+
             console.log('기존 제목 로드 중 오류:', error.message);
         }
     }
@@ -101,6 +112,16 @@ class AnnouncementScraper {
 
             return maxNumber;
         } catch (error) {
+            // 실패 공고 DB 기록
+            await FailureLogger.logFailedAnnouncement({
+                site_code: this.siteCode,
+                title: announcement?.title || 'Unknown',
+                url: announcement?.link || announcement?.url,
+                detail_url: announcement?.detailUrl,
+                error_type: 'error',
+                error_message: error.message
+            }).catch(logErr => {});
+
             console.log('기존 카운터 번호 확인 중 오류:', error.message);
             return 0;
         }
@@ -157,6 +178,16 @@ class AnnouncementScraper {
                 return;
 
             } catch (error) {
+                // 실패 공고 DB 기록
+                await FailureLogger.logFailedAnnouncement({
+                    site_code: this.siteCode,
+                    title: announcement?.title || 'Unknown',
+                    url: announcement?.link || announcement?.url,
+                    detail_url: announcement?.detailUrl,
+                    error_type: 'error',
+                    error_message: error.message
+                }).catch(logErr => {});
+
                 retries++;
                 console.error(`브라우저 초기화 실패 (시도 ${retries}/${maxRetries}):`, error.message);
 
@@ -164,6 +195,16 @@ class AnnouncementScraper {
                     try {
                         await this.browser.close();
                     } catch (closeError) {
+                        // 실패 공고 DB 기록
+                        await FailureLogger.logFailedAnnouncement({
+                            site_code: this.siteCode,
+                            title: announcement?.title || 'Unknown',
+                            url: announcement?.link || announcement?.url,
+                            detail_url: announcement?.detailUrl,
+                            error_type: 'closeError',
+                            error_message: closeError.message
+                        }).catch(logErr => {});
+
                         console.warn('브라우저 종료 중 오류:', closeError.message);
                     }
                 }
@@ -207,6 +248,16 @@ class AnnouncementScraper {
                 console.log('📂 신규 출력 디렉토리 생성');
             }
         } catch (error) {
+            // 실패 공고 DB 기록
+            await FailureLogger.logFailedAnnouncement({
+                site_code: this.siteCode,
+                title: announcement?.title || 'Unknown',
+                url: announcement?.link || announcement?.url,
+                detail_url: announcement?.detailUrl,
+                error_type: 'error',
+                error_message: error.message
+            }).catch(logErr => {});
+
             console.log(`📁 기존 제목 로드 실패 (정상 - 신규 시작): ${error.message}`);
         }
     }
@@ -269,6 +320,16 @@ class AnnouncementScraper {
                                 break;
                             }
                         } catch (announcementError) {
+                            // 실패 공고 DB 기록
+                            await FailureLogger.logFailedAnnouncement({
+                                site_code: this.siteCode,
+                                title: announcement?.title || 'Unknown',
+                                url: announcement?.link || announcement?.url,
+                                detail_url: announcement?.detailUrl,
+                                error_type: 'announcementError',
+                                error_message: announcementError.message
+                            }).catch(logErr => {});
+
                             console.error(`공고 처리 중 오류 (${announcement.title}):`, announcementError.message);
                             // 개별 공고 오류는 전체 프로세스를 중단하지 않음
                             continue;
@@ -281,6 +342,16 @@ class AnnouncementScraper {
                     }
 
                 } catch (pageError) {
+                    // 실패 공고 DB 기록
+                    await FailureLogger.logFailedAnnouncement({
+                        site_code: this.siteCode,
+                        title: announcement?.title || 'Unknown',
+                        url: announcement?.link || announcement?.url,
+                        detail_url: announcement?.detailUrl,
+                        error_type: 'pageError',
+                        error_message: pageError.message
+                    }).catch(logErr => {});
+
                     consecutiveErrors++;
                     console.error(`페이지 ${currentPage} 처리 중 오류 (${consecutiveErrors}/${maxConsecutiveErrors}):`, pageError.message);
 
@@ -296,6 +367,16 @@ class AnnouncementScraper {
             }
 
         } catch (error) {
+            // 실패 공고 DB 기록
+            await FailureLogger.logFailedAnnouncement({
+                site_code: this.siteCode,
+                title: announcement?.title || 'Unknown',
+                url: announcement?.link || announcement?.url,
+                detail_url: announcement?.detailUrl,
+                error_type: 'error',
+                error_message: error.message
+            }).catch(logErr => {});
+
             console.error('스크래핑 중 치명적 오류 발생:', error.message);
             console.error('스택 트레이스:', error.stack);
         } finally {
@@ -380,6 +461,16 @@ class AnnouncementScraper {
                 return announcements;
 
             } catch (error) {
+                // 실패 공고 DB 기록
+                await FailureLogger.logFailedAnnouncement({
+                    site_code: this.siteCode,
+                    title: announcement?.title || 'Unknown',
+                    url: announcement?.link || announcement?.url,
+                    detail_url: announcement?.detailUrl,
+                    error_type: 'error',
+                    error_message: error.message
+                }).catch(logErr => {});
+
                 retries++;
                 console.error(`리스트 가져오기 실패 (시도 ${retries}/${maxRetries}):`, error.message);
 
@@ -447,6 +538,16 @@ class AnnouncementScraper {
                     }
                 }
             } catch (fsError) {
+                // 실패 공고 DB 기록
+                await FailureLogger.logFailedAnnouncement({
+                    site_code: this.siteCode,
+                    title: announcement?.title || 'Unknown',
+                    url: announcement?.link || announcement?.url,
+                    detail_url: announcement?.detailUrl,
+                    error_type: 'fsError',
+                    error_message: fsError.message
+                }).catch(logErr => {});
+
                 console.log(`파일시스템 중복 체크 실패: ${fsError.message}`);
             }
 
@@ -482,6 +583,16 @@ class AnnouncementScraper {
             return false; // 계속 진행
 
         } catch (error) {
+            // 실패 공고 DB 기록
+            await FailureLogger.logFailedAnnouncement({
+                site_code: this.siteCode,
+                title: announcement?.title || 'Unknown',
+                url: announcement?.link || announcement?.url,
+                detail_url: announcement?.detailUrl,
+                error_type: 'error',
+                error_message: error.message
+            }).catch(logErr => {});
+
             console.error(`공고 처리 중 오류 (${announcement.title}):`, error);
             return false;
         }
@@ -638,6 +749,16 @@ class AnnouncementScraper {
                 };
 
             } catch (error) {
+                // 실패 공고 DB 기록
+                await FailureLogger.logFailedAnnouncement({
+                    site_code: this.siteCode,
+                    title: announcement?.title || 'Unknown',
+                    url: announcement?.link || announcement?.url,
+                    detail_url: announcement?.detailUrl,
+                    error_type: 'error',
+                    error_message: error.message
+                }).catch(logErr => {});
+
                 retries++;
                 console.error(`상세 페이지 처리 실패 (시도 ${retries}/${maxRetries}):`, error.message);
 
@@ -685,6 +806,16 @@ class AnnouncementScraper {
             this.counter++;
 
         } catch (error) {
+            // 실패 공고 DB 기록
+            await FailureLogger.logFailedAnnouncement({
+                site_code: this.siteCode,
+                title: announcement?.title || 'Unknown',
+                url: announcement?.link || announcement?.url,
+                detail_url: announcement?.detailUrl,
+                error_type: 'error',
+                error_message: error.message
+            }).catch(logErr => {});
+
             console.error('공고 저장 실패:', error);
         }
     }
@@ -710,6 +841,16 @@ class AnnouncementScraper {
             }
 
         } catch (error) {
+            // 실패 공고 DB 기록
+            await FailureLogger.logFailedAnnouncement({
+                site_code: this.siteCode,
+                title: announcement?.title || 'Unknown',
+                url: announcement?.link || announcement?.url,
+                detail_url: announcement?.detailUrl,
+                error_type: 'error',
+                error_message: error.message
+            }).catch(logErr => {});
+
             console.error('첨부파일 다운로드 실패:', error);
         }
         return downloadUrlInfo;
@@ -819,6 +960,16 @@ class AnnouncementScraper {
                 }
             };
         } catch (error) {
+            // 실패 공고 DB 기록
+            await FailureLogger.logFailedAnnouncement({
+                site_code: this.siteCode,
+                title: announcement?.title || 'Unknown',
+                url: announcement?.link || announcement?.url,
+                detail_url: announcement?.detailUrl,
+                error_type: 'error',
+                error_message: error.message
+            }).catch(logErr => {});
+
             console.error(`첨부파일 다운로드 실패 (${attachment.name}):`, error);
             return {
                 [attachment.name || `attachment_${index}`]: {
@@ -960,6 +1111,16 @@ class AnnouncementScraper {
             console.log(`파일 다운로드 완료: ${cleanFileName}`);
 
         } catch (error) {
+            // 실패 공고 DB 기록
+            await FailureLogger.logFailedAnnouncement({
+                site_code: this.siteCode,
+                title: announcement?.title || 'Unknown',
+                url: announcement?.link || announcement?.url,
+                detail_url: announcement?.detailUrl,
+                error_type: 'error',
+                error_message: error.message
+            }).catch(logErr => {});
+
             throw new Error(`링크 다운로드 실패: ${error.message}`);
         }
     }
@@ -980,6 +1141,16 @@ class AnnouncementScraper {
             console.log(`폼 방식 다운로드 완료: ${fileName}`);
 
         } catch (error) {
+            // 실패 공고 DB 기록
+            await FailureLogger.logFailedAnnouncement({
+                site_code: this.siteCode,
+                title: announcement?.title || 'Unknown',
+                url: announcement?.link || announcement?.url,
+                detail_url: announcement?.detailUrl,
+                error_type: 'error',
+                error_message: error.message
+            }).catch(logErr => {});
+
             throw new Error(`폼 다운로드 실패: ${error.message}`);
         }
     }
@@ -1141,6 +1312,16 @@ class AnnouncementScraper {
             }
 
         } catch (error) {
+            // 실패 공고 DB 기록
+            await FailureLogger.logFailedAnnouncement({
+                site_code: this.siteCode,
+                title: announcement?.title || 'Unknown',
+                url: announcement?.link || announcement?.url,
+                detail_url: announcement?.detailUrl,
+                error_type: 'error',
+                error_message: error.message
+            }).catch(logErr => {});
+
             console.log('브라우저 클릭 방식 실패:', error.message);
         }
 
@@ -1228,6 +1409,16 @@ class AnnouncementScraper {
                 console.log('\\n브라우저 정리 완료');
 
             } catch (error) {
+                // 실패 공고 DB 기록
+                await FailureLogger.logFailedAnnouncement({
+                    site_code: this.siteCode,
+                    title: announcement?.title || 'Unknown',
+                    url: announcement?.link || announcement?.url,
+                    detail_url: announcement?.detailUrl,
+                    error_type: 'error',
+                    error_message: error.message
+                }).catch(logErr => {});
+
                 console.warn('브라우저 정리 중 오류:', error.message);
             }
         }

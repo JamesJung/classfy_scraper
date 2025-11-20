@@ -15,6 +15,7 @@ const AnnouncementScraper = require('./announcement_scraper');
 const moment = require('moment');
 const path = require('path');
 const fs = require('fs-extra');
+const FailureLogger = require('./failure_logger');
 
 class DaeguScraper extends AnnouncementScraper {
     constructor(options = {}) {
@@ -133,6 +134,16 @@ class DaeguScraper extends AnnouncementScraper {
                 return announcements;
 
             } catch (error) {
+                // 실패 공고 DB 기록
+                await FailureLogger.logFailedAnnouncement({
+                    site_code: this.siteCode,
+                    title: announcement?.title || 'Unknown',
+                    url: announcement?.link || announcement?.url,
+                    detail_url: announcement?.detailUrl,
+                    error_type: 'error',
+                    error_message: error.message
+                }).catch(logErr => {});
+
                 retries++;
                 console.error(`리스트 가져오기 실패 (시도 ${retries}/${maxRetries}):`, error.message);
 
@@ -172,6 +183,16 @@ class DaeguScraper extends AnnouncementScraper {
                     // 직접 URL 이동
                     await this.page.goto(detailUrl, { waitUntil: 'networkidle' });
                 } catch (navError) {
+                    // 실패 공고 DB 기록
+                    await FailureLogger.logFailedAnnouncement({
+                        site_code: this.siteCode,
+                        title: announcement?.title || 'Unknown',
+                        url: announcement?.link || announcement?.url,
+                        detail_url: announcement?.detailUrl,
+                        error_type: 'navError',
+                        error_message: navError.message
+                    }).catch(logErr => {});
+
                     console.log('직접 URL 이동 실패, JavaScript 방식 시도...');
                     
                     // 기존 방식으로 폴백
@@ -340,6 +361,16 @@ class DaeguScraper extends AnnouncementScraper {
                 };
 
             } catch (error) {
+                // 실패 공고 DB 기록
+                await FailureLogger.logFailedAnnouncement({
+                    site_code: this.siteCode,
+                    title: announcement?.title || 'Unknown',
+                    url: announcement?.link || announcement?.url,
+                    detail_url: announcement?.detailUrl,
+                    error_type: 'error',
+                    error_message: error.message
+                }).catch(logErr => {});
+
                 retries++;
                 console.error(`상세 페이지 처리 실패 (시도 ${retries}/${maxRetries}):`, error.message);
 
@@ -386,6 +417,16 @@ class DaeguScraper extends AnnouncementScraper {
                     await download.saveAs(savePath);
                     console.log(`다운로드 완료: ${fileName}`);
                 } catch (downloadError) {
+                    // 실패 공고 DB 기록
+                    await FailureLogger.logFailedAnnouncement({
+                        site_code: this.siteCode,
+                        title: announcement?.title || 'Unknown',
+                        url: announcement?.link || announcement?.url,
+                        detail_url: announcement?.detailUrl,
+                        error_type: 'downloadError',
+                        error_message: downloadError.message
+                    }).catch(logErr => {});
+
                     console.log(`다운로드 타임아웃, URL 저장: ${downloadUrl}`);
                     // 다운로드 실패시 URL 정보를 저장
                     const urlInfoPath = path.join(attachDir, `${attachment.name}.url.txt`);
@@ -394,6 +435,16 @@ class DaeguScraper extends AnnouncementScraper {
             }
 
         } catch (error) {
+            // 실패 공고 DB 기록
+            await FailureLogger.logFailedAnnouncement({
+                site_code: this.siteCode,
+                title: announcement?.title || 'Unknown',
+                url: announcement?.link || announcement?.url,
+                detail_url: announcement?.detailUrl,
+                error_type: 'error',
+                error_message: error.message
+            }).catch(logErr => {});
+
             console.error(`첨부파일 다운로드 실패 (${attachment.name}):`, error.message);
         }
     }

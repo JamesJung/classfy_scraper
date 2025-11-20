@@ -800,6 +800,116 @@ def run_scraper(site_code, from_date):
         }
 
 
+def retry_failed_scrapers(failed_results, from_dates_map, max_retry=2):
+    """
+    실패한 스크래퍼를 재시도합니다.
+
+    Args:
+        failed_results: 실패한 결과 리스트 (failed, timeout, error 상태)
+        from_dates_map: {site_code: from_date} 매핑
+        max_retry: 최대 재시도 횟수 (기본값: 2)
+
+    Returns:
+        dict: {"success": [], "failed": []} 형태의 재시도 결과
+    """
+    if not failed_results:
+        return {"success": [], "failed": []}
+
+    print("\n" + "=" * 80)
+    print("실패한 스크래퍼 재시도 시작")
+    print(f"대상: {len(failed_results)}개")
+    print("=" * 80)
+
+    retry_results = {"success": [], "failed": []}
+
+    for idx, failed_item in enumerate(failed_results, 1):
+        site_code = failed_item["site_code"]
+        from_date = from_dates_map.get(site_code)
+
+        if not from_date:
+            print(f"\n[재시도 {idx}/{len(failed_results)}] {site_code} - from_date 없음, 스킵")
+            retry_results["failed"].append(failed_item)
+            continue
+
+        print(f"\n{'='*80}")
+        print(f"[재시도 {idx}/{len(failed_results)}] {site_code}")
+        print(f"원래 상태: {failed_item['status']}")
+        print(f"{'='*80}")
+
+        success = False
+        last_result = None
+
+        # 최대 max_retry번 재시도
+        for retry_attempt in range(1, max_retry + 1):
+            # 지수 백오프: 30초, 60초
+            wait_time = 30 * retry_attempt
+
+            print(f"\n  재시도 {retry_attempt}/{max_retry} - {wait_time}초 대기 중...")
+            time.sleep(wait_time)
+
+            print(f"  재시도 {retry_attempt}/{max_retry} 실행 중...")
+            result = run_scraper(site_code, from_date)
+            last_result = result
+
+            if result["status"] == "success":
+                print(f"  ✓ 재시도 성공! (시도 횟수: {retry_attempt})")
+
+                # DB에 성공 로그 저장 (재시도 성공임을 표시)
+                elapsed = result.get("elapsed_time", 0)
+                save_scraper_log(
+                    site_code=site_code,
+                    status=f"success_retry_{retry_attempt}",
+                    elapsed_time=elapsed,
+                    error_message=f"재시도 {retry_attempt}회 만에 성공",
+                    scraper_file=f"{site_code}_scraper.js",
+                    from_date=from_date,
+                    output_dir=result.get("output_dir"),
+                    scraped_count=result.get("scraped_count", 0),
+                )
+
+                # DB 업데이트
+                update_latest_announcement_date(site_code, result["output_dir"])
+
+                retry_results["success"].append({
+                    **result,
+                    "retry_attempt": retry_attempt,
+                    "original_status": failed_item["status"]
+                })
+                success = True
+                break
+            else:
+                print(f"  ✗ 재시도 {retry_attempt} 실패: {result['status']} - {result.get('error', 'N/A')[:100]}")
+
+                # 재시도 실패 로그 저장
+                elapsed = result.get("elapsed_time", 0)
+                save_scraper_log(
+                    site_code=site_code,
+                    status=f"retry_{retry_attempt}_failed",
+                    elapsed_time=elapsed,
+                    error_message=result.get("error"),
+                    scraper_file=f"{site_code}_scraper.js",
+                    from_date=from_date,
+                )
+
+        # 모든 재시도 실패
+        if not success:
+            print(f"\n  ✗ 모든 재시도 실패 ({max_retry}회)")
+            retry_results["failed"].append({
+                **last_result,
+                "retry_attempts": max_retry,
+                "original_status": failed_item["status"]
+            })
+
+    print("\n" + "=" * 80)
+    print("재시도 결과 요약")
+    print("=" * 80)
+    print(f"재시도 성공: {len(retry_results['success'])}개")
+    print(f"재시도 실패: {len(retry_results['failed'])}개")
+    print("=" * 80)
+
+    return retry_results
+
+
 def main():
     # 커맨드라인 인자 파싱
     parser = argparse.ArgumentParser(description='홈페이지 고시/공고 점진적 스크래핑 v2')
@@ -829,10 +939,12 @@ def main():
     BASE_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     results = {"success": [], "failed": [], "skipped": [], "timeout": [], "error": []}
+    from_dates_map = {}  # 재시도를 위한 from_date 매핑
 
     for idx, site in enumerate(sites, 1):
         site_code = site["site_code"]
         from_date = site["latest_announcement_date"]
+        from_dates_map[site_code] = from_date  # from_date 저장
 
         print(f"\n{'='*80}")
         print(f"[{idx}/{len(sites)}] {site_code}")
@@ -932,10 +1044,27 @@ def main():
                     log_id, site_code, "error", result.get("error"), ALERT_RECIPIENTS
                 )
 
+    # ====================================================================
+    # 재시도 로직: 실패/타임아웃/오류 사이트 재시도
+    # ====================================================================
+    failed_to_retry = results["failed"] + results["timeout"] + results["error"]
+
+    if failed_to_retry:
+        retry_results = retry_failed_scrapers(failed_to_retry, from_dates_map, max_retry=2)
+
+        # 재시도 성공한 항목을 success로 이동
+        results["success"].extend(retry_results["success"])
+
+        # 원래 실패 리스트에서 재시도 성공한 항목 제거
+        retry_success_site_codes = {r["site_code"] for r in retry_results["success"]}
+        results["failed"] = [r for r in results["failed"] if r["site_code"] not in retry_success_site_codes]
+        results["timeout"] = [r for r in results["timeout"] if r["site_code"] not in retry_success_site_codes]
+        results["error"] = [r for r in results["error"] if r["site_code"] not in retry_success_site_codes]
+
     total_elapsed = time.time() - total_start_time
 
     print("\n" + "=" * 80)
-    print("처리 결과 요약")
+    print("최종 처리 결과 요약")
     print("=" * 80)
     print(f"성공: {len(results['success'])}개")
     print(f"실패: {len(results['failed'])}개")

@@ -22,6 +22,7 @@ const moment = require('moment');
 const sanitize = require('sanitize-filename');
 const yargs = require('yargs');
 const config = require('./config');
+const FailureLogger = require('./failure_logger');
 
 class AnnouncementScraper {
     constructor(options = {}) {
@@ -233,6 +234,16 @@ class AnnouncementScraper {
                             }
                         } catch (announcementError) {
                             console.error(`공고 처리 중 오류 (${announcement.title}):`, announcementError.message);
+
+                            // 실패 공고 DB 기록
+                            FailureLogger.logFailedAnnouncement({
+                                site_code: this.siteCode,
+                                title: announcement?.title || 'Unknown',
+                                url: announcement?.link || announcement?.url,
+                                detail_url: announcement?.detailUrl,
+                                error_type: 'announcementError',
+                                error_message: announcementError.message
+                            }).catch(err => {});
                             // 개별 공고 오류는 전체 프로세스를 중단하지 않음
                             continue;
                         }

@@ -12,6 +12,7 @@ const yargs = require('yargs');
 const sanitize = require('sanitize-filename');
 const axios = require('axios');
 const https = require('https');
+const FailureLogger = require('./failure_logger');
 
 class UnifiedDetailScraper {
     constructor(options = {}) {
@@ -141,6 +142,16 @@ class UnifiedDetailScraper {
             }));
 
         } catch (error) {
+            // 실패 공고 DB 기록
+            await FailureLogger.logFailedAnnouncement({
+                site_code: this.siteCode,
+                title: announcement?.title || 'Unknown',
+                url: announcement?.link || announcement?.url,
+                detail_url: announcement?.detailUrl,
+                error_type: 'error',
+                error_message: error.message
+            }).catch(logErr => {});
+
             console.error(`[${this.siteCode}] 오류:`, error.message);
             console.log(JSON.stringify({
                 status: 'error',
@@ -215,6 +226,16 @@ class UnifiedDetailScraper {
                 return null;
             });
         } catch (error) {
+            // 실패 공고 DB 기록
+            await FailureLogger.logFailedAnnouncement({
+                site_code: this.siteCode,
+                title: announcement?.title || 'Unknown',
+                url: announcement?.link || announcement?.url,
+                detail_url: announcement?.detailUrl,
+                error_type: 'error',
+                error_message: error.message
+            }).catch(logErr => {});
+
             return null;
         }
     }
@@ -336,6 +357,16 @@ class UnifiedDetailScraper {
                     await this.delay(2000);
                 }
             } catch (error) {
+                // 실패 공고 DB 기록
+                await FailureLogger.logFailedAnnouncement({
+                    site_code: this.siteCode,
+                    title: announcement?.title || 'Unknown',
+                    url: announcement?.link || announcement?.url,
+                    detail_url: announcement?.detailUrl,
+                    error_type: 'error',
+                    error_message: error.message
+                }).catch(logErr => {});
+
                 console.error(`[${this.siteCode}] 첨부파일 다운로드 실패 (${attachment.name}):`, error.message);
             }
         }

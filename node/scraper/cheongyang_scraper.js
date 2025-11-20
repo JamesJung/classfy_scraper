@@ -27,6 +27,7 @@ const moment = require('moment');
 const sanitize = require('sanitize-filename');
 const yargs = require('yargs');
 const config = require('./config');
+const FailureLogger = require('./failure_logger');
 
 class CheongyangScraper {
     constructor(options = {}) {
@@ -232,6 +233,16 @@ class CheongyangScraper {
                             }
                         } catch (announcementError) {
                             console.error(`공고 처리 중 오류 (${announcement.title}):`, announcementError.message);
+
+                            // 실패 공고 DB 기록
+                            FailureLogger.logFailedAnnouncement({
+                                site_code: this.siteCode,
+                                title: announcement?.title || 'Unknown',
+                                url: announcement?.link || announcement?.url,
+                                detail_url: announcement?.detailUrl,
+                                error_type: 'announcementError',
+                                error_message: announcementError.message
+                            }).catch(err => {});
                             continue;
                         }
                     }

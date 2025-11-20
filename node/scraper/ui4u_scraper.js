@@ -21,6 +21,7 @@ const path = require('path');
 const fs = require('fs-extra');
 const axios = require('axios');
 const https = require('https');
+const FailureLogger = require('./failure_logger');
 
 class Ui4uScraper extends AnnouncementScraper {
     constructor(options = {}) {

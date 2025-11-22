@@ -38,29 +38,23 @@ def load_exclusion_keywords(conn):
     """EXCLUSION_KEYWORDS 테이블에서 제외 키워드 목록 로드"""
     with conn.cursor() as cursor:
         cursor.execute("""
-            SELECT keyword, reason, category
+            SELECT KEYWORD as keyword, DESCRIPTION as description
             FROM EXCLUSION_KEYWORDS
-            WHERE is_active = 1
-            ORDER BY priority DESC, keyword
+            WHERE IS_ACTIVE = 1
+            ORDER BY KEYWORD
         """)
         keywords = cursor.fetchall()
-    
+
     print(f"\n📋 활성화된 제외 키워드: {len(keywords)}개")
-    
-    # 카테고리별로 그룹화하여 출력
-    categories = {}
-    for kw in keywords:
-        category = kw['category'] or '기타'
-        if category not in categories:
-            categories[category] = []
-        categories[category].append(kw['keyword'])
-    
-    for category, kw_list in categories.items():
-        print(f"  [{category}] {', '.join(kw_list[:5])}", end='')
-        if len(kw_list) > 5:
-            print(f" 외 {len(kw_list) - 5}개", end='')
+
+    # 키워드 샘플 출력
+    if keywords:
+        sample = [kw['keyword'] for kw in keywords[:10]]
+        print(f"  샘플: {', '.join(sample)}", end='')
+        if len(keywords) > 10:
+            print(f" 외 {len(keywords) - 10}개", end='')
         print()
-    
+
     return keywords
 
 
@@ -68,7 +62,7 @@ def load_successful_records(conn):
     """processing_status가 '성공'인 레코드 로드"""
     with conn.cursor() as cursor:
         cursor.execute("""
-            SELECT id, title, processing_status, exclusion_keyword, exclusion_reason
+            SELECT id, title, folder_name, processing_status, exclusion_keyword, exclusion_reason
             FROM announcement_pre_processing
             WHERE processing_status = '성공'
         """)
@@ -78,21 +72,34 @@ def load_successful_records(conn):
     return records
 
 
-def check_keyword_match(title, keywords):
-    """제목에 제외 키워드가 포함되어 있는지 확인"""
-    if not title:
-        return None, None
-    
-    # 제목을 소문자로 변환하여 대소문자 구분 없이 매칭
-    title_lower = title.lower()
-    
-    for keyword_info in keywords:
-        keyword = keyword_info['keyword'].lower()
-        
-        # 키워드가 제목에 포함되어 있는지 확인
-        if keyword in title_lower:
-            return keyword_info['keyword'], keyword_info['reason']
-    
+def check_keyword_match(title, folder_name, keywords):
+    """제목 또는 폴더명에 제외 키워드가 포함되어 있는지 확인
+
+    원래 announcement_pre_processor.py의 로직과 동일하게 folder_name을 기준으로 체크하고,
+    추가로 title도 체크합니다.
+    """
+    matched_keywords = []
+
+    # folder_name 체크 (원래 로직)
+    if folder_name:
+        folder_name_lower = folder_name.lower()
+        for keyword_info in keywords:
+            keyword = keyword_info['keyword'].lower()
+            if keyword in folder_name_lower:
+                matched_keywords.append(keyword_info['keyword'])
+
+    # title 체크 (보조)
+    if title and not matched_keywords:
+        title_lower = title.lower()
+        for keyword_info in keywords:
+            keyword = keyword_info['keyword'].lower()
+            if keyword in title_lower:
+                matched_keywords.append(keyword_info['keyword'])
+
+    if matched_keywords:
+        reason = f"제외 키워드가 입력되어 있습니다: {', '.join(matched_keywords)}"
+        return ', '.join(matched_keywords), reason
+
     return None, None
 
 
@@ -101,7 +108,7 @@ def update_record_with_exclusion(conn, record_id, keyword, reason):
     with conn.cursor() as cursor:
         cursor.execute("""
             UPDATE announcement_pre_processing
-            SET processing_status = 'excluded',
+            SET processing_status = '제외',
                 exclusion_keyword = %s,
                 exclusion_reason = %s,
                 updated_at = NOW()
@@ -145,33 +152,36 @@ def main():
         # 각 레코드에 대해 키워드 매칭 수행
         for idx, record in enumerate(records, 1):
             title = record['title']
-            
+            folder_name = record['folder_name']
+
             # 진행률 표시 (100개마다)
             if idx % 100 == 0:
                 print(f"  진행: {idx}/{len(records)} ({idx*100/len(records):.1f}%)")
-            
-            # 키워드 매칭
-            matched_keyword, exclusion_reason = check_keyword_match(title, keywords)
-            
+
+            # 키워드 매칭 (folder_name과 title 둘 다 체크)
+            matched_keyword, exclusion_reason = check_keyword_match(title, folder_name, keywords)
+
             if matched_keyword:
                 # 제외 처리로 업데이트
                 update_record_with_exclusion(
-                    conn, 
-                    record['id'], 
-                    matched_keyword, 
+                    conn,
+                    record['id'],
+                    matched_keyword,
                     exclusion_reason
                 )
                 updated_count += 1
-                
+
                 # 통계 수집
-                if matched_keyword not in keyword_stats:
-                    keyword_stats[matched_keyword] = 0
-                keyword_stats[matched_keyword] += 1
-                
+                for kw in matched_keyword.split(', '):
+                    if kw not in keyword_stats:
+                        keyword_stats[kw] = 0
+                    keyword_stats[kw] += 1
+
                 # 처음 10개는 상세 로그 출력
                 if updated_count <= 10:
                     print(f"  [{updated_count}] ID: {record['id']}")
-                    print(f"      제목: {title[:50]}...")
+                    print(f"      폴더명: {folder_name[:50] if folder_name else 'N/A'}...")
+                    print(f"      제목: {title[:50] if title else 'N/A'}...")
                     print(f"      매칭 키워드: '{matched_keyword}'")
                     print(f"      제외 사유: {exclusion_reason}")
             else:

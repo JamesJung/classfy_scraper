@@ -77,6 +77,11 @@ class AnnouncementPreProcessor:
         }
         self.url_key_extractor = DomainKeyExtractor(db_config=db_config)
 
+        # LRU 캐시 초기화 (domain_key_config 변경사항 즉시 반영)
+        # AnnouncementPreProcessor 인스턴스 생성 시마다 최신 domain_key_config를 로드
+        self.url_key_extractor.clear_cache()
+        logger.info("✅ DomainKeyExtractor LRU 캐시 초기화 완료 (domain_key_config 최신 반영)")
+
         # 데이터베이스 테이블 생성 (없는 경우)
         self._ensure_database_tables()
 
@@ -172,11 +177,14 @@ class AnnouncementPreProcessor:
                         {"id": row[0], "keyword": row[1], "description": row[2]}
                     )
 
-                logger.info(f"제외 키워드 로드 완료: {len(keywords)}개")
+                if len(keywords) == 0:
+                    logger.error("⚠️ 제외 키워드가 0개 로드됨 - EXCLUSION_KEYWORDS 테이블 확인 필요")
+                else:
+                    logger.info(f"제외 키워드 로드 완료: {len(keywords)}개")
                 return keywords
 
         except Exception as e:
-            logger.warning(f"제외 키워드 로드 실패: {e}")
+            logger.error(f"❌ 제외 키워드 로드 실패: {e} - 제외 키워드 체크가 작동하지 않습니다!")
             return []
 
     def process_directory(self, directory_path: Path, site_code: str) -> bool:

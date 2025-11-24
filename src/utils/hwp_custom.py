@@ -112,7 +112,8 @@ def read_hwpx(hwpx_file_path):
         return result_text
 
     except zipfile.BadZipFile:
-        logger.error(f"유효하지 않은 ZIP 파일 (HWPX): {hwpx_file_path.name}")
+        # ZIP 형식이 아닌 HWPX는 OLE 형식일 수 있으므로 DEBUG로 기록
+        logger.debug(f"ZIP 형식이 아닌 HWPX (OLE 형식 가능성): {hwpx_file_path.name}")
         raise Exception(f"Invalid HWPX file format: {hwpx_file_path.name}")
 
     except FileNotFoundError:

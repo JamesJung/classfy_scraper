@@ -76,7 +76,7 @@ class AnnouncementPrvProcessor:
         """데이터베이스에서 제외 키워드를 로드합니다."""
         try:
             from sqlalchemy import text
-            
+
             with self.db_manager.SessionLocal() as session:
                 result = session.execute(text("""
                     SELECT EXCLUSION_ID, KEYWORD, DESCRIPTION
@@ -84,7 +84,7 @@ class AnnouncementPrvProcessor:
                     WHERE IS_ACTIVE = TRUE
                     ORDER BY EXCLUSION_ID
                 """))
-                
+
                 keywords = []
                 for row in result:
                     keywords.append({
@@ -92,12 +92,15 @@ class AnnouncementPrvProcessor:
                         'keyword': row[1],
                         'description': row[2]
                     })
-                
-                logger.info(f"제외 키워드 로드 완료: {len(keywords)}개")
+
+                if len(keywords) == 0:
+                    logger.error("⚠️ 제외 키워드가 0개 로드됨 - EXCLUSION_KEYWORDS 테이블 확인 필요")
+                else:
+                    logger.info(f"제외 키워드 로드 완료: {len(keywords)}개")
                 return keywords
-                
+
         except Exception as e:
-            logger.warning(f"제외 키워드 로드 실패: {e}")
+            logger.error(f"❌ 제외 키워드 로드 실패: {e} - 제외 키워드 체크가 작동하지 않습니다!")
             return []
     
     def _parse_date_filter(self, date_str: str) -> Optional[datetime]:

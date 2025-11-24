@@ -2939,7 +2939,8 @@ def convert_hwpx_to_text(hwpx_file_path: Path) -> str | None:
         logger.error(f"HWPX 파일 텍스트 추출 중 메모리 부족: {hwpx_file_path.name}")
         return None
     except Exception as e:
-        logger.error(f"HWPX 파일 '{hwpx_file_path.name}' 텍스트 추출 중 오류 발생: {e}")
+        # ZIP 형식이 아닌 경우 fallback으로 처리 가능하므로 WARNING으로 낮춤
+        logger.warning(f"HWPX 파일 '{hwpx_file_path.name}' 텍스트 추출 실패 (fallback 시도 예정): {e}")
         logger.debug(f"HWPX 텍스트 추출 오류 상세: {traceback.format_exc()}")
         return None
 
@@ -3064,11 +3065,25 @@ def extract_hwp_text_fallback(hwp_file_path: Path) -> str | None:
 
     # HWPX 파일인 경우 직접 처리
     if hwp_file_path.suffix.lower() == ".hwpx":
-        try:
-            return convert_hwpx_to_text(hwp_file_path)
-        except Exception as e:
-            logger.error(f"Fallback HWPX 텍스트 추출 실패: {hwp_file_path.name} - {e}")
-            return None
+        result = convert_hwpx_to_text(hwp_file_path)
+
+        # convert_hwpx_to_text가 실패 시 (None 반환) read_hwp()로 재시도
+        if result is None:
+            logger.info(f"gethwp.read_hwp()로 재시도 (OLE 형식 HWPX 가능성): {hwp_file_path.name}")
+            try:
+                import gethwp
+                text = gethwp.read_hwp(str(hwp_file_path))
+                if text and text.strip():
+                    cleaned_text = clean_hwp_extracted_text(text)
+                    if len(cleaned_text) >= 10:
+                        logger.info(f"✅ read_hwp()로 HWPX 추출 성공: {hwp_file_path.name} ({len(cleaned_text)}자)")
+                        return cleaned_text
+            except Exception as e:
+                logger.error(f"read_hwp()로도 HWPX 추출 실패: {hwp_file_path.name} - {e}")
+        else:
+            return result
+
+        return None
 
     # 2025.09.03  기존 소스. 현재  extracted_text = gethwp.read_hwp(str(hwp_file_path))
     # 이걸로만 하고 있다. 이 부분은 failback이다.

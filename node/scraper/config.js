@@ -178,5 +178,14 @@ module.exports = {
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         respectRobots: true,
         maxRedirects: 5
+    },
+
+    // 데이터베이스 설정 (환경 변수에서 로드)
+    database: {
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT) || 3306,
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASSWORD || '',
+        database: process.env.DB_NAME || 'subvention'
     }
 };

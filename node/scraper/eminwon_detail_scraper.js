@@ -10,6 +10,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const yargs = require('yargs');
 const FailureLogger = require('./failure_logger');
+const UrlManager = require('./url_manager');
 
 class EminwonDetailScraper {
     constructor(options = {}) {
@@ -21,6 +22,128 @@ class EminwonDetailScraper {
 
         this.browser = null;
         this.page = null;
+    }
+
+    /**
+     * 상세 URL만 추출하여 DB에 저장 (다운로드 없음)
+     * @param {string} batchDate - 배치 날짜 (선택)
+     * @returns {Promise<{totalCount: number, pageCount: number, savedCount: number}>}
+     */
+    async extractAndSaveUrls(batchDate = null) {
+        try {
+            await this.initBrowser();
+
+            let currentPage = 1;
+            let totalCount = 0;
+            let savedCount = 0;
+            let consecutiveEmptyPages = 0;
+            const maxConsecutiveEmptyPages = 3;
+
+            console.log(`\n=== 상세 URL 추출 및 저장 시작 ===`);
+            console.log(`사이트 코드: ${this.siteCode}`);
+
+            if (this.targetDate) {
+                const moment = require('moment');
+                const targetMoment = moment(this.targetDate, 'YYYYMMDD');
+                console.log(`대상 날짜: ${targetMoment.format('YYYY-MM-DD')}`);
+            } else {
+                console.log(`대상 연도: ${this.targetYear}`);
+            }
+
+            while (consecutiveEmptyPages < maxConsecutiveEmptyPages) {
+                try {
+                    console.log(`\n페이지 ${currentPage} 확인 중...`);
+                    const announcements = await this.getAnnouncementList(currentPage);
+
+                    if (!announcements || announcements.length === 0) {
+                        consecutiveEmptyPages++;
+                        currentPage++;
+                        continue;
+                    }
+
+                    consecutiveEmptyPages = 0;
+                    let pageValidCount = 0;
+                    let shouldStop = false;
+
+                    for (const announcement of announcements) {
+                        try {
+                            // 날짜 확인
+                            const listDate = this.extractDate(announcement.dateText || announcement.date);
+
+                            // targetDate가 설정된 경우
+                            if (this.targetDate) {
+                                const moment = require('moment');
+                                const targetMoment = moment(this.targetDate, 'YYYYMMDD');
+                                if (listDate && listDate.isBefore(targetMoment)) {
+                                    console.log(`대상 날짜(${targetMoment.format('YYYY-MM-DD')}) 이전 공고 발견. 추출 중단.`);
+                                    shouldStop = true;
+                                    break;
+                                }
+                            }
+                            // targetYear만 설정된 경우
+                            else if (listDate && listDate.year() < this.targetYear) {
+                                console.log(`대상 연도(${this.targetYear}) 이전 공고 발견. 추출 중단.`);
+                                shouldStop = true;
+                                break;
+                            }
+
+                            // 상세 URL 생성
+                            const detailUrl = await this.buildDetailUrl(announcement);
+                            if (!detailUrl) continue;
+
+                            // 날짜 형식 정규화 (YYYY.MM.DD or YYYY/MM/DD → YYYY-MM-DD)
+                            let normalizedDate = announcement.dateText || announcement.date || '';
+                            if (normalizedDate) {
+                                normalizedDate = normalizedDate.replace(/\./g, '-').replace(/\//g, '-');
+                            }
+
+                            // URL DB 저장
+                            const saved = await UrlManager.saveDetailUrl({
+                                site_code: this.siteCode,
+                                title: announcement.title || announcement.subject || 'Unknown',
+                                list_url: this.baseUrl,
+                                detail_url: detailUrl,
+                                list_date: normalizedDate,
+                                batch_date: batchDate
+                            });
+
+                            if (saved) {
+                                savedCount++;
+                                const title = announcement.title || announcement.subject || 'Unknown';
+                                console.log(`  ✓ ${title.substring(0, 50)}...`);
+                            }
+                            pageValidCount++;
+                        } catch (error) {
+                            continue;
+                        }
+                    }
+
+                    totalCount += pageValidCount;
+                    console.log(`페이지 ${currentPage}: ${pageValidCount}개 URL 추출 (저장: ${savedCount}개)`);
+
+                    if (shouldStop) {
+                        console.log(`조건 불일치로 추출 중단.`);
+                        break;
+                    }
+
+                    currentPage++;
+                    await this.delay(1000);
+                } catch (pageError) {
+                    consecutiveEmptyPages++;
+                    currentPage++;
+                }
+            }
+
+            console.log(`\n=== URL 추출 완료 ===`);
+            console.log(`총 URL: ${totalCount}개, 저장: ${savedCount}개`);
+
+            return { totalCount, savedCount, pageCount: currentPage - 1 };
+        } catch (error) {
+            console.error('URL 추출 중 오류:', error.message);
+            throw error;
+        } finally {
+            await this.cleanup();
+        }
     }
 
     async init() {
@@ -456,6 +579,18 @@ const argv = yargs
     .option('date', {
         description: '공고 날짜 (리스트에서 가져온)',
         type: 'string'
+    })
+    .option('count', {
+        alias: 'c',
+        type: 'boolean',
+        description: 'URL만 추출하여 DB에 저장 (다운로드 없음)',
+        default: false
+    })
+    .option('batch-date', {
+        alias: 'b',
+        type: 'string',
+        description: '배치 날짜 (YYYY-MM-DD 형식)',
+        default: null
     })
     .help()
     .argv;

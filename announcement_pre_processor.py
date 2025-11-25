@@ -1423,7 +1423,7 @@ class AnnouncementPreProcessor:
 
     def _update_api_url_registry(
         self, session, origin_url: str, preprocessing_id: int, site_code: str,
-        scraping_url: str = None, url_key_hash: str = None
+        scraping_url: str = None, url_key_hash: str = None, folder_name: str = None
     ) -> bool:
         """
         api_url_registry 테이블의 preprocessing_id를 업데이트합니다.
@@ -1435,6 +1435,7 @@ class AnnouncementPreProcessor:
             site_code: 사이트 코드
             scraping_url: 스크래핑 URL (API 사이트의 경우 우선 매칭)
             url_key_hash: 정규화된 URL 해시 (가장 우선적으로 매칭)
+            folder_name: 폴더명 (가장 정확한 매칭 - 최우선)
 
         Returns:
             업데이트 성공 여부
@@ -1451,8 +1452,48 @@ class AnnouncementPreProcessor:
             # - api_url_registry.announcement_url: 공고 URL (bizInfo, smes24 사용)
             # - api_url_registry.scrap_url: 스크래핑 URL (kStartUp 사용)
             # - api_url_registry.url_key_hash: 정규화된 URL 해시 (우선 매칭)
+            # - api_url_registry.folder_name: 폴더명 (output/data/{site_code}/{folder_id} 형식)
 
-            # 🆕 0순위: url_key_hash로 매칭 (가장 정확, 쿼리 파라미터 순서 무관)
+            # 🆕 최우선: folder_name으로 매칭 (가장 정확, 같은 URL의 여러 레코드 구분 가능)
+            if folder_name:
+                try:
+                    # api_url_registry.folder_name은 'output/data/{site_code}/{folder_id}' 형식
+                    # announcement_pre_processing.folder_name은 '{folder_id}' 형식
+                    folder_pattern = f"%/{folder_name}"
+
+                    update_sql = text("""
+                        UPDATE api_url_registry
+                        SET preprocessing_id = :preprocessing_id,
+                            update_at = NOW()
+                        WHERE folder_name LIKE :folder_pattern
+                        AND site_code = :site_code
+                        LIMIT 1
+                    """)
+
+                    result = session.execute(
+                        update_sql,
+                        {
+                            "preprocessing_id": preprocessing_id,
+                            "folder_pattern": folder_pattern,
+                            "site_code": site_code
+                        }
+                    )
+
+                    rows_affected = result.rowcount
+                    if rows_affected > 0:
+                        logger.info(
+                            f"✅ api_url_registry 업데이트 성공 ({site_code}, folder_name): "
+                            f"folder={folder_name}, preprocessing_id={preprocessing_id}"
+                        )
+                        return True
+                    else:
+                        logger.debug(
+                            f"folder_name으로 매칭 실패, url_key_hash 매칭으로 폴백: {folder_name}"
+                        )
+                except Exception as e:
+                    logger.debug(f"folder_name 매칭 실패, url_key_hash 매칭으로 폴백: {e}")
+
+            # 0순위: url_key_hash로 매칭 (가장 정확, 쿼리 파라미터 순서 무관)
             if url_key_hash:
                 try:
                     update_sql = text("""
@@ -2658,7 +2699,8 @@ class AnnouncementPreProcessor:
                 if origin_url:
                     api_registry_updated = self._update_api_url_registry(
                         session, origin_url, record_id, db_site_code, scraping_url,
-                        url_key_hash=url_key_hash  # 🆕 url_key_hash 추가
+                        url_key_hash=url_key_hash,
+                        folder_name=folder_name  # folder_name으로 정확한 매칭
                     )
 
                     # API 사이트인데 api_url_registry 업데이트 실패 시 경고

@@ -804,38 +804,49 @@ class AnnouncementPreProcessor:
         return self._check_folder_name_exists(folder_name, site_code)
 
     def _extract_title_from_content(self, content_md: str) -> str:
-        """content.md에서 제목을 추출합니다."""
+        """content.md에서 제목을 추출합니다.
+
+        우선순위:
+        1. **제목**: 패턴 (상세 페이지에서 추출된 공식 제목)
+        2. # 마크다운 헤더
+        3. 제목:, 공고명: 패턴
+        4. 첫 번째 줄
+        """
         if not content_md:
             return ""
 
         lines = content_md.split("\n")
 
-        # 첫 번째 비어있지 않은 줄을 찾기
-        for line in lines[:10]:  # 상위 10줄만 확인
+        # 1단계: **제목**: 패턴 우선 검색 (가장 신뢰도 높음)
+        for line in lines[:10]:
+            line = line.strip()
+            if line.startswith("**제목**:"):
+                title = line.replace("**제목**:", "").strip()
+                if title:
+                    logger.debug(f"**제목** 패턴에서 제목 추출: {title}")
+                    return title
+
+        # 2단계: 기타 패턴 검색
+        for line in lines[:10]:
             line = line.strip()
             if line:
-                # # 마크다운 헤더 제거
+                # # 마크다운 헤더
                 if line.startswith("#"):
                     title = line.lstrip("#").strip()
                     logger.debug(f"마크다운 헤더에서 제목 추출: {title}")
                     return title
 
-                # **제목**: 패턴 확인 (마크다운 볼드)
-                if line.startswith("**제목**:"):
-                    title = line.replace("**제목**:", "").strip()
-                    logger.debug(f"**제목** 패턴에서 제목 추출: {title}")
-                    return title
-
-                # 제목:, 공고명: 패턴 확인
+                # 제목:, 공고명: 패턴
                 for prefix in ["제목:", "공고명:", "공고 제목:", "제목 :"]:
                     if line.lower().startswith(prefix.lower()):
                         title = line[len(prefix) :].strip()
                         logger.debug(f"{prefix} 패턴에서 제목 추출: {title}")
                         return title
 
-                # 일반 텍스트인 경우 그대로 제목으로 사용 (첫 번째 줄)
-                logger.debug(f"첫 번째 줄을 제목으로 사용: {line}")
-                return line
+                # 첫 번째 일반 텍스트 줄 사용 (메타데이터 라인 제외)
+                if not line.startswith("**"):
+                    logger.debug(f"첫 번째 줄을 제목으로 사용: {line}")
+                    return line
 
         return ""
 

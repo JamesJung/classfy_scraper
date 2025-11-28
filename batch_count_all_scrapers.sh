@@ -20,10 +20,22 @@ mkdir -p "${LOG_DIR}"
 # 현재 날짜/시간
 BATCH_DATE=$(date +"%Y-%m-%d")
 CURRENT_YEAR=$(date +"%Y")
+TODAY_DATE=$(date +"%Y%m%d")
 LOG_FILE="${LOG_DIR}/batch_count_${BATCH_DATE}_$(date +"%H%M%S").log"
 
 # 파라미터 확인
 TARGET_DATE="$1"
+
+# 날짜 형식 검증 (YYYYMMDD 8자리)
+if [[ -n "$TARGET_DATE" ]]; then
+    if ! [[ "$TARGET_DATE" =~ ^[0-9]{8}$ ]]; then
+        echo "❌ 오류: 날짜 형식이 올바르지 않습니다."
+        echo "   올바른 형식: YYYYMMDD (8자리)"
+        echo "   예시: 20251124"
+        echo "   입력값: ${TARGET_DATE}"
+        exit 1
+    fi
+fi
 
 # 제외할 파일 목록
 EXCLUDE_FILES=(
@@ -34,6 +46,8 @@ EXCLUDE_FILES=(
     "url_manager.js"
     "unified_detail_scraper.js"
     "unified_list_collector.js"
+    "eminwon_detail_scraper.js"
+    "eminwon_scraper.js"
 )
 
 # 배열에 포함되어 있는지 체크하는 함수
@@ -62,18 +76,24 @@ if [[ -n "$TARGET_DATE" ]]; then
     log "대상 날짜: ${TARGET_DATE}"
     DATE_OPTION="--date ${TARGET_DATE}"
 else
-    log "대상 연도: ${CURRENT_YEAR}"
-    DATE_OPTION="--year ${CURRENT_YEAR}"
+    # 파라미터가 없으면 오늘 날짜 이후 공고만 추출
+    log "대상 날짜: ${TODAY_DATE} (오늘 이후)"
+    DATE_OPTION="--date ${TODAY_DATE}"
 fi
 
 log "로그 파일: ${LOG_FILE}"
 log ""
+
+# 배치 시작 시간 기록
+BATCH_START_TIME=$(date +%s)
 
 # 통계 변수
 TOTAL_COUNT=0
 SUCCESS_COUNT=0
 FAILED_COUNT=0
 SKIPPED_COUNT=0
+TOTAL_URLS_EXTRACTED=0
+TOTAL_URLS_SAVED=0
 
 # 실패한 스크래퍼 목록
 FAILED_SCRAPERS=()
@@ -101,24 +121,60 @@ for scraper_file in *_scraper.js; do
     # 스크래퍼 실행
     START_TIME=$(date +%s)
 
-    if node "${scraper_file}" --site "${SITE_CODE}" ${DATE_OPTION} --count --batch-date "${BATCH_DATE}" >> "${LOG_FILE}" 2>&1; then
+    # 임시 파일로 출력 캡처
+    TEMP_OUTPUT="/tmp/scraper_output_${SITE_CODE}_$$.txt"
+
+    if node "${scraper_file}" --site "${SITE_CODE}" ${DATE_OPTION} --count --batch-date "${BATCH_DATE}" > "${TEMP_OUTPUT}" 2>&1; then
         END_TIME=$(date +%s)
         ELAPSED=$((END_TIME - START_TIME))
-        log "✓ ${SITE_CODE} 완료 (${ELAPSED}초)"
+
+        # 출력에서 URL 건수 추출
+        # 패턴: "총 URL: X개, 저장: Y개" 또는 "완료: X개 URL, Y개 저장"
+        TOTAL_URLS=$(grep -E "(총 URL:|완료:)" "${TEMP_OUTPUT}" | grep -oE "[0-9]+" | head -1)
+        SAVED_URLS=$(grep -E "(총 URL:|완료:)" "${TEMP_OUTPUT}" | grep -oE "[0-9]+" | tail -1)
+
+        # 로그 파일에 전체 출력 저장
+        cat "${TEMP_OUTPUT}" >> "${LOG_FILE}"
+
+        # 건수 표시 및 누적
+        if [[ -n "$TOTAL_URLS" && -n "$SAVED_URLS" ]]; then
+            log "✓ ${SITE_CODE} 완료 (${ELAPSED}초) - 추출: ${TOTAL_URLS}개, 저장: ${SAVED_URLS}개"
+            TOTAL_URLS_EXTRACTED=$((TOTAL_URLS_EXTRACTED + TOTAL_URLS))
+            TOTAL_URLS_SAVED=$((TOTAL_URLS_SAVED + SAVED_URLS))
+        elif [[ -n "$TOTAL_URLS" ]]; then
+            log "✓ ${SITE_CODE} 완료 (${ELAPSED}초) - URL: ${TOTAL_URLS}개"
+            TOTAL_URLS_EXTRACTED=$((TOTAL_URLS_EXTRACTED + TOTAL_URLS))
+        else
+            log "✓ ${SITE_CODE} 완료 (${ELAPSED}초)"
+        fi
+
         SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
     else
         END_TIME=$(date +%s)
         ELAPSED=$((END_TIME - START_TIME))
+
+        # 실패해도 로그 파일에 출력 저장
+        cat "${TEMP_OUTPUT}" >> "${LOG_FILE}"
+
         log "✗ ${SITE_CODE} 실패 (${ELAPSED}초)"
         FAILED_COUNT=$((FAILED_COUNT + 1))
         FAILED_SCRAPERS+=("${SITE_CODE}")
     fi
+
+    # 임시 파일 삭제
+    rm -f "${TEMP_OUTPUT}"
 
     log ""
 
     # 다음 스크래퍼 실행 전 대기 (서버 부하 방지)
     sleep 2
 done
+
+# 배치 종료 시간 및 총 소요 시간 계산
+BATCH_END_TIME=$(date +%s)
+TOTAL_ELAPSED=$((BATCH_END_TIME - BATCH_START_TIME))
+TOTAL_MINUTES=$((TOTAL_ELAPSED / 60))
+TOTAL_SECONDS=$((TOTAL_ELAPSED % 60))
 
 # 최종 통계
 log "================================================================================"
@@ -128,6 +184,16 @@ log "전체 스크래퍼: ${TOTAL_COUNT}개"
 log "성공: ${SUCCESS_COUNT}개"
 log "실패: ${FAILED_COUNT}개"
 log "제외: ${SKIPPED_COUNT}개"
+log ""
+log "📊 URL 추출 통계:"
+log "  - 총 추출된 URL: ${TOTAL_URLS_EXTRACTED}개"
+log "  - DB에 저장된 URL: ${TOTAL_URLS_SAVED}개"
+log ""
+log "⏱️  총 소요 시간: ${TOTAL_MINUTES}분 ${TOTAL_SECONDS}초 (${TOTAL_ELAPSED}초)"
+if [[ ${TOTAL_COUNT} -gt 0 ]]; then
+    AVG_TIME_PER_SCRAPER=$((TOTAL_ELAPSED / TOTAL_COUNT))
+    log "  - 스크래퍼당 평균 시간: ${AVG_TIME_PER_SCRAPER}초"
+fi
 log ""
 
 if [[ ${FAILED_COUNT} -gt 0 ]]; then

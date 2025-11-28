@@ -42,6 +42,9 @@ class EminwonScraper {
 
         // eminwon.json에서 호스트 정보 로드
         this.eminwonHosts = this.loadEminwonHosts();
+        console.log("this.eminwonHosts", this.eminwonHosts)
+        console.log("this.region", this.region)
+
         const hostUrl = this.eminwonHosts[this.region];
         if (!hostUrl) {
             throw new Error(`지역 '${this.region}'에 대한 호스트 정보를 찾을 수 없습니다.`);
@@ -218,16 +221,6 @@ class EminwonScraper {
                 }
             }
         } catch (error) {
-            // 실패 공고 DB 기록
-            await FailureLogger.logFailedAnnouncement({
-                site_code: this.siteCode,
-                title: announcement?.title || 'Unknown',
-                url: announcement?.link || announcement?.url,
-                detail_url: announcement?.detailUrl,
-                error_type: 'error',
-                error_message: error.message
-            }).catch(logErr => { });
-
             console.log(`📁 기존 제목 로드 실패 (정상 - 신규 시작): ${error.message}`);
         }
     }
@@ -235,23 +228,14 @@ class EminwonScraper {
     /**
      * eminwon.json에서 호스트 정보 로드
      */
-    async loadEminwonHosts() {
+    loadEminwonHosts() {
         try {
             const hostsPath = path.join(__dirname, 'eminwon.json');
             const hostsData = fs.readJsonSync(hostsPath);
             console.log(`${Object.keys(hostsData).length}개 지역의 호스트 정보 로드`);
+            console.log("hostsData", hostsData)
             return hostsData;
         } catch (error) {
-            // 실패 공고 DB 기록
-            await FailureLogger.logFailedAnnouncement({
-                site_code: this.siteCode,
-                title: announcement?.title || 'Unknown',
-                url: announcement?.link || announcement?.url,
-                detail_url: announcement?.detailUrl,
-                error_type: 'error',
-                error_message: error.message
-            }).catch(logErr => { });
-
             console.error('eminwon.json 파일 로드 실패:', error.message);
             throw new Error('eminwon.json 파일을 찾을 수 없습니다.');
         }
@@ -283,16 +267,6 @@ class EminwonScraper {
 
             console.log(`기존 폴더에서 ${this.processedTitles.size}개의 제목 로드`);
         } catch (error) {
-            // 실패 공고 DB 기록
-            await FailureLogger.logFailedAnnouncement({
-                site_code: this.siteCode,
-                title: announcement?.title || 'Unknown',
-                url: announcement?.link || announcement?.url,
-                detail_url: announcement?.detailUrl,
-                error_type: 'error',
-                error_message: error.message
-            }).catch(logErr => { });
-
             console.log('기존 제목 로드 중 오류:', error.message);
         }
     }
@@ -323,16 +297,6 @@ class EminwonScraper {
 
             return maxNumber;
         } catch (error) {
-            // 실패 공고 DB 기록
-            await FailureLogger.logFailedAnnouncement({
-                site_code: this.siteCode,
-                title: announcement?.title || 'Unknown',
-                url: announcement?.link || announcement?.url,
-                detail_url: announcement?.detailUrl,
-                error_type: 'error',
-                error_message: error.message
-            }).catch(logErr => { });
-
             console.log('기존 카운터 번호 확인 중 오류:', error.message);
             return 0;
         }
@@ -409,16 +373,6 @@ class EminwonScraper {
                 return;
 
             } catch (error) {
-                // 실패 공고 DB 기록
-                await FailureLogger.logFailedAnnouncement({
-                    site_code: this.siteCode,
-                    title: announcement?.title || 'Unknown',
-                    url: announcement?.link || announcement?.url,
-                    detail_url: announcement?.detailUrl,
-                    error_type: 'error',
-                    error_message: error.message
-                }).catch(logErr => { });
-
                 retries++;
                 console.error(`브라우저 초기화 실패 (시도 ${retries}/${maxRetries}):`, error.message);
 
@@ -426,16 +380,6 @@ class EminwonScraper {
                     try {
                         await this.browser.close();
                     } catch (closeError) {
-                        // 실패 공고 DB 기록
-                        await FailureLogger.logFailedAnnouncement({
-                            site_code: this.siteCode,
-                            title: announcement?.title || 'Unknown',
-                            url: announcement?.link || announcement?.url,
-                            detail_url: announcement?.detailUrl,
-                            error_type: 'closeError',
-                            error_message: closeError.message
-                        }).catch(logErr => { });
-
                         console.warn('브라우저 종료 중 오류:', closeError.message);
                     }
                 }
@@ -516,15 +460,7 @@ class EminwonScraper {
                             }
 
                         } catch (announcementError) {
-                            // 실패 공고 DB 기록
-                            await FailureLogger.logFailedAnnouncement({
-                                site_code: this.siteCode,
-                                title: announcement?.title || 'Unknown',
-                                url: announcement?.link || announcement?.url,
-                                detail_url: announcement?.detailUrl,
-                                error_type: 'announcementError',
-                                error_message: announcementError.message
-                            }).catch(logErr => { });
+                            console.log("announcementError", announcementError)
 
                             console.error(`공고 처리 중 오류 (${announcement.title}):`, announcementError.message);
                             // 오류 발생 시 추가 대기 시간
@@ -539,12 +475,12 @@ class EminwonScraper {
                     }
 
                 } catch (pageError) {
-                    // 실패 공고 DB 기록
+                    console.log("pageError", pageError);
                     await FailureLogger.logFailedAnnouncement({
                         site_code: this.siteCode,
-                        title: announcement?.title || 'Unknown',
-                        url: announcement?.link || announcement?.url,
-                        detail_url: announcement?.detailUrl,
+                        title: `Page ${currentPage} Error`,
+                        url: this.listUrl,
+                        detail_url: null,
                         error_type: 'pageError',
                         error_message: pageError.message
                     }).catch(logErr => { });
@@ -563,13 +499,13 @@ class EminwonScraper {
             }
 
         } catch (error) {
-            // 실패 공고 DB 기록
+            // 실패 기록
             await FailureLogger.logFailedAnnouncement({
                 site_code: this.siteCode,
-                title: announcement?.title || 'Unknown',
-                url: announcement?.link || announcement?.url,
-                detail_url: announcement?.detailUrl,
-                error_type: 'error',
+                title: 'Scrape Error',
+                url: this.listUrl,
+                detail_url: null,
+                error_type: 'scrape_error',
                 error_message: error.message
             }).catch(logErr => { });
 
@@ -645,15 +581,6 @@ class EminwonScraper {
 
                 //         console.log('태안군 특별 처리 완료');
                 //     } catch (taeanError) {
-                // 실패 공고 DB 기록
-                await FailureLogger.logFailedAnnouncement({
-                    site_code: this.siteCode,
-                    title: announcement?.title || 'Unknown',
-                    url: announcement?.link || announcement?.url,
-                    detail_url: announcement?.detailUrl,
-                    error_type: 'taeanError',
-                    error_message: taeanError.message
-                }).catch(logErr => { });
 
                 //         console.log('태안군 특별 처리 중 오류:', taeanError.message);
                 //         console.log('일반 방식으로 계속 진행합니다...');
@@ -680,15 +607,6 @@ class EminwonScraper {
                         initialLoadSuccess = true;
 
                     } catch (error) {
-                        // 실패 공고 DB 기록
-                        await FailureLogger.logFailedAnnouncement({
-                            site_code: this.siteCode,
-                            title: announcement?.title || 'Unknown',
-                            url: announcement?.link || announcement?.url,
-                            detail_url: announcement?.detailUrl,
-                            error_type: 'error',
-                            error_message: error.message
-                        }).catch(logErr => { });
 
                         console.warn(`초기 페이지 로드 시도 ${initialLoadAttempt} 실패: ${error.message}`);
 
@@ -719,15 +637,6 @@ class EminwonScraper {
                         initialLoadSuccess = true;
                         console.log('서블릿 URL 접근 성공');
                     } catch (servletError) {
-                        // 실패 공고 DB 기록
-                        await FailureLogger.logFailedAnnouncement({
-                            site_code: this.siteCode,
-                            title: announcement?.title || 'Unknown',
-                            url: announcement?.link || announcement?.url,
-                            detail_url: announcement?.detailUrl,
-                            error_type: 'servletError',
-                            error_message: servletError.message
-                        }).catch(logErr => { });
 
                         console.error('서블릿 URL 접근도 실패:', servletError.message);
                         throw new Error('초기 페이지 로드 실패 - JSP와 서블릿 모두 실패');
@@ -751,15 +660,6 @@ class EminwonScraper {
                         );
                         console.log('자동 리다이렉트 완료');
                     } catch (waitError) {
-                        // 실패 공고 DB 기록
-                        await FailureLogger.logFailedAnnouncement({
-                            site_code: this.siteCode,
-                            title: announcement?.title || 'Unknown',
-                            url: announcement?.link || announcement?.url,
-                            detail_url: announcement?.detailUrl,
-                            error_type: 'waitError',
-                            error_message: waitError.message
-                        }).catch(logErr => { });
 
                         console.log('자동 리다이렉트 없음. 수동 폼 제출 시도...');
 
@@ -816,15 +716,6 @@ class EminwonScraper {
                                 await this.page.waitForTimeout(3000);
                                 console.log('서블릿 URL 접근 성공');
                             } catch (servletError) {
-                                // 실패 공고 DB 기록
-                                await FailureLogger.logFailedAnnouncement({
-                                    site_code: this.siteCode,
-                                    title: announcement?.title || 'Unknown',
-                                    url: announcement?.link || announcement?.url,
-                                    detail_url: announcement?.detailUrl,
-                                    error_type: 'servletError',
-                                    error_message: servletError.message
-                                }).catch(logErr => { });
 
                                 console.log('서블릿 URL 접근도 실패:', servletError.message);
                                 return [];
@@ -959,15 +850,6 @@ class EminwonScraper {
                                         this.page.waitForTimeout(10000)
                                     ]);
                                 } catch (navError) {
-                                    // 실패 공고 DB 기록
-                                    await FailureLogger.logFailedAnnouncement({
-                                        site_code: this.siteCode,
-                                        title: announcement?.title || 'Unknown',
-                                        url: announcement?.link || announcement?.url,
-                                        detail_url: announcement?.detailUrl,
-                                        error_type: 'navError',
-                                        error_message: navError.message
-                                    }).catch(logErr => { });
 
                                     console.log('네비게이션 대기 중 오류 (정상일 수 있음):', navError.message);
                                 }
@@ -991,15 +873,6 @@ class EminwonScraper {
                                         return 1;
                                     });
                                 } catch (evalError) {
-                                    // 실패 공고 DB 기록
-                                    await FailureLogger.logFailedAnnouncement({
-                                        site_code: this.siteCode,
-                                        title: announcement?.title || 'Unknown',
-                                        url: announcement?.link || announcement?.url,
-                                        detail_url: announcement?.detailUrl,
-                                        error_type: 'evalError',
-                                        error_message: evalError.message
-                                    }).catch(logErr => { });
 
                                     console.log('페이지 번호 확인 중 오류:', evalError.message);
                                 }
@@ -1027,15 +900,6 @@ class EminwonScraper {
                                             await this.page.waitForTimeout(5000);
                                         }
                                     } catch (clickError) {
-                                        // 실패 공고 DB 기록
-                                        await FailureLogger.logFailedAnnouncement({
-                                            site_code: this.siteCode,
-                                            title: announcement?.title || 'Unknown',
-                                            url: announcement?.link || announcement?.url,
-                                            detail_url: announcement?.detailUrl,
-                                            error_type: 'clickError',
-                                            error_message: clickError.message
-                                        }).catch(logErr => { });
 
                                         console.log('페이지 번호 클릭 실패:', clickError.message);
                                     }
@@ -1046,15 +910,6 @@ class EminwonScraper {
                             }
                         } // 수원시 특별 처리 else 블록 닫기
                     } catch (error) {
-                        // 실패 공고 DB 기록
-                        await FailureLogger.logFailedAnnouncement({
-                            site_code: this.siteCode,
-                            title: announcement?.title || 'Unknown',
-                            url: announcement?.link || announcement?.url,
-                            detail_url: announcement?.detailUrl,
-                            error_type: 'error',
-                            error_message: error.message
-                        }).catch(logErr => { });
 
                         console.log('페이지 이동 실패:', error.message);
                         return [];
@@ -1067,15 +922,6 @@ class EminwonScraper {
 
                     await this.page.waitForSelector('table', { timeout: 15000 });
                 } catch (error) {
-                    // 실패 공고 DB 기록
-                    await FailureLogger.logFailedAnnouncement({
-                        site_code: this.siteCode,
-                        title: announcement?.title || 'Unknown',
-                        url: announcement?.link || announcement?.url,
-                        detail_url: announcement?.detailUrl,
-                        error_type: 'error',
-                        error_message: error.message
-                    }).catch(logErr => { });
 
                     console.log('테이블 로딩 대기 실패. 페이지 내용 확인...');
 
@@ -1454,15 +1300,6 @@ class EminwonScraper {
                         await this.page.screenshot({ path: screenshotPath, fullPage: true });
                         console.log(`🖼️ 디버깅용 스크린샷 저장: ${screenshotPath}`);
                     } catch (screenshotError) {
-                        // 실패 공고 DB 기록
-                        await FailureLogger.logFailedAnnouncement({
-                            site_code: this.siteCode,
-                            title: announcement?.title || 'Unknown',
-                            url: announcement?.link || announcement?.url,
-                            detail_url: announcement?.detailUrl,
-                            error_type: 'screenshotError',
-                            error_message: screenshotError.message
-                        }).catch(logErr => { });
 
                         console.log('스크린샷 저장 실패:', screenshotError.message);
                     }
@@ -1473,15 +1310,6 @@ class EminwonScraper {
                 return announcements;
 
             } catch (error) {
-                // 실패 공고 DB 기록
-                await FailureLogger.logFailedAnnouncement({
-                    site_code: this.siteCode,
-                    title: announcement?.title || 'Unknown',
-                    url: announcement?.link || announcement?.url,
-                    detail_url: announcement?.detailUrl,
-                    error_type: 'error',
-                    error_message: error.message
-                }).catch(logErr => { });
 
                 retries++;
                 console.error(`리스트 가져오기 실패 (시도 ${retries}/${maxRetries}):`, error.message);
@@ -1573,15 +1401,6 @@ class EminwonScraper {
             return false; // 계속 진행
 
         } catch (error) {
-            // 실패 공고 DB 기록
-            await FailureLogger.logFailedAnnouncement({
-                site_code: this.siteCode,
-                title: announcement?.title || 'Unknown',
-                url: announcement?.link || announcement?.url,
-                detail_url: announcement?.detailUrl,
-                error_type: 'error',
-                error_message: error.message
-            }).catch(logErr => { });
 
             console.error(`공고 처리 중 오류 (${announcement.title}):`, error);
             return false;
@@ -1669,15 +1488,6 @@ class EminwonScraper {
                         navigationSuccess = true;
 
                     } catch (error) {
-                        // 실패 공고 DB 기록
-                        await FailureLogger.logFailedAnnouncement({
-                            site_code: this.siteCode,
-                            title: announcement?.title || 'Unknown',
-                            url: announcement?.link || announcement?.url,
-                            detail_url: announcement?.detailUrl,
-                            error_type: 'error',
-                            error_message: error.message
-                        }).catch(logErr => { });
 
                         console.log(`상세 페이지 이동 시도 ${navigationAttempt} 실패: ${error.message}`);
 
@@ -1925,15 +1735,6 @@ class EminwonScraper {
                 };
 
             } catch (error) {
-                // 실패 공고 DB 기록
-                await FailureLogger.logFailedAnnouncement({
-                    site_code: this.siteCode,
-                    title: announcement?.title || 'Unknown',
-                    url: announcement?.link || announcement?.url,
-                    detail_url: announcement?.detailUrl,
-                    error_type: 'error',
-                    error_message: error.message
-                }).catch(logErr => { });
 
                 retries++;
                 console.error(`상세 페이지 처리 실패 (시도 ${retries}/${maxRetries}):`, error.message);
@@ -1977,15 +1778,6 @@ class EminwonScraper {
                         return;
                     }
                 } catch (readDirError) {
-                    // 실패 공고 DB 기록
-                    await FailureLogger.logFailedAnnouncement({
-                        site_code: this.siteCode,
-                        title: announcement?.title || 'Unknown',
-                        url: announcement?.link || announcement?.url,
-                        detail_url: announcement?.detailUrl,
-                        error_type: 'readDirError',
-                        error_message: readDirError.message
-                    }).catch(logErr => { });
 
                     console.log(`📁 출력 디렉토리 읽기 실패 (신규 생성): ${readDirError.message}`);
                 }
@@ -2039,15 +1831,6 @@ class EminwonScraper {
             this.counter++;
 
         } catch (error) {
-            // 실패 공고 DB 기록
-            await FailureLogger.logFailedAnnouncement({
-                site_code: this.siteCode,
-                title: announcement?.title || 'Unknown',
-                url: announcement?.link || announcement?.url,
-                detail_url: announcement?.detailUrl,
-                error_type: 'error',
-                error_message: error.message
-            }).catch(logErr => { });
 
             console.error('공고 저장 실패:', error);
         }
@@ -2081,15 +1864,6 @@ class EminwonScraper {
             console.log(`📋 총 ${Object.keys(allAttachmentUrls).length}개 첨부파일 URL 정보 수집 완료`);
             return allAttachmentUrls;
         } catch (error) {
-            // 실패 공고 DB 기록
-            await FailureLogger.logFailedAnnouncement({
-                site_code: this.siteCode,
-                title: announcement?.title || 'Unknown',
-                url: announcement?.link || announcement?.url,
-                detail_url: announcement?.detailUrl,
-                error_type: 'error',
-                error_message: error.message
-            }).catch(logErr => { });
 
             console.error('❌ 첨부파일 다운로드 실패:', error);
             return {};
@@ -2124,15 +1898,6 @@ class EminwonScraper {
 
             return attachmentUrlInfo || {};
         } catch (error) {
-            // 실패 공고 DB 기록
-            await FailureLogger.logFailedAnnouncement({
-                site_code: this.siteCode,
-                title: announcement?.title || 'Unknown',
-                url: announcement?.link || announcement?.url,
-                detail_url: announcement?.detailUrl,
-                error_type: 'error',
-                error_message: error.message
-            }).catch(logErr => { });
 
             console.error(`❌ 첨부파일 다운로드 실패 (${attachment.name}):`, error.message);
             return {};
@@ -2191,15 +1956,6 @@ class EminwonScraper {
             }
 
         } catch (error) {
-            // 실패 공고 DB 기록
-            await FailureLogger.logFailedAnnouncement({
-                site_code: this.siteCode,
-                title: announcement?.title || 'Unknown',
-                url: announcement?.link || announcement?.url,
-                detail_url: announcement?.detailUrl,
-                error_type: 'error',
-                error_message: error.message
-            }).catch(logErr => { });
 
             console.error(`❌ goDownLoad 함수 다운로드 실패: ${error.message}`);
             throw error;
@@ -2248,15 +2004,6 @@ class EminwonScraper {
             }
 
         } catch (error) {
-            // 실패 공고 DB 기록
-            await FailureLogger.logFailedAnnouncement({
-                site_code: this.siteCode,
-                title: announcement?.title || 'Unknown',
-                url: announcement?.link || announcement?.url,
-                detail_url: announcement?.detailUrl,
-                error_type: 'error',
-                error_message: error.message
-            }).catch(logErr => { });
 
             console.error(`❌ onclick 다운로드 실패: ${error.message}`);
             throw error;
@@ -2306,15 +2053,6 @@ class EminwonScraper {
             }
 
         } catch (error) {
-            // 실패 공고 DB 기록
-            await FailureLogger.logFailedAnnouncement({
-                site_code: this.siteCode,
-                title: announcement?.title || 'Unknown',
-                url: announcement?.link || announcement?.url,
-                detail_url: announcement?.detailUrl,
-                error_type: 'error',
-                error_message: error.message
-            }).catch(logErr => { });
 
             console.error(`❌ 직접 링크 다운로드 실패: ${error.message}`);
             throw error;
@@ -2361,15 +2099,6 @@ class EminwonScraper {
             });
 
         } catch (error) {
-            // 실패 공고 DB 기록
-            await FailureLogger.logFailedAnnouncement({
-                site_code: this.siteCode,
-                title: announcement?.title || 'Unknown',
-                url: announcement?.link || announcement?.url,
-                detail_url: announcement?.detailUrl,
-                error_type: 'error',
-                error_message: error.message
-            }).catch(logErr => { });
 
             throw new Error(`직접 POST 다운로드 실패: ${error.message}`);
         }
@@ -2506,15 +2235,6 @@ class EminwonScraper {
                 await this.browser.close();
                 console.log('\n브라우저 정리 완료');
             } catch (error) {
-                // 실패 공고 DB 기록
-                await FailureLogger.logFailedAnnouncement({
-                    site_code: this.siteCode,
-                    title: announcement?.title || 'Unknown',
-                    url: announcement?.link || announcement?.url,
-                    detail_url: announcement?.detailUrl,
-                    error_type: 'error',
-                    error_message: error.message
-                }).catch(logErr => { });
 
                 console.warn('브라우저 정리 중 오류:', error.message);
             }
@@ -2596,7 +2316,7 @@ async function main() {
         console.log('URL 추출 모드');
         const result = await scraper.extractAndSaveUrls(argv.batchDate);
         console.log(`완료: ${result.totalCount}개 URL, ${result.savedCount}개 저장`);
-        
+
         const UrlManager = require('./url_manager');
         const moment = require('moment');
         const batchDate = argv.batchDate || moment().format('YYYY-MM-DD');

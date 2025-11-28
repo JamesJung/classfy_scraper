@@ -19,7 +19,7 @@
 ### 1. 수동 실행
 
 ```bash
-# 현재 연도 전체 공고 URL 추출
+# 오늘 날짜 이후 공고 URL 추출 (기본)
 ./batch_count_all_scrapers.sh
 
 # 특정 날짜 이후 공고 URL 추출
@@ -61,14 +61,14 @@ classfy_scraper/
 #### 기본 사용법
 
 ```bash
-# 현재 연도 전체 공고 추출 (--year 2024)
+# 오늘 날짜 이후 공고 추출 (기본 - 파라미터 없음)
 ./batch_count_all_scrapers.sh
 
 # 특정 날짜 이후 공고 추출 (--date 20241124)
 ./batch_count_all_scrapers.sh 20241124
 
-# 특정 날짜 범위 (예: 2024년 11월 24일 이후)
-./batch_count_all_scrapers.sh 20241124
+# 어제 날짜부터 공고 추출
+./batch_count_all_scrapers.sh $(date -v-1d +%Y%m%d)
 ```
 
 #### 실행 흐름

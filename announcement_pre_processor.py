@@ -804,38 +804,49 @@ class AnnouncementPreProcessor:
         return self._check_folder_name_exists(folder_name, site_code)
 
     def _extract_title_from_content(self, content_md: str) -> str:
-        """content.md에서 제목을 추출합니다."""
+        """content.md에서 제목을 추출합니다.
+
+        우선순위:
+        1. **제목**: 패턴 (상세 페이지에서 추출된 공식 제목)
+        2. # 마크다운 헤더
+        3. 제목:, 공고명: 패턴
+        4. 첫 번째 줄
+        """
         if not content_md:
             return ""
 
         lines = content_md.split("\n")
 
-        # 첫 번째 비어있지 않은 줄을 찾기
-        for line in lines[:10]:  # 상위 10줄만 확인
+        # 1단계: **제목**: 패턴 우선 검색 (가장 신뢰도 높음)
+        for line in lines[:10]:
+            line = line.strip()
+            if line.startswith("**제목**:"):
+                title = line.replace("**제목**:", "").strip()
+                if title:
+                    logger.debug(f"**제목** 패턴에서 제목 추출: {title}")
+                    return title
+
+        # 2단계: 기타 패턴 검색
+        for line in lines[:10]:
             line = line.strip()
             if line:
-                # # 마크다운 헤더 제거
+                # # 마크다운 헤더
                 if line.startswith("#"):
                     title = line.lstrip("#").strip()
                     logger.debug(f"마크다운 헤더에서 제목 추출: {title}")
                     return title
 
-                # **제목**: 패턴 확인 (마크다운 볼드)
-                if line.startswith("**제목**:"):
-                    title = line.replace("**제목**:", "").strip()
-                    logger.debug(f"**제목** 패턴에서 제목 추출: {title}")
-                    return title
-
-                # 제목:, 공고명: 패턴 확인
+                # 제목:, 공고명: 패턴
                 for prefix in ["제목:", "공고명:", "공고 제목:", "제목 :"]:
                     if line.lower().startswith(prefix.lower()):
                         title = line[len(prefix) :].strip()
                         logger.debug(f"{prefix} 패턴에서 제목 추출: {title}")
                         return title
 
-                # 일반 텍스트인 경우 그대로 제목으로 사용 (첫 번째 줄)
-                logger.debug(f"첫 번째 줄을 제목으로 사용: {line}")
-                return line
+                # 첫 번째 일반 텍스트 줄 사용 (메타데이터 라인 제외)
+                if not line.startswith("**"):
+                    logger.debug(f"첫 번째 줄을 제목으로 사용: {line}")
+                    return line
 
         return ""
 
@@ -1412,7 +1423,7 @@ class AnnouncementPreProcessor:
 
     def _update_api_url_registry(
         self, session, origin_url: str, preprocessing_id: int, site_code: str,
-        scraping_url: str = None, url_key_hash: str = None
+        scraping_url: str = None, url_key_hash: str = None, folder_name: str = None
     ) -> bool:
         """
         api_url_registry 테이블의 preprocessing_id를 업데이트합니다.
@@ -1424,6 +1435,7 @@ class AnnouncementPreProcessor:
             site_code: 사이트 코드
             scraping_url: 스크래핑 URL (API 사이트의 경우 우선 매칭)
             url_key_hash: 정규화된 URL 해시 (가장 우선적으로 매칭)
+            folder_name: 폴더명 (가장 정확한 매칭 - 최우선)
 
         Returns:
             업데이트 성공 여부
@@ -1440,8 +1452,48 @@ class AnnouncementPreProcessor:
             # - api_url_registry.announcement_url: 공고 URL (bizInfo, smes24 사용)
             # - api_url_registry.scrap_url: 스크래핑 URL (kStartUp 사용)
             # - api_url_registry.url_key_hash: 정규화된 URL 해시 (우선 매칭)
+            # - api_url_registry.folder_name: 폴더명 (output/data/{site_code}/{folder_id} 형식)
 
-            # 🆕 0순위: url_key_hash로 매칭 (가장 정확, 쿼리 파라미터 순서 무관)
+            # 🆕 최우선: folder_name으로 매칭 (가장 정확, 같은 URL의 여러 레코드 구분 가능)
+            if folder_name:
+                try:
+                    # api_url_registry.folder_name은 'output/data/{site_code}/{folder_id}' 형식
+                    # announcement_pre_processing.folder_name은 '{folder_id}' 형식
+                    folder_pattern = f"%/{folder_name}"
+
+                    update_sql = text("""
+                        UPDATE api_url_registry
+                        SET preprocessing_id = :preprocessing_id,
+                            update_at = NOW()
+                        WHERE folder_name LIKE :folder_pattern
+                        AND site_code = :site_code
+                        LIMIT 1
+                    """)
+
+                    result = session.execute(
+                        update_sql,
+                        {
+                            "preprocessing_id": preprocessing_id,
+                            "folder_pattern": folder_pattern,
+                            "site_code": site_code
+                        }
+                    )
+
+                    rows_affected = result.rowcount
+                    if rows_affected > 0:
+                        logger.info(
+                            f"✅ api_url_registry 업데이트 성공 ({site_code}, folder_name): "
+                            f"folder={folder_name}, preprocessing_id={preprocessing_id}"
+                        )
+                        return True
+                    else:
+                        logger.debug(
+                            f"folder_name으로 매칭 실패, url_key_hash 매칭으로 폴백: {folder_name}"
+                        )
+                except Exception as e:
+                    logger.debug(f"folder_name 매칭 실패, url_key_hash 매칭으로 폴백: {e}")
+
+            # 0순위: url_key_hash로 매칭 (가장 정확, 쿼리 파라미터 순서 무관)
             if url_key_hash:
                 try:
                     update_sql = text("""
@@ -2647,7 +2699,8 @@ class AnnouncementPreProcessor:
                 if origin_url:
                     api_registry_updated = self._update_api_url_registry(
                         session, origin_url, record_id, db_site_code, scraping_url,
-                        url_key_hash=url_key_hash  # 🆕 url_key_hash 추가
+                        url_key_hash=url_key_hash,
+                        folder_name=folder_name  # folder_name으로 정확한 매칭
                     )
 
                     # API 사이트인데 api_url_registry 업데이트 실패 시 경고

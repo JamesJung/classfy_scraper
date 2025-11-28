@@ -184,3 +184,4 @@ server_logs
 incremental
 node/scraper/backups_*
 node/scraper_backup
+.claude/settings.local.json

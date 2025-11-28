@@ -116,7 +116,8 @@ class DomainKeyExtractor:
                     site_code,
                     key_params,
                     extraction_method,
-                    path_pattern
+                    path_pattern,
+                    query_param_filter
                 FROM domain_key_config
                 WHERE domain = %s AND is_active = TRUE
                 ORDER BY
@@ -131,9 +132,12 @@ class DomainKeyExtractor:
             conn.close()
 
             if results:
-                # JSON 문자열을 리스트로 변환
+                # JSON 문자열을 리스트/딕셔너리로 변환
                 for result in results:
                     result['key_params'] = json.loads(result['key_params'])
+                    # query_param_filter가 있으면 JSON 파싱
+                    if result.get('query_param_filter'):
+                        result['query_param_filter'] = json.loads(result['query_param_filter'])
 
             return results if results else []
 
@@ -141,13 +145,14 @@ class DomainKeyExtractor:
             print(f"⚠️  도메인 설정 조회 실패: {domain} - {e}")
             return []
 
-    def get_domain_config(self, domain: str, path: str = None) -> Optional[Dict]:
+    def get_domain_config(self, domain: str, path: str = None, query_params: Dict = None) -> Optional[Dict]:
         """
-        도메인 설정 조회 (경로 매칭 지원)
+        도메인 설정 조회 (경로 + 쿼리 파라미터 필터 매칭 지원)
 
         Args:
             domain: 도메인 (예: www.suwon.go.kr)
             path: URL 경로 (예: /BD_ofrView.do)
+            query_params: 쿼리 파라미터 (예: {'boardCategoryCode': ['BD40002']})
 
         Returns:
             매칭된 설정 또는 None
@@ -157,20 +162,39 @@ class DomainKeyExtractor:
         if not configs:
             return None
 
-        # 1. path_pattern이 있는 설정 중 매칭되는 것 찾기
-        if path:
+        # 1. path_pattern + query_param_filter 동시 매칭
+        if path or query_params:
             for config in configs:
+                # path_pattern 매칭 체크
+                path_match = True
                 if config.get('path_pattern'):
-                    # path_pattern이 정규표현식이므로 re.search 사용
-                    if re.search(config['path_pattern'], path):
-                        return config
+                    if path:
+                        path_match = bool(re.search(config['path_pattern'], path))
+                    else:
+                        path_match = False  # path_pattern 있는데 path 없으면 매칭 실패
 
-        # 2. path_pattern이 없는 기본 설정 찾기
+                # query_param_filter 매칭 체크
+                filter_match = True
+                if config.get('query_param_filter'):
+                    if query_params:
+                        for key, expected_value in config['query_param_filter'].items():
+                            actual_value = query_params.get(key, [None])[0]
+                            if actual_value != expected_value:
+                                filter_match = False
+                                break
+                    else:
+                        filter_match = False  # query_param_filter 있는데 query_params 없으면 매칭 실패
+
+                # 둘 다 매칭되면 반환
+                if path_match and filter_match:
+                    return config
+
+        # 2. path_pattern과 query_param_filter 모두 없는 기본 설정 찾기
         for config in configs:
-            if not config.get('path_pattern'):
+            if not config.get('path_pattern') and not config.get('query_param_filter'):
                 return config
 
-        # 3. path_pattern만 있고 매칭 안되면 첫 번째 설정 반환
+        # 3. 매칭 안되면 첫 번째 설정 반환
         return configs[0] if configs else None
 
     def extract_url_key(self, url: str, site_code: Optional[str] = None) -> Optional[str]:
@@ -207,10 +231,10 @@ class DomainKeyExtractor:
             # 예: ?searchCtgry=&integrDeptCode= → {'searchCtgry': [''], 'integrDeptCode': ['']}
             query_params = parse_qs(parsed.query, keep_blank_values=True)
 
-            # 1. 도메인 설정 조회 (경로 매칭 지원)
+            # 1. 도메인 설정 조회 (경로 + 쿼리 파라미터 필터 매칭 지원)
             # 🆕 fragment가 있으면 path 대신 fragment를 사용하여 설정 조회
             search_path = fragment if fragment else path
-            config = self.get_domain_config(domain, search_path)
+            config = self.get_domain_config(domain, search_path, query_params)
 
             if config:
                 # 설정된 방법으로 추출

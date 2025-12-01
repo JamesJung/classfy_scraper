@@ -199,17 +199,18 @@ def run_processor(site_dir: Path, site_code: str, site_type: str, dry_run: bool 
     Args:
         site_dir: site_code 레벨의 디렉토리 (예: /home/zium/.../2025-12-01/서울)
         site_code: 사이트 코드
-        site_type: Eminwon, Homepage, API, Scraper
+        site_type: Eminwon, Homepage, API, Scraper (로깅용)
         dry_run: 실제 실행 없이 로그만 출력
     """
+    # announcement_pre_processor.py는 --site-type을 받지 않음
+    # 경로에서 자동으로 site_type 결정 (determine_site_type 함수 사용)
     cmd = [
         'python3', PROCESSOR_SCRIPT,
         '-d', str(site_dir),
-        '--site-code', site_code,
-        '--site-type', site_type
+        '--site-code', site_code
     ]
 
-    logger.info(f"실행: {' '.join(cmd)}")
+    logger.info(f"실행: {' '.join(cmd)} (site_type: {site_type})")
 
     if dry_run:
         return True

@@ -190,7 +190,8 @@ def get_site_type(source: str) -> str:
     return mapping.get(source, 'Scraper')
 
 
-def run_processor(site_dir: Path, site_code: str, site_type: str, dry_run: bool = False) -> bool:
+def run_processor(site_dir: Path, site_code: str, site_type: str,
+                  folder_count: int = 1, dry_run: bool = False) -> bool:
     """
     announcement_pre_processor.py 실행
 
@@ -198,6 +199,7 @@ def run_processor(site_dir: Path, site_code: str, site_type: str, dry_run: bool 
         site_dir: site_code 레벨의 디렉토리 (예: /home/zium/.../2025-12-01/서울)
         site_code: 사이트 코드
         site_type: Eminwon, Homepage, API, Scraper (로깅용)
+        folder_count: 처리할 폴더 수 (타임아웃 계산용)
         dry_run: 실제 실행 없이 로그만 출력
     """
     # announcement_pre_processor.py는 --site-type을 받지 않음
@@ -208,7 +210,10 @@ def run_processor(site_dir: Path, site_code: str, site_type: str, dry_run: bool 
         '--site-code', site_code
     ]
 
-    logger.info(f"실행: {' '.join(cmd)} (site_type: {site_type})")
+    # 동적 타임아웃: 기본 120초 + 폴더당 600초(10분) (최소 5분, 최대 없음)
+    dynamic_timeout = max(300, 120 + (folder_count * 600))
+
+    logger.info(f"실행: {' '.join(cmd)} (site_type: {site_type}, timeout: {dynamic_timeout}초)")
 
     if dry_run:
         return True
@@ -218,7 +223,7 @@ def run_processor(site_dir: Path, site_code: str, site_type: str, dry_run: bool 
             cmd,
             capture_output=True,
             text=True,
-            timeout=600  # 10분 타임아웃
+            timeout=dynamic_timeout
         )
 
         if result.returncode == 0:
@@ -229,7 +234,7 @@ def run_processor(site_dir: Path, site_code: str, site_type: str, dry_run: bool 
             return False
 
     except subprocess.TimeoutExpired:
-        logger.error(f"타임아웃: {site_code}")
+        logger.error(f"타임아웃: {site_code} (폴더 {folder_count}개, {dynamic_timeout}초 초과)")
         return False
     except Exception as e:
         logger.error(f"오류: {site_code} - {e}")
@@ -322,12 +327,14 @@ def process_missing_data(sources: List[str] = None, dry_run: bool = False,
     logger.info(f"{'='*80}\n")
 
     for idx, ((site_dir, site_code, site_type), folders) in enumerate(to_process.items(), 1):
-        logger.info(f"[{idx}/{len(to_process)}] {site_code} ({site_type}) - {len(folders)}개 폴더")
+        folder_count = len(folders)
+        logger.info(f"[{idx}/{len(to_process)}] {site_code} ({site_type}) - {folder_count}개 폴더")
 
         success = run_processor(
             Path(site_dir),
             site_code,
             site_type,
+            folder_count=folder_count,
             dry_run=dry_run
         )
 

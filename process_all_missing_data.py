@@ -29,14 +29,16 @@ except ImportError:
 BASE_DIR = Path('/home/zium/moabojo/incremental')
 PROCESSOR_SCRIPT = 'announcement_pre_processor.py'
 
-# 디렉토리 매핑
+# 디렉토리 매핑 (실제 FTP 서버 구조 기준)
+# /home/zium/moabojo/incremental/
+#   ├── eminwon/{date}/{site_code}/{folder}/
+#   ├── homepage/{date}/{site_code}/{folder}/
+#   ├── api/{bizInfo|kStartUp|smes24}/{folder}/
+#   └── btp/{YYYYMMDD}/{site_code}/{folder}/
 SOURCE_DIRS = {
-    'eminwon': BASE_DIR / 'eminwon_data_new',
-    'homepage': BASE_DIR / 'scraped_incremental_v2',
+    'eminwon': BASE_DIR / 'eminwon',
+    'homepage': BASE_DIR / 'homepage',
     'api': BASE_DIR / 'api',
-    # 환경에 따라 다른 경로도 시도
-    'eminwon_alt': BASE_DIR / 'eminwon',
-    'homepage_alt': BASE_DIR / 'homepage',
     'scraper': BASE_DIR / 'btp',
 }
 
@@ -105,44 +107,40 @@ def scan_directories() -> Dict[str, List[Dict]]:
     }
 
     # Eminwon 디렉토리 스캔
-    for key in ['eminwon', 'eminwon_alt']:
-        eminwon_dir = SOURCE_DIRS.get(key)
-        if eminwon_dir and eminwon_dir.exists():
-            logger.info(f"Eminwon 디렉토리 스캔: {eminwon_dir}")
-            for date_dir in sorted(eminwon_dir.iterdir()):
-                if date_dir.is_dir() and not date_dir.name.startswith('.'):
-                    for site_dir in date_dir.iterdir():
-                        if site_dir.is_dir() and not site_dir.name.startswith('.'):
-                            for folder in site_dir.iterdir():
-                                if folder.is_dir() and (folder / 'content.md').exists():
-                                    result['eminwon'].append({
-                                        'path': folder,
-                                        'site_code': site_dir.name,
-                                        'folder_name': folder.name,
-                                        'date': date_dir.name,
-                                        'parent_dir': site_dir
-                                    })
-            break  # 첫번째 존재하는 디렉토리만 사용
+    eminwon_dir = SOURCE_DIRS.get('eminwon')
+    if eminwon_dir and eminwon_dir.exists():
+        logger.info(f"Eminwon 디렉토리 스캔: {eminwon_dir}")
+        for date_dir in sorted(eminwon_dir.iterdir()):
+            if date_dir.is_dir() and not date_dir.name.startswith('.'):
+                for site_dir in date_dir.iterdir():
+                    if site_dir.is_dir() and not site_dir.name.startswith('.'):
+                        for folder in site_dir.iterdir():
+                            if folder.is_dir() and (folder / 'content.md').exists():
+                                result['eminwon'].append({
+                                    'path': folder,
+                                    'site_code': site_dir.name,
+                                    'folder_name': folder.name,
+                                    'date': date_dir.name,
+                                    'parent_dir': date_dir  # date 디렉토리를 전달 (site_code는 내부에서 추가됨)
+                                })
 
     # Homepage 디렉토리 스캔
-    for key in ['homepage', 'homepage_alt']:
-        homepage_dir = SOURCE_DIRS.get(key)
-        if homepage_dir and homepage_dir.exists():
-            logger.info(f"Homepage 디렉토리 스캔: {homepage_dir}")
-            for date_dir in sorted(homepage_dir.iterdir()):
-                if date_dir.is_dir() and not date_dir.name.startswith('.'):
-                    for site_dir in date_dir.iterdir():
-                        if site_dir.is_dir() and not site_dir.name.startswith('.'):
-                            for folder in site_dir.iterdir():
-                                if folder.is_dir() and (folder / 'content.md').exists():
-                                    result['homepage'].append({
-                                        'path': folder,
-                                        'site_code': site_dir.name,
-                                        'folder_name': folder.name,
-                                        'date': date_dir.name,
-                                        'parent_dir': site_dir
-                                    })
-            break
+    homepage_dir = SOURCE_DIRS.get('homepage')
+    if homepage_dir and homepage_dir.exists():
+        logger.info(f"Homepage 디렉토리 스캔: {homepage_dir}")
+        for date_dir in sorted(homepage_dir.iterdir()):
+            if date_dir.is_dir() and not date_dir.name.startswith('.'):
+                for site_dir in date_dir.iterdir():
+                    if site_dir.is_dir() and not site_dir.name.startswith('.'):
+                        for folder in site_dir.iterdir():
+                            if folder.is_dir() and (folder / 'content.md').exists():
+                                result['homepage'].append({
+                                    'path': folder,
+                                    'site_code': site_dir.name,
+                                    'folder_name': folder.name,
+                                    'date': date_dir.name,
+                                    'parent_dir': date_dir  # date 디렉토리를 전달
+                                })
 
     # API 디렉토리 스캔 (bizInfo, kStartUp, smes24)
     api_dir = SOURCE_DIRS.get('api')
@@ -157,7 +155,7 @@ def scan_directories() -> Dict[str, List[Dict]]:
                             'site_code': api_type_dir.name,
                             'folder_name': folder.name,
                             'date': '',  # API는 날짜별 구분 없음
-                            'parent_dir': api_type_dir
+                            'parent_dir': api_dir  # api 디렉토리를 전달 (site_code는 내부에서 추가됨)
                         })
 
     # Scraper(BTP) 디렉토리 스캔
@@ -175,7 +173,7 @@ def scan_directories() -> Dict[str, List[Dict]]:
                                     'site_code': site_dir.name,
                                     'folder_name': folder.name,
                                     'date': date_dir.name,
-                                    'parent_dir': site_dir
+                                    'parent_dir': date_dir  # date 디렉토리를 전달
                                 })
 
     return result

@@ -1994,47 +1994,146 @@ class AnnouncementPreProcessor:
 
             with self.db_manager.SessionLocal() as session:
                 # ================================================
-                # ⚠️ DEPRECATED (2025-11-07): 구 예외 케이스 로직
+                # 🆕 PBLN ID 기반 통합 중복 체크 (2025-12-02)
                 # ================================================
-                # 아래 로직은 1964라인의 통합 scraping_url 중복 체크로 대체됨
-                # 1964라인이 모든 API 사이트 간 scraping_url 중복을 포괄적으로 처리
-                # 검증 기간 후 완전 삭제 예정
+                # bizinfo.go.kr URL에서 pblancId(PBLN_xxx) 추출하여 중복 체크
+                # - 양방향 체크: smes24↔bizInfo, bizInfo↔smes24
+                # - URL 형식 차이에 강함 (쿼리 파라미터 순서 무관)
+                # - origin_url, scraping_url 모두에서 추출하여 비교
                 # ================================================
-                # if site_code == 'smes24' and origin_url and 'bizinfo.go.kr' in origin_url.lower():
-                #     try:
-                #         existing_bizinfo = session.execute(
-                #             text("""
-                #                 SELECT id, site_type, site_code, folder_name, url_key, created_at
-                #                 FROM announcement_pre_processing
-                #                 WHERE scraping_url = :origin_url
-                #                 AND site_code = 'bizInfo'
-                #                 LIMIT 1
-                #             """),
-                #             {"origin_url": origin_url}
-                #         ).fetchone()
-                #
-                #         if existing_bizinfo:
-                #             logger.info(
-                #                 f"🚫 중복 스킵 (예외 로직): smes24 origin_url이 bizInfo scraping_url과 일치\n"
-                #                 f"   smes24 folder: {folder_name}\n"
-                #                 f"   origin_url: {origin_url[:100]}...\n"
-                #                 f"   기존 bizInfo: ID={existing_bizinfo.id}, folder={existing_bizinfo.folder_name}\n"
-                #                 f"   기존 url_key: {existing_bizinfo.url_key}\n"
-                #                 f"   → bizInfo 우선 (지자체 원본 데이터 유지)"
-                #             )
-                #
-                #             return existing_bizinfo.id  # 기존 ID 반환하고 종료
-                #
-                #     except Exception as e:
-                #         logger.error(f"예외 케이스 중복 체크 실패 (계속 진행): {e}")
-                #         # 에러 발생 시 기존 로직으로 폴백
+
+                # pblancId 추출 (scraping_url 체크에서도 사용하므로 외부 스코프에 정의)
+                pblanc_id = None
+
+                if site_code in ['bizInfo', 'smes24', 'kStartUp']:
+                    import re
+
+                    # pblancId 추출 함수
+                    def extract_pblanc_id(url):
+                        if not url:
+                            return None
+                        match = re.search(r'pblancId=(PBLN_\d+)', url)
+                        return match.group(1) if match else None
+
+                    # origin_url 또는 scraping_url에서 pblancId 추출
+                    pblanc_id = extract_pblanc_id(origin_url) or extract_pblanc_id(scraping_url)
+
+                    if pblanc_id:
+                        try:
+                            # 다른 사이트에서 동일 pblancId를 가진 레코드 검색
+                            # 우선순위: bizInfo(1) > smes24(2) > kStartUp(3)
+                            existing_by_pblanc = session.execute(
+                                text("""
+                                    SELECT id, site_type, site_code, folder_name, url_key,
+                                           processing_status, origin_url, scraping_url, created_at
+                                    FROM announcement_pre_processing
+                                    WHERE (origin_url LIKE :pattern OR scraping_url LIKE :pattern)
+                                    AND site_code != :current_site_code
+                                    AND site_code IN ('bizInfo', 'smes24', 'kStartUp')
+                                    AND processing_status = '성공'
+                                    ORDER BY
+                                        CASE site_code
+                                            WHEN 'bizInfo' THEN 1
+                                            WHEN 'smes24' THEN 2
+                                            WHEN 'kStartUp' THEN 3
+                                            ELSE 99
+                                        END,
+                                        created_at ASC
+                                    LIMIT 1
+                                """),
+                                {
+                                    "pattern": f"%{pblanc_id}%",
+                                    "current_site_code": site_code
+                                }
+                            ).fetchone()
+
+                            if existing_by_pblanc:
+                                # 우선순위 비교
+                                priority_map = {'bizInfo': 1, 'smes24': 2, 'kStartUp': 3}
+                                existing_priority = priority_map.get(existing_by_pblanc.site_code, 99)
+                                current_priority = priority_map.get(site_code, 99)
+
+                                if existing_priority <= current_priority:
+                                    # 기존 데이터 우선순위가 높거나 같음 → 현재 데이터 스킵
+                                    logger.info(
+                                        f"🚫 중복 스킵 (PBLN ID 기반): 동일 pblancId 발견\n"
+                                        f"   pblancId: {pblanc_id}\n"
+                                        f"   현재 데이터: site_code={site_code}, folder={folder_name}\n"
+                                        f"   기존 데이터: ID={existing_by_pblanc.id}, "
+                                        f"site_code={existing_by_pblanc.site_code}, "
+                                        f"folder={existing_by_pblanc.folder_name}\n"
+                                        f"   우선순위: {existing_by_pblanc.site_code}({existing_priority}) "
+                                        f">= {site_code}({current_priority})\n"
+                                        f"   → 기존 데이터 우선"
+                                    )
+
+                                    # announcement_duplicate_log에 기록
+                                    try:
+                                        with self.db_manager.SessionLocal() as log_session:
+                                            log_session.execute(
+                                                text("""
+                                                    INSERT INTO announcement_duplicate_log (
+                                                        preprocessing_id, existing_preprocessing_id,
+                                                        duplicate_type, url_key_hash,
+                                                        new_site_type, new_site_code,
+                                                        existing_site_type, existing_site_code,
+                                                        new_priority, existing_priority,
+                                                        new_folder_name, existing_folder_name,
+                                                        duplicate_detail, created_at
+                                                    ) VALUES (
+                                                        NULL, :existing_preprocessing_id,
+                                                        :duplicate_type, :url_key_hash,
+                                                        :new_site_type, :new_site_code,
+                                                        :existing_site_type, :existing_site_code,
+                                                        :new_priority, :existing_priority,
+                                                        :new_folder_name, :existing_folder_name,
+                                                        :duplicate_detail, NOW()
+                                                    )
+                                                """),
+                                                {
+                                                    "existing_preprocessing_id": existing_by_pblanc.id,
+                                                    "duplicate_type": "pblanc_id_duplicate",
+                                                    "url_key_hash": None,
+                                                    "new_site_type": "api_scrap",
+                                                    "new_site_code": site_code,
+                                                    "existing_site_type": existing_by_pblanc.site_type,
+                                                    "existing_site_code": existing_by_pblanc.site_code,
+                                                    "new_priority": current_priority,
+                                                    "existing_priority": existing_priority,
+                                                    "new_folder_name": folder_name,
+                                                    "existing_folder_name": existing_by_pblanc.folder_name,
+                                                    "duplicate_detail": f"pblancId={pblanc_id}"
+                                                }
+                                            )
+                                            log_session.commit()
+                                            logger.debug("중복 로그 기록 완료 (PBLN ID 기반)")
+                                    except Exception as log_error:
+                                        logger.warning(f"중복 로그 기록 실패 (무시): {log_error}")
+
+                                    return existing_by_pblanc.id  # 기존 ID 반환하고 종료
+
+                                else:
+                                    # 현재 데이터 우선순위가 더 높음 → 계속 진행
+                                    logger.info(
+                                        f"⚠️ PBLN ID 중복 발견하지만 현재 데이터 우선순위 높음: "
+                                        f"{site_code}({current_priority}) > "
+                                        f"{existing_by_pblanc.site_code}({existing_priority})\n"
+                                        f"   pblancId: {pblanc_id}\n"
+                                        f"   → 계속 진행"
+                                    )
+
+                        except Exception as e:
+                            logger.error(f"PBLN ID 기반 중복 체크 실패 (계속 진행): {e}")
+                            # 에러 발생 시 기존 로직으로 폴백 (pblanc_id 초기화하여 scraping_url 체크 수행)
+                            pblanc_id = None
 
                 # ================================================
                 # 🆕 API 사이트: scraping_url 기반 중복 체크
                 # ================================================
                 # API 사이트(bizInfo, smes24, kStartUp)는 scraping_url이 실제 데이터 출처
                 # origin_url은 다르지만 scraping_url이 같으면 동일 공고로 간주
-                if site_code in ['bizInfo', 'smes24', 'kStartUp'] and scraping_url:
+                # 🔧 통합 로직: pblanc_id가 있으면 PBLN ID 체크에서 이미 처리됨 → 스킵
+                if site_code in ['bizInfo', 'smes24', 'kStartUp'] and scraping_url and not pblanc_id:
                     # 안전 장치: 빈 문자열이나 너무 짧은 URL 제외
                     scraping_url_stripped = scraping_url.strip()
                     if scraping_url_stripped and len(scraping_url_stripped) > 10:

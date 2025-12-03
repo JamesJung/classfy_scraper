@@ -968,8 +968,9 @@ class AnnouncementPreProcessor:
                     if not line:
                         continue
 
-                    # 번호. 파일명:URL 패턴 (콜론 앞뒤 공백 허용)
-                    match = re.match(r"^\d+\.\s*(.+?)\s*:\s*(https?://\S+)", line)
+                    # [목록마커] [번호.] 파일명:URL 패턴 (하이픈/별표/불릿 및 번호 선택적, 콜론 앞뒤 공백 허용)
+                    # 예: "- 공고이미지_1.jpg: https://..." 또는 "1. 파일명.pdf: https://..."
+                    match = re.match(r"^(?:[-*•]\s*)?(?:\d+\.\s*)?(.+?)\s*:\s*(https?://\S+)", line)
                     if match:
                         filename = match.group(1).strip()
                         url = match.group(2).strip()

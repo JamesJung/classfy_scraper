@@ -31,6 +31,50 @@ except Exception as e:
     import logging
     logging.getLogger(__name__).warning(f"hwp5 커스텀 패치 적용 실패: {e}")
 
+# hwp5 FILETIME 클래스 패치 (잘못된 날짜 메타데이터로 인한 OverflowError 방지)
+def _patch_hwp5_filetime():
+    """
+    hwp5 라이브러리의 FILETIME 클래스 패치.
+
+    일부 HWP 파일의 메타데이터(PIDSI_LASTPRINTED 등)에 잘못된 날짜 값이
+    저장되어 있을 경우 datetime 변환 시 OverflowError가 발생합니다.
+    이 패치는 잘못된 FILETIME 값을 안전하게 처리합니다.
+    """
+    try:
+        from hwp5 import msoleprops
+        from datetime import datetime, timedelta
+
+        original_datetime_getter = msoleprops.FILETIME.datetime.fget
+
+        def safe_datetime(self):
+            try:
+                # 유효 범위 체크: 1970년 ~ 2100년 (FILETIME 값 기준)
+                # 1970-01-01: 116444736000000000
+                # 2100-01-01: 159000000000000000 (대략)
+                MIN_VALID_FILETIME = 116444736000000000
+                MAX_VALID_FILETIME = 159000000000000000
+
+                if self.value < MIN_VALID_FILETIME or self.value > MAX_VALID_FILETIME:
+                    # 유효하지 않은 날짜는 None 대신 기본값 반환
+                    return datetime(1970, 1, 1, 0, 0, 0)
+
+                return original_datetime_getter(self)
+            except (OverflowError, OSError, ValueError):
+                # 변환 실패 시 기본값 반환
+                return datetime(1970, 1, 1, 0, 0, 0)
+
+        # 기존 property를 새로운 safe_datetime으로 교체
+        msoleprops.FILETIME.datetime = property(safe_datetime)
+
+    except ImportError:
+        pass  # hwp5가 설치되지 않은 경우 무시
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"hwp5 FILETIME 패치 적용 실패: {e}")
+
+# 모듈 로드 시 FILETIME 패치 적용
+_patch_hwp5_filetime()
+
 # Heavy libraries moved to lazy imports for faster startup
 # These will be imported only when the respective functions are called:
 # - markitdown.MarkItDown
@@ -2601,6 +2645,7 @@ def convert_hwp_to_html(hwp_file_path: Path, output_dir: Path) -> bool:
         return False
     except Exception as e:
         logger.error(f"HWP 파일 변환 중 예상치 못한 오류: {hwp_file_path.name} - {e}")
+        logger.error(f"파일 물리 경로: {hwp_file_path.absolute()}")
         logger.debug(f"오류 상세: {traceback.format_exc()}")
         return False
 

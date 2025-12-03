@@ -3110,23 +3110,32 @@ def extract_hwp_text_fallback(hwp_file_path: Path) -> str | None:
 
     # HWPX 파일인 경우 직접 처리
     if hwp_file_path.suffix.lower() == ".hwpx":
-        result = convert_hwpx_to_text(hwp_file_path)
+        # 1. 먼저 제외 대상인지 확인 (제외 대상이면 OLE2 fallback도 불필요)
+        if should_exclude_file(hwp_file_path):
+            logger.debug(f"HWPX 파일 제외됨 (fallback 불필요): {hwp_file_path.name}")
+            return None
 
-        # convert_hwpx_to_text가 실패 시 (None 반환) read_hwp()로 재시도
-        if result is None:
-            logger.info(f"gethwp.read_hwp()로 재시도 (OLE 형식 HWPX 가능성): {hwp_file_path.name}")
+        # 2. 제외 대상 아님 -> HWPX 텍스트 추출 시도
+        result = convert_hwpx_to_text(hwp_file_path)
+        if result:
+            return result
+
+        # 3. HWPX 추출 실패 시, 실제 OLE2 형식인지 확인 후 fallback
+        # (확장자는 .hwpx이지만 실제로는 OLE2 HWP 형식일 수 있음)
+        if is_valid_hwp_file(hwp_file_path):
+            logger.info(f"HWPX 확장자지만 실제 OLE2 형식으로 확인됨, read_hwp() 시도: {hwp_file_path.name}")
             try:
                 import gethwp
                 text = gethwp.read_hwp(str(hwp_file_path))
                 if text and text.strip():
                     cleaned_text = clean_hwp_extracted_text(text)
                     if len(cleaned_text) >= 10:
-                        logger.info(f"✅ read_hwp()로 HWPX 추출 성공: {hwp_file_path.name} ({len(cleaned_text)}자)")
+                        logger.info(f"OLE2 형식 HWPX 추출 성공: {hwp_file_path.name} ({len(cleaned_text)}자)")
                         return cleaned_text
             except Exception as e:
-                logger.error(f"read_hwp()로도 HWPX 추출 실패: {hwp_file_path.name} - {e}")
+                logger.warning(f"OLE2 형식 HWPX 추출 실패: {hwp_file_path.name} - {e}")
         else:
-            return result
+            logger.debug(f"HWPX 텍스트 추출 불가 (ZIP 형식이나 파싱 실패): {hwp_file_path.name}")
 
         return None
 

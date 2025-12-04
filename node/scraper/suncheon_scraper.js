@@ -1593,21 +1593,20 @@ class AnnouncementScraper {
      * suncheon 사이트는 인코딩 없이 form submit을 사용함
      */
     convertJsDownloadToUrl(jsUrl) {
-        // goDownLoad 또는 goDownload 패턴 파싱 (대소문자 모두 지원)
-        const regex = /goDownload\('([^']+)',\s*'([^']+)',\s*'([^']+)'\)/i;
+        // goDownLoad 패턴 파싱 (대소문자 모두 지원, 쌍따옴표/홑따옴표 모두 지원)
+        const regex = /goDownLoad\s*\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*\)/i;
         const matches = jsUrl.match(regex);
 
         if (matches && matches.length === 4) {
             const [, fileNm, sysFileNm, filePath] = matches;
 
-            // suncheon 사이트의 실제 goDownLoad 함수는 인코딩 없이 사용
-            // 하지만 URL 파라미터로 전달하려면 encodeURIComponent 필요
-            const downloadUrl = new URL('/emwp/jsp/ofr/FileDown.jsp', this.baseUrl);
-            downloadUrl.searchParams.set('user_file_nm', fileNm);
-            downloadUrl.searchParams.set('sys_file_nm', sysFileNm);
-            downloadUrl.searchParams.set('file_path', filePath);
+            // suncheon 사이트의 eminwon 다운로드 URL
+            // 파라미터는 URL 인코딩 적용
+            const enc_user_file_nm = encodeURIComponent(decodeURIComponent(fileNm));
+            const enc_sys_file_nm = encodeURIComponent(decodeURIComponent(sysFileNm));
+            const enc_file_path = encodeURIComponent(decodeURIComponent(filePath));
 
-            return downloadUrl.toString();
+            return `https://eminwon.suncheon.go.kr/emwp/jsp/ofr/FileDown.jsp?user_file_nm=${enc_user_file_nm}&sys_file_nm=${enc_sys_file_nm}&file_path=${enc_file_path}`;
         }
 
         return jsUrl; // 변환 실패시 원본 반환

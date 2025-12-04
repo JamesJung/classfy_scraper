@@ -1347,43 +1347,20 @@ class AnnouncementScraper {
      * jangseong 사이트는 user_file_nm은 인코딩 없이, 나머지는 인코딩해서 전달
      */
     convertJsDownloadToUrl(jsUrl) {
-        // goDownLoad 또는 goDownload 패턴 파싱 (대소문자 모두 지원)
-        const regex = /goDownload\('([^']+)',\s*'([^']+)',\s*'([^']+)'\)/i;
+        // goDownLoad 패턴 파싱 (대소문자 모두 지원, 쌍따옴표/홑따옴표 모두 지원)
+        const regex = /goDownLoad\s*\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*\)/i;
         const matches = jsUrl.match(regex);
 
         if (matches && matches.length === 4) {
             const [, fileNm, sysFileNm, filePath] = matches;
 
-            // 장성군 특수 케이스: user_file_nm은 인코딩 없이 원본 그대로 사용
-            // sys_file_nm과 file_path는 인코딩 필요
-            const baseUrl = new URL('/emwp/jsp/ofr/FileDownNew.jsp', this.baseUrl);
+            // jangseong 사이트의 eminwon 다운로드 URL
+            // 파라미터는 URL 인코딩 적용
+            const enc_user_file_nm = encodeURIComponent(decodeURIComponent(fileNm));
+            const enc_sys_file_nm = encodeURIComponent(decodeURIComponent(sysFileNm));
+            const enc_file_path = encodeURIComponent(decodeURIComponent(filePath));
 
-            console.log(jsUrl)
-            console.log("!!convertJsDownloadToUrl!!")
-            console.log(fileNm)
-            console.log(sysFileNm)
-            console.log(filePath)
-
-
-            console.log(decodeURIComponent(fileNm))
-            console.log(decodeURIComponent(sysFileNm))
-            console.log(decodeURIComponent(filePath))
-
-
-            const decodeFileName = decodeURIComponent(fileNm)
-            const decodeSysFileNm = decodeURIComponent(sysFileNm)
-
-
-            // user_file_nm은 인코딩 없이 그대로, 나머지는 encodeURIComponent로 인코딩
-            const params = [
-                `user_file_nm=${fileNm}`,  // 인코딩 없음
-                `sys_file_nm=${sysFileNm}`,
-                `file_path=${filePath}`
-            ];
-
-            return `${baseUrl.origin}/emwp/jsp/ofr/FileDownNew.jsp?user_file_nm=${fileNm}&sys_file_nm=${sysFileNm}&file_path=${filePath}`;
-
-            // return `${baseUrl.origin}${baseUrl.pathname}?${params.join('&')}`;
+            return `https://eminwon.jangseong.go.kr/emwp/jsp/ofr/FileDownNew.jsp?user_file_nm=${enc_user_file_nm}&sys_file_nm=${enc_sys_file_nm}&file_path=${enc_file_path}`;
         }
 
         return jsUrl; // 변환 실패시 원본 반환

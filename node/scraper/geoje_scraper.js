@@ -1293,6 +1293,30 @@ class AnnouncementScraper {
     }
 
     /**
+     * goDownLoad/goDownload JavaScript 호출을 실제 다운로드 URL로 변환
+     * geoje 사이트는 eminwon.geoje.go.kr을 사용함
+     */
+    convertJsDownloadToUrl(jsUrl) {
+        // goDownLoad 패턴 파싱 (대소문자 모두 지원, 쌍따옴표/홑따옴표 모두 지원)
+        const regex = /goDownLoad\s*\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*\)/i;
+        const matches = jsUrl.match(regex);
+
+        if (matches && matches.length === 4) {
+            const [, fileNm, sysFileNm, filePath] = matches;
+
+            // geoje 사이트의 eminwon 다운로드 URL
+            // 파라미터는 URL 인코딩 적용
+            const enc_user_file_nm = encodeURIComponent(decodeURIComponent(fileNm));
+            const enc_sys_file_nm = encodeURIComponent(decodeURIComponent(sysFileNm));
+            const enc_file_path = encodeURIComponent(decodeURIComponent(filePath));
+
+            return `https://eminwon.geoje.go.kr/emwp/jsp/lga/homepage/FileDown.jsp?user_file_nm=${enc_user_file_nm}&sys_file_nm=${enc_sys_file_nm}&file_path=${enc_file_path}`;
+        }
+
+        return jsUrl; // 변환 실패시 원본 반환
+    }
+
+    /**
      * 마크다운 컨텐츠 생성
      */
     generateMarkdownContent(announcement, detailContent) {
@@ -1322,20 +1346,19 @@ class AnnouncementScraper {
             lines.push('');
             detailContent.attachments.forEach((att, i) => {
                 // URL 추출 - goDownLoad 패턴인 경우 실제 다운로드 URL 생성
-                let downloadUrl = '';
-                const regex = /goDownLoad\('([^']+)',\s*'([^']+)',\s*'([^']+)'\)/;
-                const matches = att.url?.match(regex);
+                let downloadUrl = att.url || '';
 
-                if (matches) {
-                    const [, fileNm, sysFileNm, filePath] = matches;
-                    // 실제 다운로드 URL 생성
-                    downloadUrl = `https://www.geoje.go.kr/common/egovc/cmmn/FileDown.do?atchmnflId=${encodeURIComponent(sysFileNm)}&fileSn=${encodeURIComponent(filePath)}&fileNm=${encodeURIComponent(fileNm)}`;
-                } else if (att.url) {
-                    downloadUrl = att.url;
+                if (downloadUrl && /godownload/i.test(downloadUrl)) {
+                    downloadUrl = this.convertJsDownloadToUrl(downloadUrl);
                 }
 
                 // 파일명 디코딩 및 정리
-                const cleanFileName = decodeURIComponent(att.name || `attachment_${i + 1}`);
+                let cleanFileName = att.name || `attachment_${i + 1}`;
+                try {
+                    cleanFileName = decodeURIComponent(cleanFileName);
+                } catch (e) {
+                    // 디코딩 실패시 원본 사용
+                }
 
                 if (downloadUrl) {
                     lines.push(`${i + 1}. ${cleanFileName}: ${downloadUrl}`);
